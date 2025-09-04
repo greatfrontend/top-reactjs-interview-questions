@@ -6,7 +6,7 @@
   "scripts": {
     "gen": "tsx scripts/gen.ts",
     "sync": "tsx scripts/sync.ts",
-    "translate": "langnostic translate"
+    "i18n": "langnostic translate"
   },
   "keywords": [
     "javascript",
