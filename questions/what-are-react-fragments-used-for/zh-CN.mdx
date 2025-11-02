@@ -7,12 +7,14 @@ title: React Fragments 有什么用？
 React Fragments 用于对多个元素进行分组，而无需向 DOM 添加额外的节点。当您希望从组件的 render 方法返回多个元素，而无需将它们包裹在额外的 HTML 元素中时，这非常有用。您可以使用简写语法 `<>...</>` 或 `React.Fragment` 语法。
 
 ```jsx
-return (
-  <>
-    <ChildComponent1 />
-    <ChildComponent2 />
-  </>
-);
+function MyComponent() {
+  return (
+    <>
+      <ChildComponent1 />
+      <ChildComponent2 />
+    </>
+  );
+}
 ```
 
 ***
@@ -34,23 +36,27 @@ React Fragments 允许您对多个元素进行分组，而无需向 DOM 添加�
 1. **简写语法**：这是使用 fragments 最简洁的方式。它使用空标签 `<>...</>`。
 
    ```jsx
-   return (
-     <>
-       <ChildComponent1 />
-       <ChildComponent2 />
-     </>
-   );
+   function MyComponent() {
+     return (
+       <>
+         <ChildComponent1 />
+         <ChildComponent2 />
+       </>
+     );
+   }
    ```
 
 2. **完整语法**：这使用 `React.Fragment`，如果您需要向 fragment 添加键，这可能很有用。
 
    ```jsx
-   return (
-     <React.Fragment>
-       <ChildComponent1 />
-       <ChildComponent2 />
-     </React.Fragment>
-   );
+   function MyComponent() {
+     return (
+       <React.Fragment>
+         <ChildComponent1 />
+         <ChildComponent2 />
+       </React.Fragment>
+     );
+   }
    ```
 
 ### 向 fragments 添加键
@@ -58,22 +64,74 @@ React Fragments 允许您对多个元素进行分组，而无需向 DOM 添加�
 如果您需要向 fragment 中的元素添加键，则必须使用完整的 `React.Fragment` 语法。这在渲染元素列表时很有用。
 
 ```jsx
-return (
-  <>
-    {items.map((item) => (
-      <React.Fragment key={item.id}>
-        <ChildComponent />
-      </React.Fragment>
-    ))}
-  </>
-);
+function MyComponent({ items }) {
+  return (
+    <ul>
+      {items.map((item) => (
+        <React.Fragment key={item.id}>
+          <li>{item.name}</li>
+          <li>{item.description}</li>
+        </React.Fragment>
+      ))}
+    </ul>
+  );
+}
 ```
 
 ### 用例
 
-* **从组件返回多个元素**：当组件需要返回多个兄弟元素时，使用 fragment 可以帮助避免不必要的包装元素。
-* **渲染列表**：渲染元素列表时，可以使用 fragments 对列表项进行分组，而无需向 DOM 添加额外的节点。
-* **条件渲染**：当有条件地渲染多个元素时，fragments 可以帮助保持 DOM 结构的整洁。
+#### 从组件返回多个元素
+
+当组件需要返回多个兄弟元素时，使用 fragment 可以帮助避免不必要的包装元素。
+
+```jsx
+function MyComponent() {
+  return (
+    <>
+      <ChildComponent1 />
+      <ChildComponent2 />
+    </>
+  );
+}
+```
+
+#### 表格行（Fragment 是必需的）
+
+在渲染多个表格单元格（`<td>`）时，Fragment 是**必需的**，因为 HTML 表格结构不允许在 `<tr>` 和 `<td>` 之间使用包装元素。使用 `<div>` 包装会导致无效的 HTML。
+
+```jsx
+function TableRow({ data }) {
+  return (
+    <tr>
+      <React.Fragment>
+        <td>{data.name}</td>
+        <td>{data.value}</td>
+      </React.Fragment>
+    </tr>
+  );
+}
+```
+
+#### 条件渲染
+
+当有条件地渲染多个元素时，fragments 可以帮助保持 DOM 结构的整洁。
+
+```jsx
+function MyComponent({ isActive }) {
+  return (
+    <>
+      {isActive ? (
+        <>
+          <ChildComponent1 />
+          <ChildComponent2 />
+        </>
+      ) : (
+        <ChildComponent3 />
+      )}
+    </>
+  );
+}
+```
 
 ## 延伸阅读
 
