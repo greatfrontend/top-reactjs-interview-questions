@@ -1,6 +1,20 @@
 # Top React.js Interview Questions (Updated for 2025)
 
-Curated top React.js interview questions with high quality answers for acing your front end interviews.
+**Updated for 2025!** Curated top React.js interview questions with high quality answers for acing your Front End Engineer interviews, brought to you by [GreatFrontEnd](https://www.greatfrontend.com/?utm_source=github&utm_medium=referral&utm_campaign=top-reactjs-qns&gnrs=yangshun).
+
+---
+
+<div>
+  <p align="center">
+    <a href="https://www.greatfrontend.com/questions/react-interview-questions?utm_source=github&utm_medium=referral&utm_campaign=top-reactjs-qns&gnrs=yangshun">
+      <img src="./assets/greatfrontend.gif" alt="GreatFrontEnd React Interview Questions" width="100%">
+    </a>
+  </p>
+</div>
+
+> Black Friday 2025 sale going on now, enjoy the largest discount of the year! [Get 30% off GreatFrontEnd Premium →](https://www.greatfrontend.com/questions/react-interview-questions?utm_source=github&utm_medium=referral&utm_campaign=top-reactjs-qns&gnrs=yangshun) 💡
+
+---
 
 ## Table of Contents
 
