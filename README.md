@@ -72,6 +72,16 @@
 | 48 | [What is reconciliation in React?](#what-is-reconciliation-in-react) |
 | 49 | [What is React Suspense and what does it enable?](#what-is-react-suspense-and-what-does-it-enable) |
 | 50 | [Explain what happens when the `useState` setter function is called in React](#explain-what-happens-when-the-usestate-setter-function-is-called-in-react) |
+| 51 | [What is a switching component?](#what-is-a-switching-component) |
+| 52 | [What are React Mixins?](#what-are-react-mixins) |
+| 53 | [What are the pointer events supported in React?](#what-are-the-pointer-events-supported-in-react) |
+| 54 | [Why should component names start with a capital letter?](#why-should-component-names-start-with-capital-letter) |
+| 55 | [Are custom DOM attributes supported in React v16?](#are-custom-dom-attributes-supported-in-react-v16) |
+| 56 | [How do you loop inside JSX?](#how-to-loop-inside-jsx) |
+| 57 | [How do you access props within attribute quotes?](#how-do-you-access-props-in-attribute-quotes) |
+| 58 | [What is a React PropType array with shape?](#what-is-react-proptype-array-with-shape) |
+| 59 | [How do you conditionally apply class attributes?](#how-to-conditionally-apply-class-attributes) |
+| 60 | [Why is ReactDOM separated from React?](#why-reactdom-is-separated-from-react) |
 
 <!-- TABLE_OF_CONTENTS:END -->
 
@@ -1120,6 +1130,288 @@
     <br>
 
     > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/explain-what-happens-when-setstate-is-called-in-react?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
+
+    [Back to top ↑](#table-of-contents)
+    <br>
+    <br>
+
+51. ### What is a switching component?
+
+    A _switching component_ is a component that renders one of many components. We need to use object to map prop values to components.
+
+    For example, a switching component to display different pages based on `page` prop:
+
+    ```jsx harmony
+    import HomePage from "./HomePage";
+    import AboutPage from "./AboutPage";
+    import ServicesPage from "./ServicesPage";
+    import ContactPage from "./ContactPage";
+
+    const PAGES = {
+      home: HomePage,
+      about: AboutPage,
+      services: ServicesPage,
+      contact: ContactPage,
+    };
+
+    const Page = (props) => {
+      const Handler = PAGES[props.page] || ContactPage;
+
+      return <Handler {...props} />;
+    };
+
+    // The keys of the PAGES object can be used in the prop types to catch dev-time errors.
+    Page.propTypes = {
+      page: PropTypes.oneOf(Object.keys(PAGES)).isRequired,
+    };
+    ```
+
+    <br>
+
+    > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/what-is-a-switching-component?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
+
+    [Back to top ↑](#table-of-contents)
+    <br>
+    <br>
+
+52. ### What are React Mixins?
+
+    _Mixins_ are a way to totally separate components to have a common functionality. Mixins **should not be used** and can be replaced with _higher-order components_ or _decorators_.
+
+    One of the most commonly used mixins is `PureRenderMixin`. You might be using it in some components to prevent unnecessary re-renders when the props and state are shallowly equal to the previous props and state:
+
+    ```javascript
+    const PureRenderMixin = require("react-addons-pure-render-mixin");
+
+    const Button = React.createClass({
+      mixins: [PureRenderMixin],
+      // ...
+    });
+    ```
+
+    <br>
+
+    > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/what-are-react-mixins?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
+
+    [Back to top ↑](#table-of-contents)
+    <br>
+    <br>
+
+53. ### What are the Pointer Events supported in React?
+
+    _Pointer Events_ provide a unified way of handling all input events. In the old days we had a mouse and respective event listeners to handle them but nowadays we have many devices which don't correlate to having a mouse, like phones with touch surface or pens. We need to remember that these events will only work in browsers that support the _Pointer Events_ specification.
+
+    The following event types are now available in _React DOM_:
+
+    1. `onPointerDown`
+    2. `onPointerMove`
+    3. `onPointerUp`
+    4. `onPointerCancel`
+    5. `onGotPointerCapture`
+    6. `onLostPointerCapture`
+    7. `onPointerEnter`
+    8. `onPointerLeave`
+    9. `onPointerOver`
+    10. `onPointerOut`
+
+    <br>
+
+    > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/what-are-the-point-events-supported-in-react?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
+
+    [Back to top ↑](#table-of-contents)
+    <br>
+    <br>
+
+54. ### Why should component names start with capital letter?
+
+    If you are rendering your component using JSX, the name of that component has to begin with a capital letter otherwise React will throw an error as an unrecognized tag. This convention is because only HTML elements and SVG tags can begin with a lowercase letter.
+
+    ```jsx harmony
+    function SomeComponent {
+      // Code goes here
+    }
+    ```
+
+    You can define function component whose name starts with lowercase letter, but when it's imported it should have a capital letter. Here lowercase is fine:
+
+    ```jsx harmony
+    function myComponent {
+      render() {
+        return <div />;
+      }
+    }
+
+    export default myComponent;
+    ```
+
+    While when imported in another file it should start with capital letter:
+
+    ```jsx harmony
+    import MyComponent from "./myComponent";
+    ```
+
+    <br>
+
+    > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/why-should-component-names-start-with-capital-letter?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
+
+    [Back to top ↑](#table-of-contents)
+    <br>
+    <br>
+
+55. ### Are custom DOM attributes supported in React v16?
+
+    Yes. In the past, React used to ignore unknown DOM attributes. If you wrote JSX with an attribute that React doesn't recognize, React would just skip it.
+
+    For example, let's take a look at the below attribute:
+
+    ```jsx harmony
+    <div mycustomattribute={"something"} />
+    ```
+
+    Would render an empty div to the DOM with React v15:
+
+    ```html
+    <div />
+    ```
+
+    In React v16 any unknown attributes will end up in the DOM:
+
+    ```html
+    <div mycustomattribute="something" />
+    ```
+
+    This is useful for supplying browser-specific non-standard attributes, trying new DOM APIs, and integrating with opinionated third-party libraries.
+
+    <br>
+
+    > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/are-custom-dom-attributes-supported-in-react-v16?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
+
+    [Back to top ↑](#table-of-contents)
+    <br>
+    <br>
+
+56. ### How to loop inside JSX?
+
+    You can simply use `Array.prototype.map` with ES6 _arrow function_ syntax.
+
+    For example, the `items` array of objects is mapped into an array of components:
+
+    ```jsx harmony
+    <tbody>
+      {items.map((item) => (
+        <SomeComponent key={item.id} name={item.name} />
+      ))}
+    </tbody>
+    ```
+
+    But you can't iterate using `for` loop:
+
+    ```jsx harmony
+    <tbody>
+      for (let i = 0; i < items.length; i++) {
+        <SomeComponent key={items[i].id} name={items[i].name} />
+      }
+    </tbody>
+    ```
+
+    This is because JSX tags are transpiled into _function calls_, and you can't use statements inside expressions. This may change thanks to `do` expressions which are _stage 1 proposal_.
+
+    <br>
+
+    > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/how-to-loop-inside-jsx?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
+
+    [Back to top ↑](#table-of-contents)
+    <br>
+    <br>
+
+57. ### How do you access props in attribute quotes?
+
+    React (or JSX) doesn't support variable interpolation inside an attribute value. The below representation won't work:
+
+    ```jsx harmony
+    <img className="image" src="images/{this.props.image}" />
+    ```
+
+    But you can put any JS expression inside curly braces as the entire attribute value. So the below expression works:
+
+    ```jsx harmony
+    <img className="image" src={"images/" + this.props.image} />
+    ```
+
+    Using _template strings_ will also work:
+
+    ```jsx harmony
+    <img className="image" src={`images/${this.props.image}`} />
+    ```
+
+    <br>
+
+    > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/how-do-you-access-props-in-attribute-quotes?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
+
+    [Back to top ↑](#table-of-contents)
+    <br>
+    <br>
+
+58. ### What is React PropType array with shape?
+
+    If you want to pass an array of objects to a component with a particular shape then use `React.PropTypes.shape()` as an argument to `React.PropTypes.arrayOf()`.
+
+    ```javascript
+    ReactComponent.propTypes = {
+      arrayWithShape: React.PropTypes.arrayOf(
+        React.PropTypes.shape({
+          color: React.PropTypes.string.isRequired,
+          fontSize: React.PropTypes.number.isRequired,
+        })
+      ).isRequired,
+    };
+    ```
+
+    <br>
+
+    > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/what-is-react-prop-type-array-with-shape?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
+
+    [Back to top ↑](#table-of-contents)
+    <br>
+    <br>
+
+59. ### How to conditionally apply class attributes?
+
+    You shouldn't use curly braces inside quotes because it is going to be evaluated as a string.
+
+    ```jsx harmony
+    <div className="btn-panel {this.props.visible ? 'show' : 'hidden'}">
+    ```
+
+    Instead you need to move curly braces outside (don't forget to include spaces between class names):
+
+    ```jsx harmony
+    <div className={'btn-panel ' + (this.props.visible ? 'show' : 'hidden')}>
+    ```
+
+    _Template strings_ will also work:
+
+    ```jsx harmony
+    <div className={`btn-panel ${this.props.visible ? 'show' : 'hidden'}`}>
+    ```
+
+    <br>
+
+    > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/how-to-conditionally-apply-class-attributes?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
+
+    [Back to top ↑](#table-of-contents)
+    <br>
+    <br>
+
+60. ### Why ReactDOM is separated from React?
+
+    The React team worked on extracting all DOM-related features into a separate library called _ReactDOM_. React v0.14 is the first release in which the libraries are split. By looking at some of the packages, `react-native`, `react-art`, `react-canvas`, and `react-three`, it has become clear that the beauty and essence of React has nothing to do with browsers or the DOM.
+
+    To build more environments that React can render to, React team planned to split the main React package into two: `react` and `react-dom`. This paves the way to writing components that can be shared between the web version of React and React Native.
+
+    <br>
+
+    > Read the [detailed answer](https://www.greatfrontend.com/questions/quiz/why-react-dom-is-separated-from-react?framework=react&tab=quiz) on [GreatFrontEnd](https://www.greatfrontend.com?gnrs=github) which allows progress tracking, contains more code samples, and useful resources.
 
     [Back to top ↑](#table-of-contents)
     <br>
