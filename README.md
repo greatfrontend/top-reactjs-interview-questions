@@ -240,7 +240,7 @@
 
     <!-- Update here: /questions/what-are-the-rules-of-react-hooks/en-US.mdx -->
 
-    React hooks have a few essential rules to ensure they work correctly. Always call hooks at the top level of your React function, never inside loops, conditions, or nested functions. Only call hooks from React function components or custom hooks. These rules ensure that hooks maintain the correct state and lifecycle behavior.
+    React hooks have a few essential rules to ensure they work correctly. Always call hooks at the top level of your React function, never inside loops, conditions, or nested functions. Only call hooks from React function components or custom hooks. Additionally, custom hooks must always be named with a use prefix (e.g., useFetch, useAuth) — this is not just a convention but a requirement that allows React and its linter tools to identify and enforce hook rules automatically. These rules ensure that hooks maintain the correct state and lifecycle behavior.
 
     <!-- Update here: /questions/what-are-the-rules-of-react-hooks/en-US.mdx -->
 
