@@ -12,7 +12,7 @@ this.setState((prevState, props) => ({
 }));
 ```
 
-***
+---
 
 ## React 中 `setState()` 的回调函数参数格式的目的
 
@@ -34,8 +34,8 @@ this.setState((prevState, props) => {
 
 ### 什么时候使用它
 
-* **当新状态依赖于之前的状态时**：如果需要根据当前状态更新状态，请使用回调函数格式以避免与异步状态更新相关的潜在问题。
-* **当多个状态更新被批处理时**：在多个 `setState()` 调用可能被批处理在一起的情况下，使用回调函数可确保每次更新都基于最新的状态。
+- **当新状态依赖于之前的状态时**：如果需要根据当前状态更新状态，请使用回调函数格式以避免与异步状态更新相关的潜在问题。
+- **当多个状态更新被批处理时**：在多个 `setState()` 调用可能被批处理在一起的情况下，使用回调函数可确保每次更新都基于最新的状态。
 
 ### 示例
 
@@ -69,6 +69,6 @@ class Counter extends React.Component {
 
 ## 延伸阅读
 
-* [React Docs: State: A Component's Memory](https://react.dev/learn/state-a-components-memory)
-* [React Docs: setState()](https://react.dev/reference/react/useState#setstate)
-* [React Docs: Responding to Events](https://react.dev/learn/responding-to-events)
+- [React Docs: State: A Component's Memory](https://react.dev/learn/state-a-components-memory)
+- [React Docs: setState()](https://react.dev/reference/react/useState#setstate)
+- [React Docs: Responding to Events](https://react.dev/learn/responding-to-events)

@@ -6,7 +6,7 @@ title: useEffect 的依赖项数组会影响什么？
 
 useEffect 的依赖项数组决定了 effect 应该何时重新运行。如果数组为空，则 effect 仅在初始渲染后运行一次。如果它包含变量，则 effect 在任何这些变量更改时运行。如果省略，则 effect 在每次渲染后运行。
 
-***
+---
 
 ## useEffect 的依赖项数组会影响什么？
 
@@ -27,9 +27,8 @@ useEffect(() => {
 ### 依赖项数组如何影响 `useEffect`
 
 1. **空依赖项数组 (`[]`)**:
-
-   * effect 仅在初始渲染后运行一次。
-   * 这类似于类组件中 `componentDidMount` 的行为。
+   - effect 仅在初始渲染后运行一次。
+   - 这类似于类组件中 `componentDidMount` 的行为。
 
    ```javascript
    useEffect(() => {
@@ -38,9 +37,8 @@ useEffect(() => {
    ```
 
 2. **带有变量的依赖项数组**:
-
-   * effect 在初始渲染后运行，并在任何指定的依赖项更改时运行。
-   * React 对依赖项进行浅层比较，以确定它们是否已更改。
+   - effect 在初始渲染后运行，并在任何指定的依赖项更改时运行。
+   - React 对依赖项进行浅层比较，以确定它们是否已更改。
 
    ```javascript
    useEffect(() => {
@@ -49,9 +47,8 @@ useEffect(() => {
    ```
 
 3. **没有依赖项数组**:
-
-   * effect 在每次渲染后运行。
-   * 如果 effect 代价高昂，这可能会导致性能问题。
+   - effect 在每次渲染后运行。
+   - 如果 effect 代价高昂，这可能会导致性能问题。
 
    ```javascript
    useEffect(() => {
@@ -62,9 +59,8 @@ useEffect(() => {
 ### 常见陷阱
 
 1. **过时的闭包**:
-
-   * 如果你在 effect 内部使用状态或 props，而没有将它们包含在依赖项数组中，你可能会得到过时的值。
-   * 始终将 effect 所依赖的所有状态和 props 包含在依赖项数组中。
+   - 如果你在 effect 内部使用状态或 props，而没有将它们包含在依赖项数组中，你可能会得到过时的值。
+   - 始终将 effect 所依赖的所有状态和 props 包含在依赖项数组中。
 
    ```javascript
    const [count, setCount] = useState(0);
@@ -79,9 +75,8 @@ useEffect(() => {
    ```
 
 2. **函数作为依赖项**:
-
-   * 函数在每次渲染时都会重新创建，因此将它们包含在依赖项数组中可能会导致 effect 运行的频率超过必要次数。
-   * 如果需要将函数包含在依赖项数组中，请使用 `useCallback` 来记忆化函数。
+   - 函数在每次渲染时都会重新创建，因此将它们包含在依赖项数组中可能会导致 effect 运行的频率超过必要次数。
+   - 如果需要将函数包含在依赖项数组中，请使用 `useCallback` 来记忆化函数。
 
    ```javascript
    const handleClick = useCallback(() => {
@@ -95,6 +90,6 @@ useEffect(() => {
 
 ## 延伸阅读
 
-* [React Docs: Using the Effect Hook](https://react.dev/reference/react/useEffect)
-* [React Docs: Rules of Hooks](https://react.dev/reference/rules/rules-of-hooks)
-* [Overreacted: A Complete Guide to useEffect](https://overreacted.io/a-complete-guide-to-useeffect/)
+- [React Docs: Using the Effect Hook](https://react.dev/reference/react/useEffect)
+- [React Docs: Rules of Hooks](https://react.dev/reference/rules/rules-of-hooks)
+- [Overreacted: A Complete Guide to useEffect](https://overreacted.io/a-complete-guide-to-useeffect/)

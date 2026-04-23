@@ -12,7 +12,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
 
 当您有涉及多个子值的复杂 state 逻辑，或者下一个 state 依赖于前一个 state 时，请使用 `useReducer`。
 
-***
+---
 
 ## React 中的 `useReducer` Hook 是什么？应该在什么时候使用它？
 
@@ -82,11 +82,11 @@ export default Counter;
 
 ### 什么时候使用 `useReducer`
 
-* **复杂的 state 逻辑**：当您有涉及多个子值的复杂 state 逻辑，或者下一个 state 依赖于前一个 state 时，请使用 `useReducer`。
-* **状态管理**：当您需要更可预测的状态管理模式（类似于 Redux）时，它很有用。
-* **性能优化**：`useReducer` 可以通过避免不必要的重新渲染来帮助优化某些情况下的性能。
+- **复杂的 state 逻辑**：当您有涉及多个子值的复杂 state 逻辑，或者下一个 state 依赖于前一个 state 时，请使用 `useReducer`。
+- **状态管理**：当您需要更可预测的状态管理模式（类似于 Redux）时，它很有用。
+- **性能优化**：`useReducer` 可以通过避免不必要的重新渲染来帮助优化某些情况下的性能。
 
 ## 延伸阅读
 
-* [React documentation on `useReducer`](https://react.dev/reference/react/useReducer)
-* [Using the `useReducer` hook](https://react.dev/learn/scaling-up-with-reducer-and-context)
+- [React documentation on `useReducer`](https://react.dev/reference/react/useReducer)
+- [Using the `useReducer` hook](https://react.dev/learn/scaling-up-with-reducer-and-context)

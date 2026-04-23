@@ -28,7 +28,7 @@ class DataFetcher extends React.Component {
 />;
 ```
 
-***
+---
 
 ## React 中的 render props 是什么，它们有什么用？
 
@@ -40,9 +40,9 @@ Render props 是 React 中一种在组件之间共享代码的模式，它使用
 
 Render props 用于：
 
-* 在组件之间共享逻辑，而无需使用高阶组件 (HOC) 或钩子
-* 使组件更具可重用性和可组合性
-* 提高代码可读性和可维护性
+- 在组件之间共享逻辑，而无需使用高阶组件 (HOC) 或钩子
+- 使组件更具可重用性和可组合性
+- 提高代码可读性和可维护性
 
 ### 工作原理
 
@@ -86,10 +86,10 @@ class MouseTracker extends React.Component {
 
 ### 优点
 
-* **可重用性**：跟踪鼠标位置的逻辑被封装在 `MouseTracker` 中，使其可在应用程序的不同部分重复使用。
-* **关注点分离**：`MouseTracker` 组件负责跟踪鼠标位置，而 `render` prop 函数负责渲染 UI。
-* **灵活性**：通过将不同的 `render` prop 函数传递给同一个 `MouseTracker` 组件，可以创建不同的 UI 表示。
+- **可重用性**：跟踪鼠标位置的逻辑被封装在 `MouseTracker` 中，使其可在应用程序的不同部分重复使用。
+- **关注点分离**：`MouseTracker` 组件负责跟踪鼠标位置，而 `render` prop 函数负责渲染 UI。
+- **灵活性**：通过将不同的 `render` prop 函数传递给同一个 `MouseTracker` 组件，可以创建不同的 UI 表示。
 
 ## 延伸阅读
 
-* [高级 React 模式](https://kentcdodds.com/blog/compound-components-with-react-hooks)
+- [高级 React 模式](https://kentcdodds.com/blog/compound-components-with-react-hooks)

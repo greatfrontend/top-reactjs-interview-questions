@@ -6,7 +6,7 @@ title: 如何调试 React 应用程序？
 
 要调试 React 应用程序，您可以使用 React Developer Tools 浏览器扩展程序来检查组件层次结构和状态。此外，您可以使用 `console.log` 语句来记录数据和错误，并利用浏览器开发者工具在代码中设置断点。对于更高级的调试，您可以使用错误边界来捕获和处理组件中的错误。
 
-***
+---
 
 ## 如何调试 React 应用程序？
 
@@ -14,9 +14,9 @@ title: 如何调试 React 应用程序？
 
 React Developer Tools 浏览器扩展程序是一个用于检查和调试 React 应用程序的强大工具。它允许您：
 
-* 检查组件层次结构
-* 查看和编辑组件状态和属性
-* 跟踪组件重新渲染
+- 检查组件层次结构
+- 查看和编辑组件状态和属性
+- 跟踪组件重新渲染
 
 您可以从 [Chrome Web Store](https://chrome.google.com/webstore/detail/react-developer-tools) 或 [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/react-devtools/) 安装该扩展程序。
 
@@ -109,8 +109,7 @@ function App() {
       }}
       onError={(error, info) => {
         // 将错误记录到错误报告服务
-      }}
-    >
+      }}>
       <MyComponent />
     </ErrorBoundary>
   );
@@ -139,7 +138,7 @@ function MyComponent() {
 
 ## 延伸阅读
 
-* [React Developer Tools](https://react.dev/learn/react-developer-tools)
-* [React 中的错误边界](https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary)
-* [使用 Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools)
-* [JavaScript 调试和错误处理](https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Debugging_JavaScript)
+- [React Developer Tools](https://react.dev/learn/react-developer-tools)
+- [React 中的错误边界](https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary)
+- [使用 Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools)
+- [JavaScript 调试和错误处理](https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Debugging_JavaScript)

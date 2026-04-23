@@ -12,7 +12,7 @@ const memoizedCallback = useCallback(() => {
 }, [a, b]);
 ```
 
-***
+---
 
 ## React 中的 `useCallback` Hook 是什么？应该在什么时候使用？
 
@@ -57,11 +57,11 @@ const ChildComponent = React.memo(({ onClick }) => {
 
 ### 注意事项
 
-* **过度使用**：过度使用 `useCallback` 可能会导致代码更复杂，并且不一定总能提高性能。应谨慎使用。
-* **依赖项**：确保所有依赖项都在依赖项数组中正确指定。缺少依赖项可能会导致陈旧的闭包和错误。
+- **过度使用**：过度使用 `useCallback` 可能会导致代码更复杂，并且不一定总能提高性能。应谨慎使用。
+- **依赖项**：确保所有依赖项都在依赖项数组中正确指定。缺少依赖项可能会导致陈旧的闭包和错误。
 
 ## 延伸阅读
 
-* [React documentation on `useCallback`](https://react.dev/reference/react/useCallback)
-* [React memoization techniques](https://react.dev/reference/react/memo#skipping-re-rendering-when-props-are-unchanged)
-* [Understanding React's `useCallback` and `useMemo`](https://kentcdodds.com/blog/usememo-and-usecallback)
+- [React documentation on `useCallback`](https://react.dev/reference/react/useCallback)
+- [React memoization techniques](https://react.dev/reference/react/memo#skipping-re-rendering-when-props-are-unchanged)
+- [Understanding React's `useCallback` and `useMemo`](https://kentcdodds.com/blog/usememo-and-usecallback)

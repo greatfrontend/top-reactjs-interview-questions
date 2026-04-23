@@ -27,7 +27,6 @@ useEffect(() => {
 ### How the dependency array affects `useEffect`
 
 1. **Empty dependency array (`[]`)**:
-
    - The effect runs only once after the initial render.
    - This is similar to the behavior of `componentDidMount` in class components.
 
@@ -38,7 +37,6 @@ useEffect(() => {
    ```
 
 2. **Dependency array with variables**:
-
    - The effect runs after the initial render and whenever any of the specified dependencies change.
    - React performs a shallow comparison of the dependencies to determine if they have changed.
 
@@ -49,7 +47,6 @@ useEffect(() => {
    ```
 
 3. **No dependency array**:
-
    - The effect runs after every render.
    - This can lead to performance issues if the effect is expensive.
 
@@ -62,7 +59,6 @@ useEffect(() => {
 ### Common pitfalls
 
 1. **Stale closures**:
-
    - If you use state or props inside the effect without including them in the dependency array, you might end up with stale values.
    - Always include all state and props that the effect depends on in the dependency array.
 
@@ -79,7 +75,6 @@ useEffect(() => {
    ```
 
 2. **Functions as dependencies**:
-
    - Functions are recreated on every render, so including them in the dependency array can cause the effect to run more often than necessary.
    - Use `useCallback` to memoize functions if they need to be included in the dependency array.
 

@@ -6,7 +6,7 @@ title: 在 React 中使用数组索引作为 `key` 的值有什么后果？
 
 在 React 中使用数组索引作为 `key` 的值可能会导致性能问题和错误。当项目顺序发生变化时，React 可能无法正确识别哪些项目已更改，从而导致不必要的重新渲染或不正确的组件更新。最好使用唯一的标识符作为 `key`，以确保 React 可以有效地管理和更新 DOM。
 
-***
+---
 
 ## 使用数组索引作为 React 中 `key` 值的后果
 
@@ -60,6 +60,6 @@ const List = () => (
 
 ## 延伸阅读
 
-* [React documentation on keys](https://react.dev/learn/rendering-lists#why-does-react-need-keys)
-* [Why using array index as a key is an anti-pattern](https://medium.com/@robinpokorny/index-as-a-key-is-an-anti-pattern-e0349aece318)
-* [React performance optimization with keys](https://kentcdodds.com/blog/understanding-reacts-key-prop)
+- [React documentation on keys](https://react.dev/learn/rendering-lists#why-does-react-need-keys)
+- [Why using array index as a key is an anti-pattern](https://medium.com/@robinpokorny/index-as-a-key-is-an-anti-pattern-e0349aece318)
+- [React performance optimization with keys](https://kentcdodds.com/blog/understanding-reacts-key-prop)

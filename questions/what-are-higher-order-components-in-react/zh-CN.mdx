@@ -14,7 +14,7 @@ const withExtraProps = (WrappedComponent) => {
 const EnhancedComponent = withExtraProps(MyComponent);
 ```
 
-***
+---
 
 ## React 中什么是高阶组件？
 
@@ -26,9 +26,9 @@ const EnhancedComponent = withExtraProps(MyComponent);
 
 HOC 用于：
 
-* 在组件之间共享通用功能
-* 抽象和重用组件逻辑
-* 使用额外的 props 或 state 增强组件
+- 在组件之间共享通用功能
+- 抽象和重用组件逻辑
+- 使用额外的 props 或 state 增强组件
 
 ### 示例
 
@@ -64,23 +64,23 @@ export default App;
 
 ### 常见用例
 
-* **身份验证**：在渲染之前包装组件以检查用户是否已通过身份验证。
-* **日志记录**：向组件添加日志记录功能。
-* **主题**：将与主题相关的 props 注入到组件中。
-* **数据获取**：获取数据并将其作为 props 传递给组件。
+- **身份验证**：在渲染之前包装组件以检查用户是否已通过身份验证。
+- **日志记录**：向组件添加日志记录功能。
+- **主题**：将与主题相关的 props 注入到组件中。
+- **数据获取**：获取数据并将其作为 props 传递给组件。
 
 ### 最佳实践
 
-* **不要改变原始组件**：始终返回一个新组件。
-* **谨慎使用 HOC**：过度使用 HOC 会使代码更难理解。
-* **正确命名 HOC**：使用一个描述性名称来指示 HOC 的作用。
+- **不要改变原始组件**：始终返回一个新组件。
+- **谨慎使用 HOC**：过度使用 HOC 会使代码更难理解。
+- **正确命名 HOC**：使用一个描述性名称来指示 HOC 的作用。
 
 ### 替代方案
 
-* **Render props**: 一种模式，组件使用函数作为 prop 来确定要渲染的内容。
-* **Hooks**: 自定义 hooks 可用于在函数组件之间共享逻辑。
+- **Render props**: 一种模式，组件使用函数作为 prop 来确定要渲染的内容。
+- **Hooks**: 自定义 hooks 可用于在函数组件之间共享逻辑。
 
 ## 延伸阅读
 
-* [理解 React 中的高阶组件](https://medium.com/@franleplant/react-higher-order-components-in-depth-cf9032ee6c3e)
-* [HOCs vs Render Props vs Hooks](https://gist.github.com/bradwestfall/4fa683c8f4fcd781a38a8d623bec20e7)
+- [理解 React 中的高阶组件](https://medium.com/@franleplant/react-higher-order-components-in-depth-cf9032ee6c3e)
+- [HOCs vs Render Props vs Hooks](https://gist.github.com/bradwestfall/4fa683c8f4fcd781a38a8d623bec20e7)

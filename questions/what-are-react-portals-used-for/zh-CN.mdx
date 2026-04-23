@@ -6,7 +6,7 @@ title: React Portals 有什么用？
 
 React Portals 用于将子项渲染到存在于父组件层级结构之外的 DOM 节点中。这对于模态框、工具提示和下拉菜单等需要突破父组件的 overflow 或 z-index 限制的场景非常有用。您可以使用 `ReactDOM.createPortal(child, container)` 创建一个 portal。
 
-***
+---
 
 ## React Portals 有什么用？
 
@@ -86,11 +86,11 @@ ReactDOM.createPortal(child, container);
 
 ### 优点
 
-* **突破父级约束**：Portals 允许您在父组件的 DOM 层次结构之外渲染组件，这对于避免 z-index 和 overflow 问题很有用。
-* **改进的可访问性**：通过在 DOM 的顶层渲染模态框和工具提示等组件，您可以确保它们更容易被屏幕阅读器和其他辅助技术访问。
-* **简化样式**：通过在父组件之外渲染组件，您可以避免复杂的 CSS 规则，并确保组件的样式正确。
+- **突破父级约束**：Portals 允许您在父组件的 DOM 层次结构之外渲染组件，这对于避免 z-index 和 overflow 问题很有用。
+- **改进的可访问性**：通过在 DOM 的顶层渲染模态框和工具提示等组件，您可以确保它们更容易被屏幕阅读器和其他辅助技术访问。
+- **简化样式**：通过在父组件之外渲染组件，您可以避免复杂的 CSS 规则，并确保组件的样式正确。
 
 ## 延伸阅读
 
-* [React createPortal documentation](https://react.dev/reference/react-dom/createPortal)
-* [Building a modal in React with React Portals](https://blog.logrocket.com/build-modal-with-react-portals/)
+- [React createPortal documentation](https://react.dev/reference/react-dom/createPortal)
+- [Building a modal in React with React Portals](https://blog.logrocket.com/build-modal-with-react-portals/)

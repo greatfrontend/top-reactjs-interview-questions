@@ -6,7 +6,7 @@ title: React 中的虚拟 DOM 如何工作？它有哪些优点和缺点？
 
 React 中的虚拟 DOM 是实际 DOM 的轻量级副本。当组件的状态发生变化时，React 会创建一个新的虚拟 DOM 树，并使用称为“协调”的过程将其与之前的树进行比较。然后，只有差异会在实际 DOM 中更新，从而使更新更有效。优点包括提高性能和更具声明性的方式来管理 UI。但是，它可能会增加复杂性，并且对于非常简单的应用程序可能没有那么高的性能。
 
-***
+---
 
 ## React 中的虚拟 DOM 如何工作？
 
@@ -46,29 +46,29 @@ function MyComponent() {
 
 ### 提高性能
 
-* **高效更新**：通过仅更新已更改的 DOM 部分，React 最小化了昂贵的 DOM 操作的数量。
-* **批量更新**：React 可以将多个更新批量处理在一起，从而减少重新渲染的次数。
+- **高效更新**：通过仅更新已更改的 DOM 部分，React 最小化了昂贵的 DOM 操作的数量。
+- **批量更新**：React 可以将多个更新批量处理在一起，从而减少重新渲染的次数。
 
 ### 声明式 UI
 
-* **简化开发**：开发人员可以描述 UI 在给定状态下应该是什么样子，而 React 负责更新 DOM 以匹配该状态。
+- **简化开发**：开发人员可以描述 UI 在给定状态下应该是什么样子，而 React 负责更新 DOM 以匹配该状态。
 
 ### 跨平台
 
-* **React Native**：虚拟 DOM 概念允许 React 用于使用 React Native 进行移动应用程序开发，从而在不同平台上提供一致的开发体验。
+- **React Native**：虚拟 DOM 概念允许 React 用于使用 React Native 进行移动应用程序开发，从而在不同平台上提供一致的开发体验。
 
 ## 虚拟 DOM 的缺点
 
 ### 复杂性
 
-* **学习曲线**：对于初学者来说，理解虚拟 DOM 的工作原理以及如何优化组件可能具有挑战性。
-* **开销**：对于非常简单的应用程序，维护虚拟 DOM 的开销可能不合理。
+- **学习曲线**：对于初学者来说，理解虚拟 DOM 的工作原理以及如何优化组件可能具有挑战性。
+- **开销**：对于非常简单的应用程序，维护虚拟 DOM 的开销可能不合理。
 
 ### 性能限制
 
-* **并非万能药**：虽然虚拟 DOM 改善了许多用例的性能，但在非常具体、高度优化的场景中，它的性能可能不如手动 DOM 操作。
+- **并非万能药**：虽然虚拟 DOM 改善了许多用例的性能，但在非常具体、高度优化的场景中，它的性能可能不如手动 DOM 操作。
 
 ## 延伸阅读
 
-* [React Docs on Reconciliation](https://react.dev/learn/render-and-commit)
-* [What is the Virtual DOM in React?](https://www.freecodecamp.org/news/what-is-the-virtual-dom-in-react/)
+- [React Docs on Reconciliation](https://react.dev/learn/render-and-commit)
+- [What is the Virtual DOM in React?](https://www.freecodecamp.org/news/what-is-the-virtual-dom-in-react/)

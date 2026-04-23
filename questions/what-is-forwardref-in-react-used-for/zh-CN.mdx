@@ -12,7 +12,7 @@ import React, { forwardRef } from 'react';
 const MyComponent = forwardRef((props, ref) => <input ref={ref} {...props} />);
 ```
 
-***
+---
 
 ## React 中的 `forwardRef()` 有什么作用？
 
@@ -24,8 +24,8 @@ const MyComponent = forwardRef((props, ref) => <input ref={ref} {...props} />);
 
 在以下几种情况下，`forwardRef()` 很有用：
 
-* **访问 DOM 元素**：当您需要直接操作 DOM 元素时，例如聚焦输入字段。
-* **与子组件交互**：当您需要调用子组件实例的方法或访问其属性时。
+- **访问 DOM 元素**：当您需要直接操作 DOM 元素时，例如聚焦输入字段。
+- **与子组件交互**：当您需要调用子组件实例的方法或访问其属性时。
 
 ### 如何使用 `forwardRef()`
 
@@ -72,11 +72,11 @@ export default ParentComponent;
 
 ### 重要注意事项
 
-* **仅限函数式组件**：`forwardRef()` 与函数式组件一起使用。类组件可以直接使用 ref，而无需 `forwardRef()`。
-* **Ref 转发**：确保 ref 被转发到 DOM 元素或类组件实例，而不是另一个函数式组件。
+- **仅限函数式组件**：`forwardRef()` 与函数式组件一起使用。类组件可以直接使用 ref，而无需 `forwardRef()`。
+- **Ref 转发**：确保 ref 被转发到 DOM 元素或类组件实例，而不是另一个函数式组件。
 
 ## 延伸阅读
 
-* [React documentation on `forwardRef()`](https://react.dev/reference/react/forwardRef)
-* [Using the `useRef` Hook](https://react.dev/reference/react/useRef)
-* [Refs and the DOM](https://react.dev/learn/manipulating-the-dom-with-refs)
+- [React documentation on `forwardRef()`](https://react.dev/reference/react/forwardRef)
+- [Using the `useRef` Hook](https://react.dev/reference/react/useRef)
+- [Refs and the DOM](https://react.dev/learn/manipulating-the-dom-with-refs)

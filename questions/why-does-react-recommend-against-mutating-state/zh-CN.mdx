@@ -6,7 +6,7 @@ title: 为什么 React 建议不要修改状态？
 
 React 建议不要修改状态，因为它可能导致意外行为和错误。React 依赖于状态不变性来有效地确定何时重新渲染组件。当状态被直接修改时，React 可能无法检测到更改，从而导致过时或不正确的 UI 更新。相反，请始终使用 `setState` 或 `useState` 钩子等方法创建一个新的状态对象。
 
-***
+---
 
 ## 为什么 React 建议不要修改状态？
 
@@ -49,6 +49,6 @@ this.setState((prevState) => ({
 
 ## 延伸阅读
 
-* [React documentation on state](https://react.dev/learn/state-a-components-memory)
-* [React documentation on reconciliation](https://react.dev/learn/preserving-and-resetting-state)
-* [Why not to mutate state in React](https://daveceddia.com/why-not-modify-react-state-directly/)
+- [React documentation on state](https://react.dev/learn/state-a-components-memory)
+- [React documentation on reconciliation](https://react.dev/learn/preserving-and-resetting-state)
+- [Why not to mutate state in React](https://daveceddia.com/why-not-modify-react-state-directly/)
