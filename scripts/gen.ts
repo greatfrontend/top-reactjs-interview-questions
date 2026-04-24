@@ -159,4 +159,4 @@ async function generate() {
   fs.writeFileSync(README_PATH_EN, updatedText);
 }
 
-generate();
+void generate();

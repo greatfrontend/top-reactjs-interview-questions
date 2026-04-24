@@ -15,8 +15,8 @@ function readQuestionsSheet(): Record<string, QuestionRaw> {
     columns: true,
     skip_empty_lines: true,
   });
-  const recordsDict = {};
-  records.forEach((row) => (recordsDict[row.slug] = row));
+  const recordsDict: Record<string, QuestionRaw> = {};
+  (records as QuestionRaw[]).forEach((row) => (recordsDict[row.slug] = row));
   return recordsDict;
 }
 const qnsDict = readQuestionsSheet();
@@ -67,4 +67,4 @@ async function syncQuestionList() {
   await Promise.all(qnsList.map((qnSlug) => syncQuestion(qnSlug)));
 }
 
-syncQuestionList();
+void syncQuestionList();
