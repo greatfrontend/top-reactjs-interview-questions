@@ -86,3 +86,15 @@ For GitHub Actions, consider using [`voidzero-dev/setup-vp`](https://github.com/
 - [ ] Run `vp install` after pulling remote changes and before getting started.
 - [ ] Run `vp check` and `vp test` to validate changes.
 <!--VITE PLUS END-->
+
+## Authoring MDX content (`questions/**/*.mdx`)
+
+MDX parses `{...}` as a JSX expression, so any literal curly braces in prose or example strings will try to evaluate an identifier and fail at build time (e.g. `"hello {user}"` throws because `user` is not defined).
+
+When writing literal braces in MDX prose, use one of:
+
+- Escape the opening brace: `\{user}` → renders as `{user}`
+- Inline code: `` `{user}` ``
+- HTML entities: `&#123;user&#125;`
+
+This does not apply inside fenced code blocks (```` ``` ````), where braces are already treated as literal text.

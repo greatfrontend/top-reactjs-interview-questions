@@ -86,7 +86,7 @@ You can also revalidate on demand (e.g. from a webhook) using `revalidatePath` o
 
 ### When SSG is not a good fit
 
-- **Per-user content**: Anything personalized (auth-gated dashboards, "hello {user}", carts) cannot be pre-rendered for every visitor — use SSR or client-side fetching for the personalized parts.
+- **Per-user content**: Anything personalized (auth-gated dashboards, "hello \{user}", carts) cannot be pre-rendered for every visitor — use SSR or client-side fetching for the personalized parts.
 - **Highly dynamic data**: Live prices, stock levels, scoreboards, etc. need fresher data than even ISR comfortably provides.
 - **Huge or unbounded route spaces**: If `generateStaticParams` would emit millions of pages, build time and storage become a problem. Mitigations include partial pre-rendering (build the popular pages, defer the rest to on-demand SSR/ISR) or moving to SSR.
 - **Stale-data tradeoffs**: Plain SSG serves whatever was true at build time until the next deploy. ISR shortens that window but always serves the previous version on the request that triggers revalidation, so users may see slightly stale content.
