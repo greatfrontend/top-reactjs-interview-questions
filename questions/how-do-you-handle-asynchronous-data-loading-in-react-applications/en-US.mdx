@@ -4,159 +4,160 @@ title: How do you handle asynchronous data loading in React applications?
 
 ## TL;DR
 
-In React applications, asynchronous data loading is typically handled using `useEffect` and `useState` hooks. You initiate the data fetch inside `useEffect` and update the state with the fetched data. This ensures that the component re-renders with the new data. Here's a simple example:
-
-```javascript
-import React, { useState, useEffect } from 'react';
-
-function DataFetchingComponent() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      const response = await fetch('https://api.example.com/data');
-      const result = await response.json();
-      setData(result);
-      setLoading(false);
-    }
-
-    fetchData();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  return <div>{JSON.stringify(data)}</div>;
-}
-```
+In a modern React app, **don't** roll your own `useEffect` + `fetch` for data loading — the React docs explicitly recommend against it. Reach first for a dedicated data-fetching library: **TanStack Query**, **SWR**, or **RTK Query** for client-side fetching, or **Server Components** and route-level loaders (Next.js App Router, Remix/React Router) when you control the framework. In React 19, the new `use()` hook lets a component read a promise directly and suspend, which pairs naturally with `<Suspense>` for loading states and error boundaries for failures. A hand-written `useEffect`+`fetch` is a low-level fallback that needs an `AbortController`, a `response.ok` check, and careful state handling to avoid race conditions and stale updates.
 
 ---
 
-## Handling asynchronous data loading in React applications
+## Handling asynchronous data loading in React
 
-### Using `useEffect` and `useState`
+### Prefer a data-fetching library (recommended)
 
-The most common way to handle asynchronous data loading in React is by using the `useEffect` and `useState` hooks. `useEffect` allows you to perform side effects, such as data fetching, and `useState` helps manage the component's state.
+The React team's recommendation in `react.dev` is to use a framework's built-in data fetching or a dedicated library, because they correctly handle caching, deduplication, refetching, race conditions, retries, and loading/error states — all of which are easy to get wrong by hand.
 
-1. **Initialize state**: Use `useState` to create state variables for storing the fetched data and loading status.
-2. **Fetch data**: Use `useEffect` to perform the data fetching when the component mounts.
-3. **Update state**: Once the data is fetched, update the state to trigger a re-render.
+**TanStack Query** is the de facto standard for client-side fetching:
 
-Here's a detailed example:
+```jsx
+import { useQuery } from '@tanstack/react-query';
 
-```javascript
-import React, { useState, useEffect } from 'react';
+function Profile({ userId }) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['user', userId],
+    queryFn: async ({ signal }) => {
+      const res = await fetch(`/api/users/${userId}`, { signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+  });
 
-function DataFetchingComponent() {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch('https://api.example.com/data');
-        const result = await response.json();
-        setData(result);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchData();
-  }, []);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  return <div>{JSON.stringify(data)}</div>;
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return <h1>{data.name}</h1>;
 }
 ```
 
-### Handling errors
+**SWR** is a lightweight alternative with a similar mental model. **RTK Query** is the right pick if you already use Redux Toolkit.
 
-It's important to handle errors that may occur during data fetching. You can use a `try-catch` block within the `useEffect` to catch and handle errors.
+These libraries give you for free:
 
-```javascript
-useEffect(() => {
-  async function fetchData() {
-    try {
-      const response = await fetch('https://api.example.com/data');
-      const result = await response.json();
-      setData(result);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+- An in-memory cache keyed by query parameters
+- Automatic deduplication of in-flight requests
+- Refetching on window focus, network reconnect, and on a stale interval
+- Cancellation via `AbortSignal`
+- Retries with backoff
+- Pagination, infinite scroll, and optimistic updates
 
-  fetchData();
-}, []);
+### Server Components and framework loaders
+
+If you're using a framework, fetch on the server whenever possible — it's faster (no client waterfall) and ships less JS.
+
+- **Next.js App Router (React Server Components)** — `async` Server Components can `await` data directly and stream the result.
+- **React Router / Remix loaders** — co-locate a `loader` with the route; data is fetched in parallel with code.
+
+```jsx
+// Next.js Server Component (no useEffect needed)
+async function UserPage({ params }) {
+  const user = await fetch(`https://api.example.com/users/${params.id}`).then(
+    (r) => r.json(),
+  );
+  return <h1>{user.name}</h1>;
+}
 ```
 
-### Using custom hooks
+### React 19: `use()` + `<Suspense>`
 
-For better code reusability, you can create custom hooks to handle data fetching. This allows you to encapsulate the data fetching logic and reuse it across multiple components.
+React 19's `use()` hook lets a Client Component read a promise. While the promise is pending, the component **suspends** and the nearest `<Suspense>` boundary shows the fallback; if the promise rejects, the nearest error boundary catches it. The promise is typically created by a parent (often a Server Component) and passed down as a prop, so the request starts before the child renders.
 
-```javascript
-import { useState, useEffect } from 'react';
+```jsx
+'use client';
+import { use, Suspense } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 
-function useFetch(url) {
+function UserName({ userPromise }) {
+  const user = use(userPromise); // suspends until resolved
+  return <h1>{user.name}</h1>;
+}
+
+function Page({ userPromise }) {
+  return (
+    <ErrorBoundary fallback={<div>Failed to load</div>}>
+      <Suspense fallback={<div>Loading...</div>}>
+        <UserName userPromise={userPromise} />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+```
+
+### Keeping the UI responsive: `useTransition` and `useDeferredValue`
+
+When a user interaction triggers a re-fetch (filtering a list, switching tabs), wrap the state update that causes the new fetch in `startTransition` so the previous UI stays interactive while the new data loads. `useDeferredValue` gives you a lagging copy of a value — useful for letting an input stay snappy while a derived list re-renders against slower data.
+
+```jsx
+const [isPending, startTransition] = useTransition();
+
+function onTabChange(next) {
+  startTransition(() => setTab(next));
+}
+```
+
+### Low-level: `useEffect` + `fetch` (when and how)
+
+Plain `useEffect` + `fetch` is a fine fallback for one-off fetches in a small app, or as an escape hatch. But you must handle two things the naive example always gets wrong: **race conditions** (an older request resolving after a newer one) and **HTTP errors** (`fetch` only rejects on network failure — a 500 still resolves).
+
+```jsx
+import { useEffect, useState } from 'react';
+
+function User({ id }) {
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+
+    (async () => {
       try {
-        const response = await fetch(url);
-        const result = await response.json();
-        setData(result);
-      } catch (error) {
-        setError(error);
+        const res = await fetch(`/api/users/${id}`, {
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        setData(json);
+      } catch (err) {
+        if (err.name !== 'AbortError') setError(err);
       } finally {
         setLoading(false);
       }
-    }
+    })();
 
-    fetchData();
-  }, [url]);
+    // Cancel the in-flight request if `id` changes or the component unmounts
+    return () => controller.abort();
+  }, [id]);
 
-  return { data, loading, error };
-}
-
-export default useFetch;
-```
-
-You can then use this custom hook in your components:
-
-```javascript
-import React from 'react';
-import useFetch from './useFetch';
-
-function DataFetchingComponent() {
-  const { data, loading, error } = useFetch('https://api.example.com/data');
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>Error: {error.message}</div>;
-  }
-
-  return <div>{JSON.stringify(data)}</div>;
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  return <h1>{data.name}</h1>;
 }
 ```
+
+Even with these fixes, `useEffect` does not give you caching across components, deduplication, or refetch-on-focus — which is why a real app outgrows it quickly.
+
+### Summary of options
+
+| Option | Use when |
+| --- | --- |
+| TanStack Query / SWR / RTK Query | Default for client-side fetching |
+| Server Components / route loaders | You control the framework (Next.js, Remix) |
+| `use(promise)` + `<Suspense>` | Streaming a promise from a parent in React 19+ |
+| `useEffect` + `fetch` | One-off fetches, learning, or escape hatch only |
 
 ## Further reading
 
-- [React documentation on hooks](https://react.dev/reference/react/hooks)
-- [React useEffect Hook](https://react.dev/reference/react/useEffect)
-- [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
-- [Handling errors in async functions](https://javascript.info/async-await#error-handling)
+- [React Docs: You Might Not Need an Effect (fetching section)](https://react.dev/learn/you-might-not-need-an-effect#fetching-data)
+- [React Docs: `use`](https://react.dev/reference/react/use)
+- [React Docs: `<Suspense>`](https://react.dev/reference/react/Suspense)
+- [TanStack Query](https://tanstack.com/query/latest)
+- [SWR](https://swr.vercel.app/)
+- [Next.js: Data fetching](https://nextjs.org/docs/app/building-your-application/data-fetching)

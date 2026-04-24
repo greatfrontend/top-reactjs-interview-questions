@@ -17,7 +17,9 @@ React is a JavaScript library created by Facebook for building user interfaces, 
 
 ## What is React?
 
-React is an open-source JavaScript library developed by Facebook for building user interfaces. It focuses on the view layer of an application and is especially useful for creating single-page applications where a seamless user experience is crucial. React allows developers to build encapsulated components that manage their own state and compose them to create complex UIs.
+React is an open-source JavaScript library developed by Meta (formerly Facebook) for building user interfaces. It focuses on the view layer of an application and is especially useful for creating single-page applications where a seamless user experience is crucial. React allows developers to build encapsulated components that manage their own state and compose them to create complex UIs.
+
+Modern React is hooks-first and function-component-driven. JSX, an HTML-like syntax extension to JavaScript, is the standard way to describe UI. With React 19 (released December 2024), React also officially supports React Server Components, the `use()` hook for unwrapping promises and context, Actions for form/data mutations, and the React Compiler (RC), which automatically memoizes components so you rarely need to reach for `useMemo`/`useCallback` by hand.
 
 ## Benefits of React
 
@@ -41,13 +43,17 @@ React boasts a vast and active community of developers worldwide. This translate
 - **Abundant third-party libraries and tools:** Leverage a rich ecosystem of pre-built components, libraries, and tools that extend React's functionality and streamline development.
 - **Strong community support:** Seek help, share knowledge, and engage with fellow developers through forums, online communities, and meetups.
 
-### 4. Learn once, write anywhere
+### 4. One-way data binding
 
-React's versatility extends beyond web development. With React Native, you can use your React knowledge to build native mobile applications for iOS and Android. This "learn once, write anywhere" approach allows you to:
+React uses a unidirectional data flow: data is passed from parent components down to children via props, and child components communicate back up through callbacks rather than mutating shared state directly. This makes the flow of data explicit and easy to trace, which leads to more predictable behavior and simpler debugging compared to two-way binding approaches.
 
-- **Share code between platforms:** Reuse components and logic across web and mobile, reducing development time and effort.
-- **Leverage existing skills:** Apply your React expertise to mobile development without needing to learn entirely new technologies.
-- **Target multiple platforms with a single codebase:** Streamline development and maintenance by managing a single codebase for multiple platforms.
+### 5. Hooks and function components
+
+Modern React is built around function components and hooks. Hooks like `useState`, `useEffect`, `useReducer`, `useContext`, and `useRef` let you manage state, side effects, and shared logic without classes. Custom hooks make it easy to extract and reuse stateful logic across components.
+
+### 6. Learn once, write anywhere
+
+React's versatility extends beyond web development. With React Native, you can apply your React knowledge to build native mobile applications for iOS and Android, sharing components and logic across web and mobile and targeting multiple platforms without learning entirely new technologies.
 
 ## Further reading
 

@@ -4,7 +4,7 @@ title: What are the rules of React hooks?
 
 ## TL;DR
 
-React hooks have a few essential rules to ensure they work correctly. Always call hooks at the top level of your React function, never inside loops, conditions, or nested functions. Only call hooks from React function components or custom hooks. These rules ensure that hooks maintain the correct state and lifecycle behavior.
+React hooks have a few essential rules to ensure they work correctly. Always call hooks at the top level of your component or custom hook — never inside loops, conditions, nested functions, or after an early `return`. Only call hooks from React function components or other custom hooks (whose names must start with `use`). Lean on `eslint-plugin-react-hooks` to enforce these rules. The React Compiler (RC/stable by 2026) relaxes the need for some manual memoization, but the rules of hooks themselves still apply.
 
 ---
 
@@ -12,71 +12,120 @@ React hooks have a few essential rules to ensure they work correctly. Always cal
 
 ### Always call hooks at the top level
 
-Hooks should always be called at the top level of your React function. This means you should not call hooks inside loops, conditions, or nested functions. This rule ensures that hooks are called in the same order each time a component renders, which is crucial for maintaining the correct state and lifecycle behavior.
+Hooks must be called in the same order on every render. That means you cannot call them inside loops, conditions, nested functions, or after an early `return`. React identifies which `useState`/`useEffect`/etc. call corresponds to which piece of state purely by call order — break the order and React's internal bookkeeping desyncs.
 
-```javascript
+```jsx
 // Correct
-function MyComponent() {
+function MyComponent({ enabled }) {
   const [count, setCount] = useState(0);
 
-  if (count > 0) {
-    // Do something
+  if (!enabled) {
+    // Use the value conditionally — fine.
   }
+
+  return <div>{count}</div>;
 }
 
-// Incorrect
-function MyComponent() {
-  if (someCondition) {
-    const [count, setCount] = useState(0); // This will break the rules of hooks
+// Incorrect — hook inside an `if`
+function MyComponent({ enabled }) {
+  if (enabled) {
+    const [count, setCount] = useState(0); // hook order changes between renders
+    return <div>{count}</div>;
   }
+  return null;
+}
+
+// Incorrect — hook after an early return
+function MyComponent({ items }) {
+  if (items.length === 0) return null;
+  const [selected, setSelected] = useState(null); // skipped on the early-return path
+  return <List items={items} selected={selected} onSelect={setSelected} />;
 }
 ```
 
-### Only call hooks from React function components or custom hooks
+To fix the early-return case, move the hook above the conditional:
 
-Hooks should only be called from React function components or custom hooks. This rule ensures that hooks are used in the appropriate context where React can manage their state and lifecycle.
+```jsx
+function MyComponent({ items }) {
+  const [selected, setSelected] = useState(null);
+  if (items.length === 0) return null;
+  return <List items={items} selected={selected} onSelect={setSelected} />;
+}
+```
 
-```javascript
-// Correct
+### Only call hooks from React functions
+
+Hooks can only be called from:
+
+1. React function components.
+2. Other custom hooks (which by convention must have a name starting with `use`).
+
+Calling a hook from a regular utility function, a class component, or an event handler is not allowed.
+
+```jsx
+// Correct — function component
 function MyComponent() {
   const [count, setCount] = useState(0);
   return <div>{count}</div>;
 }
 
-// Correct (custom hook)
-function useCustomHook() {
-  const [state, setState] = useState(null);
-  return [state, setState];
+// Correct — custom hook (name starts with `use`)
+function useCounter(initial = 0) {
+  const [count, setCount] = useState(initial);
+  const increment = () => setCount((c) => c + 1);
+  return { count, increment };
 }
 
-// Incorrect
+// Incorrect — plain function, not a component or hook
 function regularFunction() {
-  const [count, setCount] = useState(0); // This will break the rules of hooks
+  const [count, setCount] = useState(0); // violates the rules of hooks
 }
 ```
 
-### Use the `eslint-plugin-react-hooks` linter
+The `use` prefix isn't cosmetic — it's how the linter identifies a custom hook and enforces the rules of hooks inside it. Naming a function `getCounter` instead of `useCounter` will silently disable those checks.
 
-To enforce these rules, you can use the `eslint-plugin-react-hooks` linter. This plugin will help you identify and fix violations of the rules of hooks in your code.
+### Use `eslint-plugin-react-hooks`
+
+The `eslint-plugin-react-hooks` package automates enforcement of these rules. It ships two main rules: `react-hooks/rules-of-hooks` (call order, where hooks may be called) and `react-hooks/exhaustive-deps` (correct dependency arrays for `useEffect`, `useMemo`, `useCallback`).
 
 ```bash
 npm install eslint-plugin-react-hooks --save-dev
 ```
 
-Add the plugin to your ESLint configuration:
+For an ESLint legacy `.eslintrc` config:
 
 ```json
 {
   "plugins": ["react-hooks"],
   "rules": {
-    "react-hooks/rules-of-hooks": "error", // Checks rules of hooks
-    "react-hooks/exhaustive-deps": "warn" // Checks effect dependencies
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn"
   }
 }
 ```
 
+For ESLint 9's flat config (`eslint.config.js`), import the plugin and spread its recommended config:
+
+```js
+import reactHooks from 'eslint-plugin-react-hooks';
+
+export default [
+  {
+    plugins: { 'react-hooks': reactHooks },
+    rules: reactHooks.configs.recommended.rules,
+  },
+];
+```
+
+`eslint-plugin-react-hooks` v5 added flat-config support and ships an additional rule set for the React Compiler when you enable it.
+
+### A note on the React Compiler
+
+The React Compiler (RC and on track for stable in 2026) auto-memoizes components and values, removing most of the need for hand-written `useMemo` and `useCallback`. It does **not** change the rules of hooks — your hooks still have to be called unconditionally at the top level, from components or custom hooks. The compiler actually relies on those rules to do its job safely, and will refuse to optimize components that violate them.
+
 ## Further reading
 
-- [React hooks documentation](https://react.dev/reference/react/hooks)
 - [Rules of hooks](https://react.dev/reference/rules/rules-of-hooks)
-- [Using the `eslint-plugin-react-hooks` linter](https://www.npmjs.com/package/eslint-plugin-react-hooks)
+- [Built-in React hooks](https://react.dev/reference/react/hooks)
+- [`eslint-plugin-react-hooks`](https://www.npmjs.com/package/eslint-plugin-react-hooks)
+- [React Compiler](https://react.dev/learn/react-compiler)

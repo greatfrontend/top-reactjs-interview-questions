@@ -4,12 +4,12 @@ title: What is the `useId` hook in React and when should it be used?
 
 ## TL;DR
 
-The `useId` hook in React is used to generate unique IDs for elements within a component. This is particularly useful for accessibility purposes, such as linking form inputs with their labels. It ensures that IDs are unique across the entire application, even if the component is rendered multiple times.
+`useId` (added in React 18) generates a stable, unique string ID per component instance, **per React root**. Its main reason for existing is to produce IDs that match between the server-rendered HTML and the client hydration — a plain incrementing counter would produce mismatches. Within a single root the IDs are unique, but two separate roots on the same page can collide unless you set `identifierPrefix` on `createRoot` / `hydrateRoot`. Use it for things like linking `<label htmlFor>` to `<input id>`, never as a list `key`.
 
 ```javascript
 import { useId } from 'react';
 
-function MyComponent() {
+function NameField() {
   const id = useId();
   return (
     <div>
@@ -26,18 +26,42 @@ function MyComponent() {
 
 ### Introduction to `useId`
 
-The `useId` hook is a built-in React hook introduced in React 18. It is designed to generate unique IDs that can be used within a component. This is particularly useful for ensuring that IDs are unique across the entire application, even if the component is rendered multiple times.
+The `useId` hook was added in React 18. It returns a stable string ID tied to the component instance's position in the tree. The ID is the same on every render of that instance, and — crucially — it is the same on the server and the client.
+
+### Why `useId` exists: SSR and hydration
+
+The actual motivation for `useId` is server-side rendering. Before React 18, generating IDs with a module-level counter (`let next = 0; const id = next++;`) caused **hydration mismatches**: the server and the client could increment the counter in a different order, producing different IDs in the HTML versus the client tree. React would then warn (and in React 18+, throw away the hydrated subtree).
+
+`useId` sidesteps this by deriving the ID from the component's location in the React tree, which is identical on the server and the client. Producing IDs unique to one component instance is a side benefit; the main job is hydration stability.
+
+### Uniqueness scope and multiple roots
+
+IDs from `useId` are unique **within a single React root**. If your page mounts more than one root (for example, an island-style architecture, or a widget you embed into a host page that also uses React), two separate roots can both generate `:r0:` and collide.
+
+To prevent that, give each root a distinct `identifierPrefix`:
+
+```javascript
+import { createRoot } from 'react-dom/client';
+
+createRoot(document.getElementById('widget-a'), {
+  identifierPrefix: 'a-',
+}).render(<WidgetA />);
+
+createRoot(document.getElementById('widget-b'), {
+  identifierPrefix: 'b-',
+}).render(<WidgetB />);
+```
+
+The same option exists on `hydrateRoot`.
 
 ### When to use `useId`
 
-#### Accessibility
-
-One of the primary use cases for `useId` is to improve accessibility. For example, when creating form elements, it is important to link labels to their corresponding inputs using the `htmlFor` attribute on the label and the `id` attribute on the input. The `useId` hook ensures that these IDs are unique, preventing any potential conflicts.
+The canonical use is associating labels with form controls for accessibility:
 
 ```javascript
 import { useId } from 'react';
 
-function MyComponent() {
+function NameField() {
   const id = useId();
   return (
     <div>
@@ -48,52 +72,41 @@ function MyComponent() {
 }
 ```
 
-#### Dynamic components
+It is also useful for ARIA attributes such as `aria-describedby`, `aria-labelledby`, and `aria-controls`.
 
-When you have components that are rendered dynamically or multiple times, using `useId` ensures that each instance of the component has a unique ID. This can prevent issues where multiple elements end up with the same ID, which can cause problems with accessibility and JavaScript behavior.
+### Generating multiple related IDs from one call
+
+Do not call `useId` multiple times for related fields. Call it once and append suffixes — this keeps related IDs grouped and saves hook calls:
 
 ```javascript
-import { useId } from 'react';
-
-function DynamicComponent() {
+function PasswordField() {
   const id = useId();
   return (
-    <div>
-      <label htmlFor={id}>Dynamic Input:</label>
-      <input id={id} type="text" />
-    </div>
-  );
-}
-
-function App() {
-  return (
-    <div>
-      <DynamicComponent />
-      <DynamicComponent />
-    </div>
+    <>
+      <label htmlFor={`${id}-password`}>Password:</label>
+      <input
+        id={`${id}-password`}
+        type="password"
+        aria-describedby={`${id}-hint`}
+      />
+      <p id={`${id}-hint`}>Must be at least 12 characters.</p>
+    </>
   );
 }
 ```
 
-### How `useId` works
+### What `useId` is not for
 
-The `useId` hook generates a unique string that can be used as an ID. This string is unique across the entire application, ensuring that there are no conflicts even if the component is rendered multiple times. The hook does not take any arguments and returns a string.
+- **Do not use it as a list `key`.** `key` needs to identify a piece of _data_ across renders; `useId` identifies a _component position_. Use a stable id from your data.
+- **Avoid it in CSS selectors and `document.querySelector`.** The generated format (e.g. `:r0:`) contains colons, which are valid in HTML `id` attributes but require escaping in CSS selectors. Pair `<label htmlFor>` with `<input id>` instead of selecting by id.
+- **Do not parse or rely on the format.** The exact shape (`:r0:`, `«r0»`, etc.) is an implementation detail and has changed between versions.
 
-```javascript
-import { useId } from 'react';
+### Practical guidance
 
-function ExampleComponent() {
-  const id = useId();
-  console.log(id); // Outputs a unique ID string
-  return <div id={id}>Unique ID Component</div>;
-}
-```
-
-### Best practices
-
-- **Use for accessibility**: Always use `useId` when linking labels to inputs to ensure accessibility.
-- **Avoid hardcoding IDs**: Instead of hardcoding IDs, use `useId` to generate them dynamically.
-- **Consistent usage**: Use `useId` consistently across your application to avoid ID conflicts.
+- Always pair the generated id with the element via `htmlFor` / `id` (or the relevant `aria-*` attribute) — never use it as decoration.
+- Concatenate suffixes for related controls instead of calling `useId` repeatedly.
+- Set `identifierPrefix` on each root if your app mounts more than one.
+- Reach for `useId` only when you actually need a generated id; many components can simply accept an `id` prop from the parent.
 
 ## Further reading
 

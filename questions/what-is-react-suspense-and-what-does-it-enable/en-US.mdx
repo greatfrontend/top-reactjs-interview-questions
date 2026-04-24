@@ -48,11 +48,11 @@ In this example, `React.lazy` is used to dynamically import the `LazyComponent`.
 
 ### Data fetching with Suspense
 
-React Suspense can also be used for data fetching, although this feature is still experimental and requires additional libraries like `react-query` or `Relay`.
+Suspense for data fetching is stable as of React 19 (December 2024). The supported ways to suspend on data are React Server Components, the `use()` hook for unwrapping promises and context in client components, and integrations in data libraries like TanStack Query and Relay. Plain `useQuery` does _not_ trigger Suspense — you have to opt in with a Suspense-aware API.
 
 ```jsx
-import React, { Suspense } from 'react';
-import { useQuery } from 'react-query';
+import { Suspense } from 'react';
+import { useSuspenseQuery } from '@tanstack/react-query';
 
 function fetchData() {
   return fetch('https://api.example.com/data').then((response) =>
@@ -61,7 +61,12 @@ function fetchData() {
 }
 
 function DataComponent() {
-  const { data } = useQuery('data', fetchData);
+  // useSuspenseQuery throws a promise while loading,
+  // which Suspense catches and shows the fallback for.
+  const { data } = useSuspenseQuery({
+    queryKey: ['data'],
+    queryFn: fetchData,
+  });
   return <div>{data}</div>;
 }
 
@@ -74,17 +79,55 @@ function MyComponent() {
 }
 ```
 
-In this example, `react-query` is used to fetch data, and `Suspense` provides a fallback UI while the data is being loaded.
+### The `use()` hook (React 19)
+
+In React 19, you can read a promise directly from a client component with the `use()` hook. While the promise is pending, React suspends the nearest `Suspense` boundary; when it resolves, the component re-renders with the value.
+
+```jsx
+import { Suspense, use } from 'react';
+
+function Profile({ userPromise }) {
+  const user = use(userPromise);
+  return <h1>{user.name}</h1>;
+}
+
+function Page({ userPromise }) {
+  return (
+    <Suspense fallback={<p>Loading profile…</p>}>
+      <Profile userPromise={userPromise} />
+    </Suspense>
+  );
+}
+```
+
+`use()` also unwraps context, and unlike other hooks it can be called inside conditionals and loops.
+
+### Server Components and streaming SSR
+
+React Server Components can suspend on the server while data loads, and the framework streams HTML to the browser as each `Suspense` boundary resolves. This means users see content progressively instead of waiting for the entire page to be ready, with the same `<Suspense fallback={...}>` semantics on both server and client.
+
+### Pairing Suspense with error boundaries
+
+Suspense handles the _pending_ state of an async operation, but it doesn't handle the _error_ state. To cover both, wrap your suspending tree in an error boundary as well:
+
+```jsx
+<ErrorBoundary fallback={<p>Something went wrong.</p>}>
+  <Suspense fallback={<p>Loading…</p>}>
+    <DataComponent />
+  </Suspense>
+</ErrorBoundary>
+```
 
 ### Benefits of React Suspense
 
 - **Improved user experience**: By showing fallback content, you can keep the user engaged while waiting for asynchronous operations to complete.
-- **Simplified code**: Suspense allows you to handle loading states declaratively, reducing the need for complex state management.
-- **Better performance**: Code splitting with `React.lazy` can significantly reduce the initial load time of your application.
+- **Simplified code**: Suspense lets you handle loading states declaratively at the boundary level, instead of threading `isLoading` flags through every component.
+- **Better performance**: Code splitting with `React.lazy` reduces initial bundle size, and streaming SSR with Suspense lets the browser render content as it becomes available.
 
 ## Further reading
 
 - [React Suspense documentation](https://react.dev/reference/react/Suspense)
 - [React.lazy documentation](https://react.dev/reference/react/lazy)
-- [React Query documentation](https://react-query.tanstack.com/)
-- [Relay documentation](https://relay.dev/docs/next/guides/relay-resolvers/suspense/)
+- [`use` API reference](https://react.dev/reference/react/use)
+- [TanStack Query documentation](https://tanstack.com/query)
+- [Relay Suspense documentation](https://relay.dev/docs/next/guides/relay-resolvers/suspense/)

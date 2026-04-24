@@ -4,14 +4,17 @@ title: What are some React anti-patterns?
 
 ## TL;DR
 
-React anti-patterns are practices that can lead to inefficient, hard-to-maintain, or buggy code. Some common anti-patterns include:
+React anti-patterns are practices that lead to inefficient, buggy, or hard-to-maintain code. Common ones in modern (hooks-era) React include:
 
-- Mutating state directly instead of using `setState`
-- Using `componentWillMount` for data fetching
-- Overusing `componentWillReceiveProps`
-- Not using keys in lists
-- Overusing inline functions in render
-- Deeply nested state
+- Mutating state directly instead of producing a new value
+- Using `useState` to mirror props or other state instead of computing the value during render
+- Using `useEffect` to derive data that could just be computed
+- Using array index as `key` for dynamic lists
+- Stale closures inside effects (missing or wrong dependencies)
+- Forgetting to clean up effects (subscriptions, timers, listeners)
+- Mutating refs during render
+- Not using keys in lists at all
+- Reaching for `useMemo`/`useCallback` everywhere instead of where they actually help
 
 ---
 
@@ -19,106 +22,197 @@ React anti-patterns are practices that can lead to inefficient, hard-to-maintain
 
 ### Mutating state directly
 
-Directly mutating the state can lead to unexpected behavior and bugs. Always use `setState` to update the state.
+Directly mutating state doesn't tell React anything has changed, so it won't re-render. Always produce a new value (object, array) and pass it to the setter.
 
-```javascript
+```jsx
 // Anti-pattern
-this.state.count = 1;
+const [user, setUser] = useState({ name: 'Ada', age: 36 });
+user.age = 37; // mutation — React doesn't see this
+setUser(user); // same reference, no re-render guaranteed
 
-// Correct approach
-this.setState({ count: 1 });
+// Correct
+setUser((prev) => ({ ...prev, age: 37 }));
 ```
 
-### Using `componentWillMount` for data fetching
+### Using state to mirror props or other state
 
-`componentWillMount` is deprecated and should not be used for data fetching. Use `componentDidMount` instead.
+A common anti-pattern is copying a prop into state in order to "have a local copy." This usually leads to two sources of truth that drift out of sync.
 
-```javascript
-// Anti-pattern
-componentWillMount() {
-  fetchData();
+```jsx
+// Anti-pattern — `fullName` mirrors props in state
+function Greeting({ firstName, lastName }) {
+  const [fullName, setFullName] = useState(`${firstName} ${lastName}`);
+  // fullName won't update when firstName/lastName change!
+  return <h1>{fullName}</h1>;
 }
 
-// Correct approach
-componentDidMount() {
-  fetchData();
-}
-```
-
-### Overusing `componentWillReceiveProps`
-
-`componentWillReceiveProps` is deprecated. Use `getDerivedStateFromProps` or `componentDidUpdate` instead.
-
-```javascript
-// Anti-pattern
-componentWillReceiveProps(nextProps) {
-  if (nextProps.value !== this.props.value) {
-    this.setState({ value: nextProps.value });
-  }
-}
-
-// Correct approach
-static getDerivedStateFromProps(nextProps, prevState) {
-  if (nextProps.value !== prevState.value) {
-    return { value: nextProps.value };
-  }
-  return null;
+// Correct — compute it during render
+function Greeting({ firstName, lastName }) {
+  const fullName = `${firstName} ${lastName}`;
+  return <h1>{fullName}</h1>;
 }
 ```
 
-### Not using keys in lists
+If the derived value is genuinely expensive, wrap it in `useMemo`. The React Compiler can also handle this for you.
 
-Keys help React identify which items have changed, are added, or are removed. Not using keys can lead to inefficient rendering.
+### Using `useEffect` to derive data
 
-```javascript
+If a value can be computed from existing props/state, don't store it in state and update it from an effect — just compute it during render. The effect version adds an extra render, can flash stale values, and is harder to reason about.
+
+```jsx
 // Anti-pattern
-const listItems = items.map((item) => <li>{item}</li>);
-
-// Correct approach
-const listItems = items.map((item) => <li key={item.id}>{item}</li>);
-```
-
-### Overusing inline functions in render
-
-Defining functions inside the `render` method can lead to performance issues because a new function is created on every render.
-
-```javascript
-// Anti-pattern
-render() {
-  return <button onClick={() => this.handleClick()}>Click me</button>;
+function Cart({ items }) {
+  const [total, setTotal] = useState(0);
+  useEffect(() => {
+    setTotal(items.reduce((sum, i) => sum + i.price, 0));
+  }, [items]);
+  return <div>{total}</div>;
 }
 
-// Correct approach
-render() {
-  return <button onClick={this.handleClick}>Click me</button>;
+// Correct
+function Cart({ items }) {
+  const total = items.reduce((sum, i) => sum + i.price, 0);
+  return <div>{total}</div>;
 }
 ```
+
+The React docs have a full guide on this: [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect).
+
+### Using array index as `key` on dynamic lists
+
+`key={index}` is fine if the list is static and never reordered. As soon as items can be inserted, removed, or reordered, index keys cause React to reuse the wrong DOM nodes and component state — leading to subtle bugs (text inputs keeping the wrong value, animations playing on the wrong row).
+
+```jsx
+// Anti-pattern for a list that can change
+items.map((item, i) => <Row key={i} item={item} />);
+
+// Correct
+items.map((item) => <Row key={item.id} item={item} />);
+```
+
+### Not using keys in lists at all
+
+Omitting `key` triggers a console warning and forces React to fall back to position-based reconciliation, which is the same problem as index keys. Always use a stable, unique key.
+
+```jsx
+// Anti-pattern
+items.map((item) => <li>{item.name}</li>);
+
+// Correct
+items.map((item) => <li key={item.id}>{item.name}</li>);
+```
+
+### Stale closures in effects
+
+When an effect captures a value but doesn't list it in the dependency array, it keeps reading the old value forever. This shows up as "the timer keeps logging 0," "the WebSocket sends old form values," etc.
+
+```jsx
+// Anti-pattern — effect closes over `count` but doesn't depend on it
+useEffect(() => {
+  const id = setInterval(() => {
+    console.log(count); // always logs the initial value
+  }, 1000);
+  return () => clearInterval(id);
+}, []);
+
+// Correct — depend on `count`, or use a functional updater
+useEffect(() => {
+  const id = setInterval(() => {
+    console.log(count);
+  }, 1000);
+  return () => clearInterval(id);
+}, [count]);
+```
+
+Let `eslint-plugin-react-hooks`'s `exhaustive-deps` rule catch these.
+
+### Forgetting to clean up effects
+
+Subscriptions, timers, intervals, and event listeners need to be torn down in the effect's cleanup function. Otherwise they leak — and in `<StrictMode>` the dev-time double-mount makes the leak immediately visible (two intervals, two listeners).
+
+```jsx
+// Anti-pattern
+useEffect(() => {
+  window.addEventListener('resize', onResize);
+}, []);
+
+// Correct
+useEffect(() => {
+  window.addEventListener('resize', onResize);
+  return () => window.removeEventListener('resize', onResize);
+}, []);
+```
+
+### Mutating refs during render
+
+Reading or writing `ref.current` during render is unsafe — render must be pure, and React 19's strictness flags this. Read/write refs in event handlers and effects instead.
+
+```jsx
+// Anti-pattern
+function Component() {
+  const ref = useRef(0);
+  ref.current += 1; // side effect during render
+  return <div>{ref.current}</div>;
+}
+
+// Correct
+function Component() {
+  const ref = useRef(0);
+  useEffect(() => {
+    ref.current += 1;
+  });
+  return <div>{ref.current}</div>;
+}
+```
+
+### Inline functions and objects in JSX
+
+Defining a function or object inline (`onClick={() => doThing(id)}`, `style={{ color: 'red' }}`) creates a fresh reference each render. This is **not** automatically a performance problem — for the vast majority of components it's the idiomatic style, and the React docs explicitly say not to optimize prematurely. It only matters when the receiving child is wrapped in `React.memo` and the new reference defeats the memoization. With the React Compiler enabled, even those cases are usually handled for you.
+
+### Prop drilling and the over-correction into context
+
+Passing a prop through five layers that don't use it is annoying, but the fix isn't always context. Often the right answer is to lift state to the right place, compose components differently (children, slots), or pull in a state library for genuinely global state. Wrapping every shared value in context invites the [context pitfalls](/questions/what-are-some-pitfalls-of-using-context-in-react) — every consumer re-renders on every change.
+
+### Overusing `useMemo` and `useCallback`
+
+Memoization isn't free — it costs memory plus the equality check on every render. Sprinkling `useMemo`/`useCallback` on every value "just in case" usually loses time rather than saving it. Reach for them when:
+
+- The wrapped computation is genuinely expensive, or
+- The value is passed to a `React.memo`'d child or a hook dependency array where reference stability matters.
+
+The React Compiler (RC/stable as of 2026) handles most of this automatically, making manual memoization unnecessary in many codebases.
 
 ### Deeply nested state
 
-Deeply nested state can make state management complex and error-prone. Flatten the state structure when possible.
+Deeply nested state is awkward to update immutably and easy to get wrong. Prefer a flatter shape, but **don't** lose information that the structure encoded. The fix below loses the "users have profiles" grouping; a better fix keeps the relationship while flattening the tree:
 
-```javascript
-// Anti-pattern
-this.state = {
+```jsx
+// Anti-pattern — deeply nested
+const [state, setState] = useState({
   user: {
     profile: {
       name: 'John',
       age: 30,
     },
   },
-};
+});
 
-// Correct approach
-this.state = {
-  userName: 'John',
-  userAge: 30,
-};
+// Correct — flatten while preserving structure
+const [user, setUser] = useState({ name: 'John', age: 30 });
+
+// Or, for collections, normalize by id
+const [users, setUsers] = useState({
+  byId: {
+    u1: { id: 'u1', name: 'John', age: 30 },
+  },
+  allIds: ['u1'],
+});
 ```
 
 ## Further reading
 
-- [React documentation on state](https://react.dev/learn/state-a-components-memory)
-- [React documentation on lists and keys](https://react.dev/learn/rendering-lists#why-does-react-need-keys)
-- [React documentation on hooks](https://react.dev/reference/react/hooks)
-- [React documentation on memo optimizing performance](https://react.dev/reference/react/memo)
+- [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect)
+- [Choosing the State Structure](https://react.dev/learn/choosing-the-state-structure)
+- [Rendering Lists — why does React need keys?](https://react.dev/learn/rendering-lists#why-does-react-need-keys)
+- [`useMemo` — should you add it everywhere?](https://react.dev/reference/react/useMemo#should-you-add-usememo-everywhere)
+- [React Compiler](https://react.dev/learn/react-compiler)

@@ -6,15 +6,16 @@ title: What is code splitting in a React application?
 
 Code splitting in a React application is a technique used to improve performance by splitting the code into smaller chunks that can be loaded on demand. This helps in reducing the initial load time of the application. You can achieve code splitting using dynamic `import()` statements or React's `React.lazy` and `Suspense`.
 
-```javascript
-// Using React.lazy and Suspense
-const LazyComponent = React.lazy(() => import('./LazyComponent'));
+```jsx
+import { lazy, Suspense } from 'react';
+
+const LazyComponent = lazy(() => import('./LazyComponent'));
 
 function App() {
   return (
-    <React.Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>Loading...</div>}>
       <LazyComponent />
-    </React.Suspense>
+    </Suspense>
   );
 }
 ```
@@ -40,19 +41,81 @@ import('./module').then((module) => {
 });
 ```
 
-#### Using React.lazy and Suspense
+#### Using `lazy` and `Suspense`
 
-React provides built-in support for code splitting through `React.lazy` and `Suspense`. `React.lazy` allows you to render a dynamic import as a regular component, and `Suspense` lets you specify a loading fallback while the component is being loaded.
+React provides built-in support for code splitting through `lazy` and `Suspense`. `lazy` lets you render a dynamic import as a regular component, and `Suspense` lets you specify a loading fallback while the chunk is being fetched.
 
-```javascript
-// Lazy loading a component
-const LazyComponent = React.lazy(() => import('./LazyComponent'));
+```jsx
+import { lazy, Suspense } from 'react';
+
+const LazyComponent = lazy(() => import('./LazyComponent'));
 
 function App() {
   return (
-    <React.Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<div>Loading...</div>}>
       <LazyComponent />
-    </React.Suspense>
+    </Suspense>
+  );
+}
+```
+
+#### Route-based splitting
+
+The dominant real-world use case is splitting at route boundaries — each route loads its own chunk so users only download the code for the page they visit. With React Router this is typically:
+
+```jsx
+import { lazy, Suspense } from 'react';
+import { Routes, Route } from 'react-router';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Settings = lazy(() => import('./pages/Settings'));
+
+function App() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Routes>
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+    </Suspense>
+  );
+}
+```
+
+#### Framework-level splitting
+
+Modern React frameworks handle code splitting for you. Next.js (App Router) and Remix / React Router (framework mode) automatically split per route and per Server / Client Component boundary, so you usually do not need `lazy` for routes — only for genuinely opt-in subtrees like modals, editors, or charts.
+
+#### Pairing `Suspense` with error boundaries
+
+`Suspense` only handles the loading state. If the dynamic import fails (network error, deploy mismatch), you need an error boundary to render a fallback and let the user retry:
+
+```jsx
+<ErrorBoundary fallback={<RetryUI />}>
+  <Suspense fallback={<Spinner />}>
+    <LazyComponent />
+  </Suspense>
+</ErrorBoundary>
+```
+
+#### `Suspense` for data and `use()`
+
+In React 19, `Suspense` integrates with data fetching through the `use()` hook — components can `use(promise)` to suspend on data the same way `lazy` suspends on a code chunk. This means a single `<Suspense>` boundary can coordinate both code loading and data loading.
+
+#### Preloading
+
+You can warm a lazy chunk before it is needed (e.g. on hover or focus) by simply calling the dynamic import — the bundler / browser will fetch and cache it:
+
+```jsx
+const Editor = lazy(() => import('./Editor'));
+
+function OpenButton() {
+  return (
+    <button
+      onMouseEnter={() => import('./Editor')} // preload on hover
+      onClick={openEditor}>
+      Open editor
+    </button>
   );
 }
 ```
@@ -65,11 +128,13 @@ function App() {
 
 ### Tools and libraries
 
-- **Webpack**: Webpack is a popular module bundler that supports code splitting out of the box. You can configure it to split your code into chunks automatically.
-- **React Loadable**: Although `React.lazy` and `Suspense` are the recommended ways to implement code splitting in React, `React Loadable` is an older library that also provides similar functionality.
+- **Webpack / Rspack / Vite / Turbopack**: Modern bundlers all support code splitting out of the box and split on dynamic `import()` boundaries automatically.
+- **React Loadable**: A predecessor to `React.lazy` that is now abandoned (unmaintained for years). New code should use `lazy` and `Suspense` instead.
 
 ## Further reading
 
-- [React documentation on React.lazy](https://react.dev/reference/react/lazy)
+- [React documentation on `lazy`](https://react.dev/reference/react/lazy)
+- [React documentation on `Suspense`](https://react.dev/reference/react/Suspense)
+- [React documentation on `use`](https://react.dev/reference/react/use)
 - [Webpack documentation on code splitting](https://webpack.js.org/guides/code-splitting/)
 - [MDN Web Docs on dynamic import](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/import#dynamic_imports)

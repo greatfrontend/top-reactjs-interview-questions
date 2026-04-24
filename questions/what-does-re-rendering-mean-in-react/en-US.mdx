@@ -12,22 +12,24 @@ Re-rendering in React refers to the process where a component updates its output
 
 ### Understanding re-rendering
 
-Re-rendering in React is the process by which a component updates its output to the DOM in response to changes in its state or props. This ensures that the UI is always in sync with the underlying data.
+Re-rendering is the process by which React calls a component's function again to compute a new description of the UI. It is important to note that a re-render does not necessarily result in a DOM update — React performs reconciliation against the previous output and may bail out if nothing has changed.
 
 ### When does re-rendering occur?
 
 Re-rendering occurs in the following scenarios:
 
-- When a component's state changes using `setState`
-- When a component receives new props from its parent component
-- When the parent component re-renders, causing its child components to re-render as well
+- When a component's state changes via a `useState` setter or a `useReducer` `dispatch`
+- When a component subscribed to a context reads a new context value
+- When a component receives new props from its parent
+- When a parent component re-renders, its children re-render by default — even if their props are referentially unchanged
+- When a component's `key` changes, React unmounts the old instance and mounts a new one (a remount, not just a re-render)
 
 ### The re-rendering process
 
-1. **State or props change**: When a component's state or props change, React schedules a re-render for that component.
-2. **Render method**: React calls the component's `render` method to generate a new virtual DOM tree.
-3. **Virtual DOM comparison**: React compares the new virtual DOM tree with the previous one using a diffing algorithm.
-4. **DOM updates**: React calculates the minimal set of changes required and updates the actual DOM accordingly.
+1. **Trigger**: A state update, context value change, or parent re-render schedules the component for re-rendering.
+2. **Render**: React calls the component function again to produce a new React element tree.
+3. **Reconciliation**: React diffs the new tree against the previous one.
+4. **Commit**: React applies the minimal set of changes (if any) to the actual DOM.
 
 ### Example
 
@@ -52,16 +54,20 @@ In this example:
 
 - The `Counter` component has a state variable `count`.
 - When the button is clicked, `setCount` updates the state, triggering a re-render.
-- The `render` method is called again, and the new virtual DOM is compared to the previous one.
+- React calls the `Counter` function again, producing a new element tree that is reconciled against the previous one.
 - React updates the actual DOM to reflect the new count.
 
 ### Performance considerations
 
-Re-rendering can be expensive, especially for complex components or large applications. To optimize performance, React provides several techniques:
+Re-rendering itself is usually cheap, but unnecessary re-renders of expensive subtrees can hurt performance. React provides several techniques to opt out of re-rendering:
 
-- **PureComponent**: A base class that implements a shallow comparison of props and state to prevent unnecessary re-renders.
-- **React.memo**: A higher-order component that memoizes the result of a component's render to avoid re-rendering if the props haven't changed.
-- **useMemo and useCallback**: Hooks that memoize values and functions to prevent unnecessary re-renders.
+- **`React.memo`**: A higher-order component that memoizes a function component's output and skips re-rendering if its props are referentially equal (compared with `Object.is`).
+- **`useMemo` and `useCallback`**: Hooks that preserve the identity of values and functions across renders so memoized children don't see "new" props.
+- **State colocation**: Move state down so fewer components re-render when it changes.
+
+### React Compiler
+
+The React Compiler (RC/stable as of 2025) automatically memoizes components, values, and callbacks at build time. With it enabled, much of the manual `useMemo` / `useCallback` / `React.memo` work becomes unnecessary — the compiler inserts the optimal memoization for you. The mental model still matters for debugging, but the optimization story is shifting from "manually memoize hot paths" to "write idiomatic code and let the compiler memoize."
 
 ## Further reading
 

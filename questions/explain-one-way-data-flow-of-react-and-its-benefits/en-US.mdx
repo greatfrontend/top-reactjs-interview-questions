@@ -4,7 +4,7 @@ title: Explain one-way data flow of React and its benefits
 
 ## TL;DR
 
-In React, one-way data flow means that data in a React application flows in a single direction, from parent components to child components. This makes the data flow predictable and easier to debug. The main benefits include improved maintainability, easier debugging, and better performance.
+In React, one-way data flow means that data moves in a single direction: from parent components down to child components via `props`. Children cannot mutate the props they receive; to change parent state, a child invokes a callback the parent passed in. This contrasts with two-way binding (e.g. Angular or Vue's `v-model`), where view and model stay in sync automatically. The main benefits are predictable state changes, easier debugging, and patterns like controlled components, immutable updates, and time-travel debugging that fall out naturally from the constraint.
 
 ---
 
@@ -12,7 +12,9 @@ In React, one-way data flow means that data in a React application flows in a si
 
 ### What is one-way data flow?
 
-In React, one-way data flow refers to the concept where data flows in a single direction, from parent components to child components. This is achieved through the use of `props`. Parent components pass data to child components via `props`, and child components can only read these `props` but cannot modify them. If a child component needs to communicate back to the parent, it does so by calling a function passed down from the parent as a prop.
+In React, one-way data flow refers to the concept where data moves in a single direction, from parent components to child components. This is achieved through the use of `props`. Parents pass data to children via `props`, and children may only read those `props` — they cannot mutate them. When a child needs to influence parent state, the parent passes down a callback (also via `props`) that the child invokes. The parent owns the state; the child requests changes.
+
+This is sometimes called "unidirectional data flow" and contrasts with two-way data binding found in frameworks like Angular and Vue, where directives such as `v-model` keep an input element and a piece of state automatically in sync in both directions. React deliberately avoids this: the input is told what to display via a prop, and any change is reported back through an event handler.
 
 ### Example
 
@@ -55,21 +57,39 @@ const ChildComponent = ({ data, onChange }) => {
 export default ChildComponent;
 ```
 
-In this example, `ParentComponent` passes `data` and `handleChange` function to `ChildComponent` via `props`. The `ChildComponent` can read the `data` and call `onChange` to communicate back to the parent.
+In this example, `ParentComponent` passes `data` and a `handleChange` callback to `ChildComponent` via `props`. The child reads `data` and calls `onChange` to ask the parent to update its state. The child never writes to `data` directly. This is also a controlled component pattern: the parent is the single source of truth for the displayed value.
+
+### Lifting state up
+
+When two sibling components need to share or coordinate state, the React idiom is to "lift state up" — move the state into their nearest common ancestor and pass it down via `props`, along with callbacks to update it. Because data only flows downward, the common ancestor becomes the natural owner of any state shared by its descendants. This keeps the source of truth explicit instead of trying to synchronize two independent copies.
+
+### Contrast with two-way binding
+
+In two-way bound frameworks, an expression like Vue's `<input v-model="name">` or Angular's `[(ngModel)]="name"` automatically updates the bound variable when the input changes, and updates the input when the variable changes. The same effect in React requires both halves to be wired explicitly:
+
+```jsx
+<input value={name} onChange={(e) => setName(e.target.value)} />
+```
+
+This is more verbose, but every state change goes through a function you control, which makes the data flow easy to follow and intercept.
 
 ### Benefits of one-way data flow
 
-#### Improved maintainability
+#### Predictable state changes
 
-One-way data flow makes the application structure more predictable and easier to understand. Since data flows in a single direction, it is easier to track how data changes over time, making the codebase more maintainable.
+State only changes through explicit calls to setter functions in the component that owns it. You can read a component top-to-bottom and know exactly which props depend on which state, without worrying about a child silently mutating a parent's data.
 
 #### Easier debugging
 
-With one-way data flow, it is easier to pinpoint where a bug might be occurring. Since data can only flow from parent to child, you can trace the data flow and identify the source of the issue more quickly.
+Because data flows downward and updates flow upward through named callbacks, you can trace a value from where it originates to every component that consumes it. This is what makes tools like the React DevTools state inspector and Redux DevTools' time-travel debugging possible — every state transition is a discrete, replayable event rather than a side effect of a binding.
 
-#### Better performance
+#### Encourages immutable updates
 
-One-way data flow can lead to better performance because it reduces the complexity of data management. React's reconciliation algorithm can efficiently update the DOM by comparing the current state with the previous state, minimizing the number of updates required.
+Children receive props as read-only inputs, and the recommended way to update state is to produce a new value rather than mutate the existing one. This pairs well with `React.memo`, `useMemo`, and the React Compiler, which can rely on referential equality to skip unnecessary work.
+
+#### Reusable, testable components
+
+A component that only depends on its props and never reaches out to mutate parent state is easy to reuse in different parents and easy to test by passing in fixture props.
 
 ## Further reading
 

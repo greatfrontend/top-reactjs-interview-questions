@@ -40,7 +40,7 @@ function reducer(state, action) {
     case 'decrement':
       return { count: state.count - 1 };
     default:
-      throw new Error();
+      throw new Error('Unhandled action: ' + action.type);
   }
 }
 ```
@@ -61,7 +61,7 @@ function reducer(state, action) {
     case 'decrement':
       return { count: state.count - 1 };
     default:
-      throw new Error();
+      throw new Error('Unhandled action: ' + action.type);
   }
 }
 
@@ -80,11 +80,33 @@ function Counter() {
 export default Counter;
 ```
 
+### Lazy initialization
+
+`useReducer` accepts an optional third argument: an `init` function. When provided, React calls `init(initialArg)` once on mount and uses the result as the initial state. This is useful when computing the initial state is expensive, or when you want to derive it from a prop.
+
+```javascript
+function init(initialCount) {
+  return { count: initialCount };
+}
+
+function Counter({ initialCount }) {
+  const [state, dispatch] = useReducer(reducer, initialCount, init);
+  // ...
+}
+```
+
+### Bailing out of an update
+
+If the reducer returns the exact same value (compared with `Object.is`) as the current state, React bails out — no re-render is scheduled and no children re-render. This is one reason reducers must be pure and must not mutate the existing state object: a mutated-but-same-reference return looks like a bailout to React, but the state has actually changed.
+
 ### When to use `useReducer`
 
-- **Complex state logic**: Use `useReducer` when you have complex state logic that involves multiple sub-values or when the next state depends on the previous state.
-- **State management**: It is useful when you need a more predictable state management pattern, similar to Redux.
-- **Performance optimization**: `useReducer` can help optimize performance in certain scenarios by avoiding unnecessary re-renders.
+- **Complex state transitions**: Use `useReducer` when state updates involve multiple sub-values or when the next state depends on the previous one in non-trivial ways. Centralizing the transitions in a reducer is easier to reason about than scattering several `useState` setters.
+- **Explicit, named actions**: Dispatching `{ type: 'increment' }` documents intent at the call site; the reducer is the single place that knows how to apply each action.
+- **Testability**: Because reducers are pure functions of `(state, action) -> state`, they can be unit-tested in isolation without rendering any components.
+- **Stable `dispatch` identity**: React guarantees that the `dispatch` function has a stable identity across renders. You can safely include it in `useEffect`/`useCallback` dependency arrays (or omit it) without causing effects to re-run, and you can pass it down through context without invalidating memoized children.
+
+A common misconception is that `useReducer` inherently reduces re-renders compared to `useState`. It does not — both schedule a render whenever the state reference changes. The real wins are around how you structure and reason about updates, plus the stable `dispatch` identity.
 
 ## Further reading
 

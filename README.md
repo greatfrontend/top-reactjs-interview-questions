@@ -58,8 +58,8 @@
 | 34 | [What is the Flux pattern and what are its benefits?](#what-is-the-flux-pattern-and-what-are-its-benefits) |
 | 35 | [Explain one-way data flow of React and its benefits](#explain-one-way-data-flow-of-react-and-its-benefits) |
 | 36 | [How do you handle asynchronous data loading in React applications?](#how-do-you-handle-asynchronous-data-loading-in-react-applications) |
-| 37 | [Explain server-side rendering of React applications and its benefits?](#explain-server-side-rendering-of-react-applications-and-its-benefits) |
-| 38 | [Explain static generation of React applications and its benefits?](#explain-static-generation-of-react-applications-and-its-benefits) |
+| 37 | [Explain server-side rendering of React applications and its benefits](#explain-server-side-rendering-of-react-applications-and-its-benefits) |
+| 38 | [Explain static generation of React applications and its benefits](#explain-static-generation-of-react-applications-and-its-benefits) |
 | 39 | [Explain the presentational vs container component pattern in React](#explain-the-presentational-vs-container-component-pattern-in-react) |
 | 40 | [What are some common pitfalls when doing data fetching in React?](#what-are-some-common-pitfalls-when-doing-data-fetching-in-react) |
 | 41 | [What are render props in React and what are they for?](#what-are-render-props-in-react-and-what-are-they-for) |
@@ -106,7 +106,7 @@
 
     <!-- Update here: /questions/what-is-the-difference-between-react-node-react-element-and-a-react-component/en-US.mdx -->
 
-    A React Node is any renderable unit in React, such as an element, string, number, or `null`. A React Element is an immutable object describing what to render, created using JSX or `React.createElement`. A React Component is a function or class that returns React Elements, enabling the creation of reusable UI pieces.
+    A **React Node** is anything React can render: a React Element, a string, a number, an array of nodes, a fragment, a portal, `null`, `undefined`, `false`, or `true`. A **React Element** is the immutable plain object React produces from JSX or `React.createElement` describing what to render. A **React Component** is a function (or, historically, a class) that accepts props and returns React Nodes. Elements describe the UI; components are the factories that produce those elements.
 
     <!-- Update here: /questions/what-is-the-difference-between-react-node-react-element-and-a-react-component/en-US.mdx -->
 
@@ -138,7 +138,7 @@
 
     <!-- Update here: /questions/what-is-the-difference-between-state-and-props-in-react/en-US.mdx -->
 
-    In React, `state` is a local data storage that is managed within a component and can change over time, while `props` are read-only attributes passed from a parent component to a child component. State is used for data that changes within a component, whereas props are used to pass data and event handlers to child components.
+    **State** is data a component owns and can update over time; **props** are data a component receives from its parent and is not allowed to mutate. State changes trigger a re-render of the owning component (and its descendants); prop changes happen because the parent re-rendered with new values. Together they implement React's one-way data flow: state lives at the lowest common ancestor that needs it, flows down as props, and changes flow back up via callbacks passed as props.
 
     <!-- Update here: /questions/what-is-the-difference-between-state-and-props-in-react/en-US.mdx -->
 
@@ -154,12 +154,14 @@
 
     <!-- Update here: /questions/what-is-the-purpose-of-the-key-prop-in-react/en-US.mdx -->
 
-    The `key` prop in React is used to uniquely identify elements in a list. It helps React optimize rendering by efficiently updating and reordering elements. Without a unique `key`, React may re-render elements unnecessarily, leading to performance issues and bugs.
+    The `key` prop tells React how to identify each child in a list across renders so it can match the right component instance to the right data, preserve its state, and reorder DOM nodes correctly. A `key` only needs to be unique among siblings, not globally. Changing a component's `key` is also the idiomatic way to **reset its state** — React unmounts the old instance and mounts a fresh one.
     
     ```jsx
-    {
-      items.map((item) => <ListItem key={item.id} value={item.value} />);
-    }
+    <ul>
+      {items.map((item) => (
+        <ListItem key={item.id} value={item.value} />
+      ))}
+    </ul>
     ```
 
     <!-- Update here: /questions/what-is-the-purpose-of-the-key-prop-in-react/en-US.mdx -->
@@ -176,7 +178,7 @@
 
     <!-- Update here: /questions/what-is-the-consequence-of-using-array-indices-as-the-value-for-key-s-in-react/en-US.mdx -->
 
-    Using array indices as the value for `key`s in React can lead to performance issues and bugs. When the order of items changes, React may not correctly identify which items have changed, leading to unnecessary re-renders or incorrect component updates. It's better to use unique identifiers for `key`s to ensure React can efficiently manage and update the DOM.
+    Using array indices as `key`s causes React to reconcile the list incorrectly when items are reordered, inserted, or removed. Because the key identifies a position rather than an item, React reuses the wrong component instances — leaving stale local state, focus, and DOM attached to the wrong rows. The fix is to use a stable, unique identifier from the data (e.g. `item.id`). Index keys are only safe when the list is static and never reordered, filtered, or prepended to.
 
     <!-- Update here: /questions/what-is-the-consequence-of-using-array-indices-as-the-value-for-key-s-in-react/en-US.mdx -->
 
@@ -192,7 +194,7 @@
 
     <!-- Update here: /questions/what-is-the-difference-between-controlled-and-uncontrolled-react-components/en-US.mdx -->
 
-    Controlled components in React are those where the form data is handled by the component's state. The state is the single source of truth, and any changes to the form input are managed through event handlers. Uncontrolled components, on the other hand, store their own state internally and rely on refs to access the form values. Controlled components offer more control and are easier to test, while uncontrolled components can be simpler to implement for basic use cases.
+    A **controlled** component drives a form input from React state — you pass `value`/`checked` plus an `onChange` handler, and React state is the single source of truth. An **uncontrolled** component lets the DOM keep the value; you read it via a `ref` (or on submit) and seed the initial value with `defaultValue`/`defaultChecked`. Controlled inputs are the right default when you need validation, conditional UI, or to derive other state from the value. Uncontrolled inputs are simpler for write-once forms and for `<input type="file">`, which is always uncontrolled. React 19 also added first-class form support via the form `action` prop, `useFormStatus`, and `useActionState`, which often removes the need for per-field controlled state.
 
     <!-- Update here: /questions/what-is-the-difference-between-controlled-and-uncontrolled-react-components/en-US.mdx -->
 
@@ -208,7 +210,7 @@
 
     <!-- Update here: /questions/what-are-some-pitfalls-about-using-context-in-react/en-US.mdx -->
 
-    Using context in React can lead to performance issues if not managed properly. It can cause unnecessary re-renders of components that consume the context, even if the part of the context they use hasn't changed. Additionally, overusing context for state management can make the code harder to understand and maintain. It's important to use context sparingly and consider other state management solutions like Redux or Zustand for more complex state needs.
+    Context in React is convenient but easy to misuse. The biggest pitfalls are passing a fresh object/array as the provider `value` on every render (which forces every consumer to re-render), assuming `React.memo` will stop context-driven re-renders (it won't), and reaching for context as a general-purpose state manager. For frequently-changing or independent slices of state, split context into multiple providers, memoize the value, or use a dedicated state library like Redux, Zustand, or Jotai.
 
     <!-- Update here: /questions/what-are-some-pitfalls-about-using-context-in-react/en-US.mdx -->
 
@@ -224,7 +226,7 @@
 
     <!-- Update here: /questions/what-are-the-benefits-of-using-hooks-in-react/en-US.mdx -->
 
-    Hooks in React allow you to use state and other React features without writing a class. They make it easier to reuse stateful logic between components, improve code readability, and simplify the codebase by reducing the need for lifecycle methods. Hooks like `useState` and `useEffect` are commonly used to manage state and side effects in functional components.
+    Hooks let you use state and other React features in plain functions, without classes. They were introduced to solve real pain points in the class-component era — "wrapper hell" from HOCs and render props, the awkwardness of `this` binding, and the difficulty of sharing stateful logic between components. Custom hooks make that logic genuinely reusable through composition. React 19 expands the set further with hooks like `use`, `useActionState`, `useOptimistic`, and `useFormStatus` for promises, forms, and optimistic UI.
 
     <!-- Update here: /questions/what-are-the-benefits-of-using-hooks-in-react/en-US.mdx -->
 
@@ -240,7 +242,7 @@
 
     <!-- Update here: /questions/what-are-the-rules-of-react-hooks/en-US.mdx -->
 
-    React hooks have a few essential rules to ensure they work correctly. Always call hooks at the top level of your React function, never inside loops, conditions, or nested functions. Only call hooks from React function components or custom hooks. These rules ensure that hooks maintain the correct state and lifecycle behavior.
+    React hooks have a few essential rules to ensure they work correctly. Always call hooks at the top level of your component or custom hook — never inside loops, conditions, nested functions, or after an early `return`. Only call hooks from React function components or other custom hooks (whose names must start with `use`). Lean on `eslint-plugin-react-hooks` to enforce these rules. The React Compiler (RC/stable by 2026) relaxes the need for some manual memoization, but the rules of hooks themselves still apply.
 
     <!-- Update here: /questions/what-are-the-rules-of-react-hooks/en-US.mdx -->
 
@@ -256,27 +258,29 @@
 
     <!-- Update here: /questions/what-is-the-difference-between-useeffect-and-uselayouteffect-in-react/en-US.mdx -->
 
-    `useEffect` and `useLayoutEffect` are React hooks used to handle side effects in functional components, but they differ in timing and use cases:
+    Both hooks run side effects after render, but they differ in **when** they fire relative to paint:
     
-    - `useEffect`: Runs asynchronously after the DOM has been painted. It is suitable for tasks like data fetching, subscriptions, or logging.
-    - `useLayoutEffect`: Runs synchronously after DOM mutations but before the browser paints. Use it for tasks like measuring DOM elements or synchronizing the UI with the DOM.
+    - `useEffect` runs **asynchronously after the browser has painted**. It does not block the user from seeing the new frame. Use it for data fetching, subscriptions, logging, and most side effects.
+    - `useLayoutEffect` runs **synchronously during the commit phase, after DOM mutations but before the browser paints**. It blocks paint, so use it only when you need to measure the DOM and write to it in the same frame to avoid a visual flicker.
+    
+    Both accept a dependency array with the same semantics, both fire twice on mount in Strict Mode development builds, and `useLayoutEffect` has no effect during server rendering (React warns if you use it in SSR).
     
     Code example:
     
     ```jsx
-    import React, { useEffect, useLayoutEffect, useRef } from 'react';
+    import { useEffect, useLayoutEffect, useRef } from 'react';
     
     function Example() {
-      const ref = useRef();
+      const ref = useRef(null);
     
       useEffect(() => {
-        console.log('useEffect: Runs after DOM paint');
-      });
+        console.log('useEffect: runs after paint');
+      }, []);
     
       useLayoutEffect(() => {
-        console.log('useLayoutEffect: Runs before DOM paint');
+        console.log('useLayoutEffect: runs before paint');
         console.log('Element width:', ref.current.offsetWidth);
-      });
+      }, []);
     
       return <div ref={ref}>Hello</div>;
     }
@@ -296,9 +300,20 @@
 
     <!-- Update here: /questions/what-is-the-purpose-of-callback-function-argument-format-of-setstate-in-react-and-when-should-it-be-used/en-US.mdx -->
 
-    The callback function argument format of `setState()` in React is used to ensure that state updates are based on the most recent state and props. This is particularly important when the new state depends on the previous state. Instead of passing an object directly to `setState()`, you pass a function that takes the previous state and props as arguments and returns the new state.
+    The callback (or **updater function**) form of `setState` — both `this.setState(prev => ...)` in classes and `setX(prev => ...)` with `useState` — guarantees that each update is computed from the latest queued state rather than the value captured in your closure. Use it whenever the next state depends on the previous state, especially when you call the setter more than once in the same event handler or when the update may run after an `await`/timeout/promise.
     
-    ```javascript
+    ```jsx
+    // Modern hooks form (preferred)
+    const [count, setCount] = useState(0);
+    
+    const handleClick = () => {
+      setCount((c) => c + 1);
+      setCount((c) => c + 1); // Both run; final count is +2.
+    };
+    ```
+    
+    ```jsx
+    // Legacy class form
     this.setState((prevState, props) => ({
       counter: prevState.counter + props.increment,
     }));
@@ -343,7 +358,7 @@
       const inputEl = useRef(null);
     
       useEffect(() => {
-        inputEl.current.focus();
+        inputEl.current?.focus();
       }, []);
     
       return <input ref={inputEl} type="text" />;
@@ -364,13 +379,15 @@
 
     <!-- Update here: /questions/what-is-the-usecallback-hook-in-react-and-when-should-it-be-used/en-US.mdx -->
 
-    The `useCallback` hook in React is used to memoize functions, preventing them from being recreated on every render. This is particularly useful when passing callbacks to optimized child components that rely on reference equality to prevent unnecessary renders. You should use `useCallback` when you have a function that is passed as a prop to a child component and you want to avoid the child component re-rendering unnecessarily.
+    `useCallback` returns a memoized function whose identity only changes when one of its dependencies changes. The point is **referential stability** — so a `React.memo`-wrapped child does not re-render, or a `useEffect` whose deps include the function does not re-fire. Re-creating a plain function literal each render is essentially free; the actual cost being avoided is the **downstream work** triggered by a new reference.
     
     ```javascript
     const memoizedCallback = useCallback(() => {
       doSomething(a, b);
     }, [a, b]);
     ```
+    
+    > Note for 2026: with the **React Compiler** (stable in React 19), most components no longer need manual `useCallback` / `useMemo` / `React.memo` — the compiler memoizes automatically. New code targeting a compiler-enabled project should generally not reach for `useCallback` unless profiling shows a specific need.
 
     <!-- Update here: /questions/what-is-the-usecallback-hook-in-react-and-when-should-it-be-used/en-US.mdx -->
 
@@ -428,12 +445,12 @@
 
     <!-- Update here: /questions/what-is-the-useid-hook-in-react-and-when-should-it-be-used/en-US.mdx -->
 
-    The `useId` hook in React is used to generate unique IDs for elements within a component. This is particularly useful for accessibility purposes, such as linking form inputs with their labels. It ensures that IDs are unique across the entire application, even if the component is rendered multiple times.
+    `useId` (added in React 18) generates a stable, unique string ID per component instance, **per React root**. Its main reason for existing is to produce IDs that match between the server-rendered HTML and the client hydration — a plain incrementing counter would produce mismatches. Within a single root the IDs are unique, but two separate roots on the same page can collide unless you set `identifierPrefix` on `createRoot` / `hydrateRoot`. Use it for things like linking `<label htmlFor>` to `<input id>`, never as a list `key`.
     
     ```javascript
     import { useId } from 'react';
     
-    function MyComponent() {
+    function NameField() {
       const id = useId();
       return (
         <div>
@@ -499,12 +516,19 @@
 
     <!-- Update here: /questions/what-is-forwardref-in-react-used-for/en-US.mdx -->
 
-    `forwardRef()` in React is used to pass a ref through a component to one of its child components. This is useful when you need to access a DOM element or a child component's instance directly from a parent component. You wrap your functional component with `forwardRef()` and use the `ref` parameter to forward the ref to the desired child element.
+    As of React 19 (December 2024), `forwardRef()` is **deprecated**. Function components can now accept `ref` as a regular prop, so wrapping in `forwardRef()` is no longer required. `forwardRef()` historically existed because, before React 19, function components could not receive a `ref` prop and `forwardRef()` was the official workaround for forwarding a parent's ref down to a child DOM node or component.
     
     ```jsx
-    import React, { forwardRef } from 'react';
+    // Modern (React 19+): ref is a regular prop
+    function MyInput({ ref, ...props }) {
+      return <input ref={ref} {...props} />;
+    }
     
-    const MyComponent = forwardRef((props, ref) => <input ref={ref} {...props} />);
+    // Legacy (React 18 and earlier): wrap with forwardRef
+    import { forwardRef } from 'react';
+    const MyInputLegacy = forwardRef((props, ref) => (
+      <input ref={ref} {...props} />
+    ));
     ```
 
     <!-- Update here: /questions/what-is-forwardref-in-react-used-for/en-US.mdx -->
@@ -521,15 +545,13 @@
 
     <!-- Update here: /questions/how-do-you-reset-a-components-state-in-react/en-US.mdx -->
 
-    To reset a component's state in React, you can set the state back to its initial value. This can be done by defining an initial state and then using the `setState` function to reset it. For example, if you have a state object like this:
+    The most idiomatic way to reset a component's state in React is to give the component a `key` prop and change it — React unmounts the old instance and mounts a fresh one with brand-new state. For finer-grained resets, call your `useState` setter with the initial value, or dispatch a `RESET` action when using `useReducer`.
     
     ```javascript
-    const [state, setState] = useState(initialState);
-    ```
+    // Force a full reset by changing the key
+    <Form key={formId} />;
     
-    You can reset it by calling:
-    
-    ```javascript
+    // Or reset specific state in place
     setState(initialState);
     ```
 
@@ -547,7 +569,7 @@
 
     <!-- Update here: /questions/why-does-react-recommend-against-mutating-state/en-US.mdx -->
 
-    React recommends against mutating state because it can lead to unexpected behavior and bugs. React relies on state immutability to efficiently determine when to re-render components. When state is mutated directly, React may not detect the changes, leading to stale or incorrect UI updates. Instead, always create a new state object using methods like `setState` or the `useState` hook.
+    React recommends against mutating state because several of its mechanisms depend on the previous and next state being **different objects** (reference inequality). When you mutate state in place, the reference does not change, which breaks `Object.is` bailouts in `useState`/`useReducer`, breaks `React.memo` and `useMemo`/`useEffect` dependency comparisons, and can cause tearing under concurrent rendering. It also defeats time-travel debugging in React DevTools. Always produce a **new** object/array (with the spread operator, array methods like `map`/`filter`/`toSorted`, or a library such as Immer) and pass it to the state setter.
 
     <!-- Update here: /questions/why-does-react-recommend-against-mutating-state/en-US.mdx -->
 
@@ -563,7 +585,7 @@
 
     <!-- Update here: /questions/what-are-error-boundaries-in-react-for/en-US.mdx -->
 
-    Error boundaries in React are components that catch JavaScript errors anywhere in their child component tree, log those errors, and display a fallback UI instead of crashing the whole application. They are implemented using the `componentDidCatch` lifecycle method and the `static getDerivedStateFromError` method. Error boundaries do not catch errors inside event handlers, asynchronous code, or server-side rendering.
+    Error boundaries in React are components that catch JavaScript errors thrown during rendering, in lifecycle methods, and in constructors of their child component tree, then display a fallback UI instead of crashing the whole application. They are implemented as class components using `static getDerivedStateFromError` (to render a fallback) and optionally `componentDidCatch` (for logging). Since React 16, an uncaught error unmounts the entire React tree, which makes error boundaries effectively required for production apps. Error boundaries do not catch errors inside event handlers, asynchronous code, or server-side rendering. As of React 19, there is still no hooks-based API for error boundaries — most teams use the `react-error-boundary` library, or rely on the new root-level `onUncaughtError`, `onCaughtError`, and `onRecoverableError` options on `createRoot`/`hydrateRoot`.
 
     <!-- Update here: /questions/what-are-error-boundaries-in-react-for/en-US.mdx -->
 
@@ -579,7 +601,7 @@
 
     <!-- Update here: /questions/how-do-you-test-react-applications/en-US.mdx -->
 
-    To test React applications, you can use tools like Jest and React Testing Library. Jest is a JavaScript testing framework that works well with React, and React Testing Library provides utilities to test React components in a way that resembles how users interact with them. You can write unit tests for individual components, integration tests for component interactions, and end-to-end tests using tools like Cypress.
+    To test React applications, use Jest or Vitest as the test runner together with React Testing Library, which encourages testing components the way users interact with them. Drive interactions with `@testing-library/user-event` (preferred over `fireEvent`), mock network calls with MSW, and write end-to-end tests with Playwright (or Cypress). For React 19 features like async components and Server Components, lean on async queries (`findBy*`, `waitFor`).
 
     <!-- Update here: /questions/how-do-you-test-react-applications/en-US.mdx -->
 
@@ -611,7 +633,7 @@
 
     <!-- Update here: /questions/what-are-react-portals-used-for/en-US.mdx -->
 
-    React Portals are used to render children into a DOM node that exists outside the hierarchy of the parent component. This is useful for scenarios like modals, tooltips, and dropdowns where you need to break out of the parent component's overflow or z-index constraints. You can create a portal using `ReactDOM.createPortal(child, container)`.
+    React Portals are used to render children into a DOM node that exists outside the hierarchy of the parent component. This is useful for scenarios like modals, tooltips, and dropdowns where you need to break out of the parent component's overflow or z-index constraints. You create a portal with `createPortal(child, container)` from `react-dom`. Even though the rendered DOM lives elsewhere, the portal still belongs to the React tree, so events bubble up to the React parent and context still flows through normally.
 
     <!-- Update here: /questions/what-are-react-portals-used-for/en-US.mdx -->
 
@@ -627,7 +649,7 @@
 
     <!-- Update here: /questions/how-do-you-debug-react-applications/en-US.mdx -->
 
-    To debug React applications, you can use the React Developer Tools browser extension to inspect component hierarchies and state. Additionally, you can use `console.log` statements to log data and errors, and leverage breakpoints in your code using browser developer tools. For more advanced debugging, you can use error boundaries to catch and handle errors in your components.
+    To debug React applications, use the React Developer Tools browser extension to inspect the component tree, props/state, and rendering with the Profiler. Enable Strict Mode during development to surface unsafe patterns, and rely on React 19.1 owner stacks for clearer component-aware stack traces. Use error boundaries (or the `react-error-boundary` package) to catch render-time errors, and reach for `console.log`, breakpoints, and the React DevTools "log" button for deeper inspection.
 
     <!-- Update here: /questions/how-do-you-debug-react-applications/en-US.mdx -->
 
@@ -687,15 +709,16 @@
 
     Code splitting in a React application is a technique used to improve performance by splitting the code into smaller chunks that can be loaded on demand. This helps in reducing the initial load time of the application. You can achieve code splitting using dynamic `import()` statements or React's `React.lazy` and `Suspense`.
     
-    ```javascript
-    // Using React.lazy and Suspense
-    const LazyComponent = React.lazy(() => import('./LazyComponent'));
+    ```jsx
+    import { lazy, Suspense } from 'react';
+    
+    const LazyComponent = lazy(() => import('./LazyComponent'));
     
     function App() {
       return (
-        <React.Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div>Loading...</div>}>
           <LazyComponent />
-        </React.Suspense>
+        </Suspense>
       );
     }
     ```
@@ -714,10 +737,10 @@
 
     <!-- Update here: /questions/how-would-one-optimize-the-performance-of-react-contexts-to-reduce-rerenders/en-US.mdx -->
 
-    To optimize the performance of React contexts and reduce rerenders, you can use techniques such as memoizing context values, splitting contexts, and using selectors. Memoizing context values with `useMemo` ensures that the context value only changes when its dependencies change. Splitting contexts allows you to isolate state changes to specific parts of your application. Using selectors with libraries like `use-context-selector` can help you only rerender components that actually need the updated context value.
+    The first thing to know in 2026 is that the **React Compiler** auto-memoizes components and values, so a lot of the manual `useMemo`/`useCallback` work that used to be required for context performance is now done for you — adopt it before reaching for other tricks. Beyond that, the canonical patterns are: split a single context into a state context and a dispatch (or setter) context so consumers that only dispatch don't rerender on state changes; memoize the value object you pass to the provider; wrap consumer components in `React.memo`; and reach for selector libraries like `use-context-selector` when you need to subscribe to a slice of a large value.
     
     ```javascript
-    const value = useMemo(() => ({ state, dispatch }), [state, dispatch]);
+    const value = useMemo(() => ({ state }), [state]); // dispatch is already stable
     ```
 
     <!-- Update here: /questions/how-would-one-optimize-the-performance-of-react-contexts-to-reduce-rerenders/en-US.mdx -->
@@ -743,6 +766,8 @@
     
     const EnhancedComponent = withExtraProps(MyComponent);
     ```
+    
+    HOCs are largely a legacy pattern. The current React docs (React 19) discourage HOCs in favor of custom hooks for sharing logic between function components. You'll still see HOCs in older code and in libraries (e.g. `connect` from React Redux), but for new code, prefer hooks.
 
     <!-- Update here: /questions/what-are-higher-order-components-in-react/en-US.mdx -->
 
@@ -758,15 +783,16 @@
 
     <!-- Update here: /questions/what-is-the-flux-pattern-and-what-are-its-benefits/en-US.mdx -->
 
-    The Flux pattern is an architectural design used for managing state in applications, particularly in React ecosystems. It enforces a unidirectional data flow, making it easier to manage and debug application state.
+    The Flux pattern is an architectural design Facebook introduced for managing state in React applications. It enforces a unidirectional data flow, making it easier to manage and debug application state. Today Flux is largely historical — it has been superseded by libraries it inspired, such as Redux, Zustand, and the built-in `useReducer` + Context combination — but its single-source-of-truth and unidirectional-flow ideas are still the foundation of those tools.
     
     - **Core components**:
-      - **Dispatcher**: Manages actions and dispatches them to stores.
-      - **Stores**: Hold the state and logic of the application.
-      - **Actions**: Payloads of information sent from the application to the dispatcher.
-      - **View**: React components that re-render when stores update.
+      - **Dispatcher**: Single hub that manages actions and dispatches them to all registered stores.
+      - **Stores**: Hold the state and business logic; act as change emitters that notify subscribed views.
+      - **Actions**: Plain payloads of information sent from the application to the dispatcher.
+      - **View**: React components that subscribe to stores and re-render when stores emit changes.
     - **Benefits**:
       - Predictable state management due to unidirectional data flow.
+      - Single source of truth for application state.
       - Improved debugging and testing.
       - Clear separation of concerns.
     
@@ -774,7 +800,7 @@
     
     1. User interacts with the **View**.
     2. **Actions** are triggered and dispatched by the **Dispatcher**.
-    3. **Stores** process the actions and update their state.
+    3. **Stores** process the actions, update their state, and emit a change event.
     4. **View** re-renders based on the updated state.
 
     <!-- Update here: /questions/what-is-the-flux-pattern-and-what-are-its-benefits/en-US.mdx -->
@@ -791,7 +817,7 @@
 
     <!-- Update here: /questions/explain-one-way-data-flow-of-react-and-its-benefits/en-US.mdx -->
 
-    In React, one-way data flow means that data in a React application flows in a single direction, from parent components to child components. This makes the data flow predictable and easier to debug. The main benefits include improved maintainability, easier debugging, and better performance.
+    In React, one-way data flow means that data moves in a single direction: from parent components down to child components via `props`. Children cannot mutate the props they receive; to change parent state, a child invokes a callback the parent passed in. This contrasts with two-way binding (e.g. Angular or Vue's `v-model`), where view and model stay in sync automatically. The main benefits are predictable state changes, easier debugging, and patterns like controlled components, immutable updates, and time-travel debugging that fall out naturally from the constraint.
 
     <!-- Update here: /questions/explain-one-way-data-flow-of-react-and-its-benefits/en-US.mdx -->
 
@@ -807,33 +833,7 @@
 
     <!-- Update here: /questions/how-do-you-handle-asynchronous-data-loading-in-react-applications/en-US.mdx -->
 
-    In React applications, asynchronous data loading is typically handled using `useEffect` and `useState` hooks. You initiate the data fetch inside `useEffect` and update the state with the fetched data. This ensures that the component re-renders with the new data. Here's a simple example:
-    
-    ```javascript
-    import React, { useState, useEffect } from 'react';
-    
-    function DataFetchingComponent() {
-      const [data, setData] = useState(null);
-      const [loading, setLoading] = useState(true);
-    
-      useEffect(() => {
-        async function fetchData() {
-          const response = await fetch('https://api.example.com/data');
-          const result = await response.json();
-          setData(result);
-          setLoading(false);
-        }
-    
-        fetchData();
-      }, []);
-    
-      if (loading) {
-        return <div>Loading...</div>;
-      }
-    
-      return <div>{JSON.stringify(data)}</div>;
-    }
-    ```
+    In a modern React app, **don't** roll your own `useEffect` + `fetch` for data loading — the React docs explicitly recommend against it. Reach first for a dedicated data-fetching library: **TanStack Query**, **SWR**, or **RTK Query** for client-side fetching, or **Server Components** and route-level loaders (Next.js App Router, Remix/React Router) when you control the framework. In React 19, the new `use()` hook lets a component read a promise directly and suspend, which pairs naturally with `<Suspense>` for loading states and error boundaries for failures. A hand-written `useEffect`+`fetch` is a low-level fallback that needs an `AbortController`, a `response.ok` check, and careful state handling to avoid race conditions and stale updates.
 
     <!-- Update here: /questions/how-do-you-handle-asynchronous-data-loading-in-react-applications/en-US.mdx -->
 
@@ -845,11 +845,11 @@
     <br>
     <br>
 
-37. ### Explain server-side rendering of React applications and its benefits?
+37. ### Explain server-side rendering of React applications and its benefits
 
     <!-- Update here: /questions/explain-server-side-rendering-of-react-applications-and-its-benefits/en-US.mdx -->
 
-    Server-side rendering (SSR) in React involves rendering React components on the server and sending the fully rendered HTML to the client. This approach improves initial load times and SEO. The server handles the initial rendering, and the client takes over with React's hydration process. Benefits include faster initial page loads, better SEO, and improved performance on slower devices.
+    Server-side rendering (SSR) in React involves rendering React components on the server and sending the resulting HTML to the client. The browser displays that HTML immediately, then `hydrateRoot` attaches event handlers so the page becomes interactive. Modern React supports streaming SSR via `renderToPipeableStream` (Node) and `renderToReadableStream` (Web), and React Server Components let parts of the tree render only on the server. Benefits include faster perceived loads and better SEO; tradeoffs include a slower TTFB, the cost of hydration, and the risk of hydration mismatches.
 
     <!-- Update here: /questions/explain-server-side-rendering-of-react-applications-and-its-benefits/en-US.mdx -->
 
@@ -861,11 +861,11 @@
     <br>
     <br>
 
-38. ### Explain static generation of React applications and its benefits?
+38. ### Explain static generation of React applications and its benefits
 
     <!-- Update here: /questions/explain-static-generation-of-react-applications-and-its-benefits/en-US.mdx -->
 
-    Static generation in React applications involves pre-rendering the HTML at build time, rather than on each request. This results in faster load times and better performance since the HTML is already generated and can be served directly from a CDN. It also improves SEO and can reduce server load. Tools like Next.js facilitate static generation by allowing developers to generate static pages easily.
+    Static generation (SSG) pre-renders pages to HTML at build time, instead of rendering them per request. The output is plain files that can be served from a CDN, which makes loads fast and SEO straightforward. Frameworks like Next.js, Remix, Astro, and Gatsby support it; in Next.js's App Router, fetches are statically generated by default and `generateStaticParams` enumerates dynamic routes at build. Incremental Static Regeneration (ISR) lets you re-build individual pages in the background after a TTL, so static does not have to mean stale. SSG is best for content that does not vary per user and does not need to be perfectly fresh.
 
     <!-- Update here: /questions/explain-static-generation-of-react-applications-and-its-benefits/en-US.mdx -->
 
@@ -881,7 +881,7 @@
 
     <!-- Update here: /questions/explain-the-presentational-vs-container-component-pattern-in-react/en-US.mdx -->
 
-    In React, the presentational vs container component pattern is a design approach where presentational components focus on how things look and container components focus on how things work. Presentational components are concerned with rendering HTML and CSS, while container components handle the logic and state management. This separation helps in maintaining a clean and organized codebase.
+    The presentational vs container component pattern (also known as "dumb vs smart components") splits components into two roles: presentational components decide how things look and receive everything via props, while container components decide how things work — they fetch data, hold state, and pass props down. Dan Abramov, who popularized the pattern in 2015, [updated his original article in 2019](https://medium.com/@dan_abramov/smart-and-dumb-components-7ca2f9a7c7d0) to say he no longer recommends splitting components this way: hooks (especially custom hooks) cover the same separation of concerns without forcing you to introduce a wrapper component. The vocabulary is still useful for talking about responsibilities, but in modern React the "container" layer is usually a custom hook.
 
     <!-- Update here: /questions/explain-the-presentational-vs-container-component-pattern-in-react/en-US.mdx -->
 
@@ -897,7 +897,7 @@
 
     <!-- Update here: /questions/what-are-some-common-pitfalls-when-doing-data-fetching-in-react/en-US.mdx -->
 
-    Common pitfalls when doing data fetching in React include not handling loading and error states, causing memory leaks by not cleaning up subscriptions, and not using the right lifecycle methods or hooks. Always ensure you handle these states properly, clean up after your components, and use `useEffect` for side effects in functional components.
+    Common pitfalls when doing data fetching in React include not handling loading and error states, leaking requests by not aborting them on unmount, ignoring race conditions when props or query params change, fetching during render (which loops), and triggering request waterfalls. In modern React (18+), use `AbortController` for cleanup, account for StrictMode's intentional double-invoke in development, and prefer purpose-built libraries like TanStack Query, SWR, or RTK Query for caching and deduplication. React 19's `use()` hook plus Suspense, and Server Components, are now the recommended way to read promises in components.
 
     <!-- Update here: /questions/what-are-some-common-pitfalls-when-doing-data-fetching-in-react/en-US.mdx -->
 
@@ -913,29 +913,30 @@
 
     <!-- Update here: /questions/what-are-render-props-in-react-and-what-are-they-for/en-US.mdx -->
 
-    Render props in React are a technique for sharing code between components using a prop whose value is a function. This function returns a React element and allows you to pass data to the child component. It helps in reusing component logic without using higher-order components or hooks.
+    Render props in React are a technique for sharing code between components using a prop whose value is a function. The component calls that function with some internal state or data, and the function returns the React element to render. The prop does not have to be named `render` — passing a function as `children` is the more common modern form.
     
     ```jsx
-    class DataFetcher extends React.Component {
-      state = { data: null };
+    import { useEffect, useState } from 'react';
     
-      componentDidMount() {
-        fetch(this.props.url)
+    function DataFetcher({ url, children }) {
+      const [data, setData] = useState(null);
+    
+      useEffect(() => {
+        fetch(url)
           .then((response) => response.json())
-          .then((data) => this.setState({ data }));
-      }
+          .then(setData);
+      }, [url]);
     
-      render() {
-        return this.props.render(this.state.data);
-      }
+      return children(data);
     }
     
     // Usage
-    <DataFetcher
-      url="/api/data"
-      render={(data) => <div>{data ? data.name : 'Loading...'}</div>}
-    />;
+    <DataFetcher url="/api/data">
+      {(data) => <div>{data ? data.name : 'Loading...'}</div>}
+    </DataFetcher>;
     ```
+    
+    Render props were popular before hooks. As of modern React, custom hooks have largely replaced them for sharing stateful logic, though render props are still useful for components that own a piece of UI structure (e.g. virtualized lists, headless component libraries).
 
     <!-- Update here: /questions/what-are-render-props-in-react-and-what-are-they-for/en-US.mdx -->
 
@@ -951,14 +952,17 @@
 
     <!-- Update here: /questions/what-are-some-react-anti-patterns/en-US.mdx -->
 
-    React anti-patterns are practices that can lead to inefficient, hard-to-maintain, or buggy code. Some common anti-patterns include:
+    React anti-patterns are practices that lead to inefficient, buggy, or hard-to-maintain code. Common ones in modern (hooks-era) React include:
     
-    - Mutating state directly instead of using `setState`
-    - Using `componentWillMount` for data fetching
-    - Overusing `componentWillReceiveProps`
-    - Not using keys in lists
-    - Overusing inline functions in render
-    - Deeply nested state
+    - Mutating state directly instead of producing a new value
+    - Using `useState` to mirror props or other state instead of computing the value during render
+    - Using `useEffect` to derive data that could just be computed
+    - Using array index as `key` for dynamic lists
+    - Stale closures inside effects (missing or wrong dependencies)
+    - Forgetting to clean up effects (subscriptions, timers, listeners)
+    - Mutating refs during render
+    - Not using keys in lists at all
+    - Reaching for `useMemo`/`useCallback` everywhere instead of where they actually help
 
     <!-- Update here: /questions/what-are-some-react-anti-patterns/en-US.mdx -->
 
@@ -974,7 +978,7 @@
 
     <!-- Update here: /questions/how-do-you-decide-between-using-react-state-context-and-external-state-managers/en-US.mdx -->
 
-    Choosing between React state, context, and external state managers depends on the complexity and scope of your application's state management needs. Use React state for local component state, React context for global state that needs to be shared across multiple components, and external state managers like Redux or MobX for complex state management that requires advanced features like middleware, time-travel debugging, or when the state needs to be shared across a large application.
+    Match the tool to the kind of state. Use `useState`/`useReducer` for local component state, and lift state up before reaching for anything heavier. Use React Context to pass values that change rarely (theme, locale, current user) — Context is **not** a state manager and re-renders all consumers on every change. Reach for a client-state library like Zustand, Jotai, or Redux Toolkit when many unrelated components need to share frequently-changing state. Critically, treat **server state separately**: TanStack Query, SWR, or RTK Query handle caching, refetching, and invalidation far better than any general-purpose store.
 
     <!-- Update here: /questions/how-do-you-decide-between-using-react-state-context-and-external-state-managers/en-US.mdx -->
 
@@ -990,22 +994,7 @@
 
     <!-- Update here: /questions/explain-the-composition-pattern-in-react/en-US.mdx -->
 
-    The composition pattern in React is a way to build components by combining smaller, reusable components. Instead of using inheritance, React encourages composition to create complex UIs. You can pass components as children or props to other components to achieve this. For example:
-    
-    ```jsx
-    function WelcomeDialog() {
-      return (
-        <Dialog>
-          <h1>Welcome</h1>
-          <p>Thank you for visiting our spacecraft!</p>
-        </Dialog>
-      );
-    }
-    
-    function Dialog(props) {
-      return <div className="dialog">{props.children}</div>;
-    }
-    ```
+    The composition pattern in React is the practice of building UIs by combining smaller, reusable components instead of extending them through inheritance. The most common forms are: passing children (`props.children`), passing components as named props (slots), specialization (a more specific component that wraps a generic one and fixes some props), render props / "children as a function", and compound components (a parent component that exposes a set of related sub-components, e.g. `<Tabs>` with `<Tabs.List>` and `<Tabs.Panel>`). Composition is React's main reuse mechanism, alongside custom hooks for behavior.
 
     <!-- Update here: /questions/explain-the-composition-pattern-in-react/en-US.mdx -->
 
@@ -1021,7 +1010,7 @@
 
     <!-- Update here: /questions/what-is-virtual-dom-in-react/en-US.mdx -->
 
-    The virtual DOM in React is a lightweight copy of the actual DOM. It allows React to efficiently update the UI by comparing the virtual DOM with the real DOM and only making necessary changes. This process is called reconciliation. By using the virtual DOM, React minimizes direct manipulation of the real DOM, which can be slow and inefficient.
+    The "virtual DOM" in React is a tree of plain JavaScript objects (React elements) that describes what the UI should look like — it is not a copy of the actual DOM. When state or props change, React builds a new tree, compares it with the previous one (a process called reconciliation, performed by the Fiber reconciler since React 16), and applies only the necessary changes to the real DOM. The React team now prefers the terms "React elements" and "Fiber tree." The main benefit is the declarative programming model, not raw speed over hand-written DOM updates.
 
     <!-- Update here: /questions/what-is-virtual-dom-in-react/en-US.mdx -->
 

@@ -4,13 +4,15 @@ title: What is the `useCallback` hook in React and when should it be used?
 
 ## TL;DR
 
-The `useCallback` hook in React is used to memoize functions, preventing them from being recreated on every render. This is particularly useful when passing callbacks to optimized child components that rely on reference equality to prevent unnecessary renders. You should use `useCallback` when you have a function that is passed as a prop to a child component and you want to avoid the child component re-rendering unnecessarily.
+`useCallback` returns a memoized function whose identity only changes when one of its dependencies changes. The point is **referential stability** — so a `React.memo`-wrapped child does not re-render, or a `useEffect` whose deps include the function does not re-fire. Re-creating a plain function literal each render is essentially free; the actual cost being avoided is the **downstream work** triggered by a new reference.
 
 ```javascript
 const memoizedCallback = useCallback(() => {
   doSomething(a, b);
 }, [a, b]);
 ```
+
+> Note for 2026: with the **React Compiler** (stable in React 19), most components no longer need manual `useCallback` / `useMemo` / `React.memo` — the compiler memoizes automatically. New code targeting a compiler-enabled project should generally not reach for `useCallback` unless profiling shows a specific need.
 
 ---
 
@@ -30,17 +32,30 @@ const memoizedCallback = useCallback(() => {
 
 ### When should `useCallback` be used?
 
-#### Preventing unnecessary re-renders
+#### Preventing unnecessary re-renders of memoized children
 
-When you pass a function as a prop to a child component, the child component may re-render every time the parent component re-renders, even if the function itself hasn't changed. Using `useCallback` ensures that the function reference remains the same as long as its dependencies haven't changed, thus preventing unnecessary re-renders.
+When you pass a function as a prop to a `React.memo`-wrapped child, a new function reference on each parent render breaks the memoization and the child re-renders anyway. `useCallback` keeps the reference stable so `React.memo` can do its job.
+
+A common bug is depending on a state value you also update inside the callback — the dependency changes after every click, so the memoization is useless:
+
+```javascript
+// BAD: `count` is in the deps, so `handleClick` gets a new identity every click,
+// defeating React.memo on the child.
+const handleClick = useCallback(() => {
+  setCount(count + 1);
+}, [count]);
+```
+
+The fix is to use the **functional updater** form of `setState`, which lets you drop the value from the deps:
 
 ```javascript
 const ParentComponent = () => {
   const [count, setCount] = useState(0);
 
+  // GOOD: empty deps, stable identity for the lifetime of the component.
   const handleClick = useCallback(() => {
-    setCount(count + 1);
-  }, [count]);
+    setCount((c) => c + 1);
+  }, []);
 
   return <ChildComponent onClick={handleClick} />;
 };
@@ -51,14 +66,31 @@ const ChildComponent = React.memo(({ onClick }) => {
 });
 ```
 
-#### Optimizing performance
+#### Stabilising functions used in `useEffect` deps
 
-In complex applications, re-creating functions on every render can be costly in terms of performance. By using `useCallback`, you can avoid this overhead and make your application more efficient.
+If a function is referenced inside an effect's dependency array, a fresh reference each render will cause the effect to re-run every render. Wrapping the function in `useCallback` (or moving it inside the effect) prevents that:
+
+```javascript
+const fetchData = useCallback(async () => {
+  const res = await fetch(`/api/items?query=${query}`);
+  setItems(await res.json());
+}, [query]);
+
+useEffect(() => {
+  fetchData();
+}, [fetchData]);
+```
+
+#### Relationship to `useMemo`
+
+`useCallback(fn, deps)` is exactly equivalent to `useMemo(() => fn, deps)` — it memoizes a value that happens to be a function. Use `useCallback` for readability when the value is a function.
 
 ### Caveats
 
-- **Overuse**: Overusing `useCallback` can lead to more complex code and may not always result in performance improvements. It should be used judiciously.
-- **Dependencies**: Ensure that all dependencies are correctly specified in the dependency array. Missing dependencies can lead to stale closures and bugs.
+- **It is not free**: `useCallback` itself adds bookkeeping. For a function that is not passed to a memoized child or used in a dependency array, wrapping it usually makes the code slower, not faster.
+- **The cost being avoided is downstream re-renders**, not the function literal itself. Allocating an arrow function on each render is essentially free.
+- **Dependencies must be correct**: missing dependencies cause stale closures; over-specified ones defeat the memoization.
+- **The React Compiler removes most need for it**: in a compiler-enabled codebase, prefer plain inline functions and let the compiler memoize.
 
 ## Further reading
 

@@ -4,9 +4,20 @@ title: What is the purpose of callback function argument format of `setState()` 
 
 ## TL;DR
 
-The callback function argument format of `setState()` in React is used to ensure that state updates are based on the most recent state and props. This is particularly important when the new state depends on the previous state. Instead of passing an object directly to `setState()`, you pass a function that takes the previous state and props as arguments and returns the new state.
+The callback (or **updater function**) form of `setState` — both `this.setState(prev => ...)` in classes and `setX(prev => ...)` with `useState` — guarantees that each update is computed from the latest queued state rather than the value captured in your closure. Use it whenever the next state depends on the previous state, especially when you call the setter more than once in the same event handler or when the update may run after an `await`/timeout/promise.
 
-```javascript
+```jsx
+// Modern hooks form (preferred)
+const [count, setCount] = useState(0);
+
+const handleClick = () => {
+  setCount((c) => c + 1);
+  setCount((c) => c + 1); // Both run; final count is +2.
+};
+```
+
+```jsx
+// Legacy class form
 this.setState((prevState, props) => ({
   counter: prevState.counter + props.increment,
 }));
@@ -14,43 +25,85 @@ this.setState((prevState, props) => ({
 
 ---
 
-## Purpose of callback function argument format of `setState()` in React
+## Purpose of the updater function form of `setState`
 
-### Ensuring state updates are based on the most recent state
+### What it is
 
-React's `setState()` is asynchronous, meaning multiple calls to `setState()` can be batched together for performance reasons. If you rely on the current state to compute the next state, using the callback function format ensures that you are working with the most up-to-date state.
+React's state setters — `this.setState` in class components and the `setX` returned by `useState` in function components — accept either a new value or an **updater function**. The updater receives the latest queued state (and, for class components, the latest props) and returns the next state.
 
-### Syntax
+The community calls this the **updater function** form (sometimes "functional updater"). Recognising that name is helpful in interviews.
 
-The callback function format of `setState()` takes a function as an argument. This function receives two parameters: `prevState` and `props`. It returns an object representing the new state.
+### Why it exists: state updates are batched and asynchronous
 
-```javascript
-this.setState((prevState, props) => {
-  return {
-    counter: prevState.counter + props.increment,
+State setters do not change state immediately. React queues the update and applies it later, then re-renders. Since React 18, this batching is **automatic** and applies everywhere — event handlers, promises, `setTimeout`, native event handlers — not only inside React event handlers as in earlier versions.
+
+That means by the time the queued update actually runs, the variable you captured from the previous render may be stale.
+
+### The motivating bug — reading state directly between successive calls
+
+The classic mistake is calling the setter more than once based on the current state value:
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = () => {
+    // BUG: each call uses the same closed-over `count` (still 0 on this render).
+    setCount(count + 1);
+    setCount(count + 1);
+    setCount(count + 1);
+    // After re-render, count is 1 — not 3.
   };
-});
+
+  return <button onClick={handleClick}>{count}</button>;
+}
 ```
+
+`count` is captured by the closure when the component rendered. All three calls compute `0 + 1`, so React queues `1`, `1`, `1` and the final state is `1`.
+
+The same bug exists in classes — reading `this.state.counter` between `setState` calls returns the value from the last render, not the in-flight queued value.
+
+### The fix — pass an updater function
+
+```jsx
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  const handleClick = () => {
+    setCount((c) => c + 1);
+    setCount((c) => c + 1);
+    setCount((c) => c + 1);
+    // Final count is 3 — each updater receives the result of the previous one.
+  };
+
+  return <button onClick={handleClick}>{count}</button>;
+}
+```
+
+Each updater receives a snapshot of the latest queued state, not the value from your render closure.
 
 ### When to use it
 
-- **When the new state depends on the previous state**: If you need to update the state based on the current state, use the callback function format to avoid potential issues with asynchronous state updates.
-- **When multiple state updates are batched**: In scenarios where multiple `setState()` calls might be batched together, using the callback function ensures that each update is based on the most recent state.
+- **The next state depends on the previous state** (counters, toggles, append-to-array, increment-a-map-entry).
+- **You call the setter more than once in the same handler.**
+- **The update happens after an `await`, `setTimeout`, promise resolution, or subscription callback** — by then the closed-over value is almost certainly stale.
+- **Inside `useEffect` or `useCallback` where omitting the state from deps would otherwise cause stale-closure bugs** — using the updater lets you drop the value from the dependency array.
 
-### Example
+### When you do not need it
 
-Consider a counter component where the state update depends on the previous state:
+If the new value does not depend on the previous state — `setName('Alice')`, `setUser(response.data)` — passing the value directly is fine and slightly more readable.
 
-```javascript
+### Class component equivalent
+
+The same idea applies in class components, where the updater also receives `props`:
+
+```jsx
 class Counter extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { counter: 0 };
-  }
+  state = { counter: 0 };
 
   incrementCounter = () => {
     this.setState((prevState, props) => ({
-      counter: prevState.counter + 1,
+      counter: prevState.counter + props.increment,
     }));
   };
 
@@ -65,10 +118,9 @@ class Counter extends React.Component {
 }
 ```
 
-In this example, using the callback function format ensures that the `counter` state is correctly incremented, even if multiple `incrementCounter` calls are made in quick succession.
-
 ## Further reading
 
-- [React Docs: State: A Component's Memory](https://react.dev/learn/state-a-components-memory)
-- [React Docs: setState()](https://react.dev/reference/react/useState#setstate)
-- [React Docs: Responding to Events](https://react.dev/learn/responding-to-events)
+- [React Docs: Queueing a series of state updates](https://react.dev/learn/queueing-a-series-of-state-updates)
+- [React Docs: `useState`](https://react.dev/reference/react/useState)
+- [React Docs: State as a snapshot](https://react.dev/learn/state-as-a-snapshot)
+- [React 18: Automatic batching](https://github.com/reactwg/react-18/discussions/21)

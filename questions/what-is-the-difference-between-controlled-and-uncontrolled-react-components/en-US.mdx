@@ -4,7 +4,7 @@ title: What is the difference between controlled and uncontrolled React Componen
 
 ## TL;DR
 
-Controlled components in React are those where the form data is handled by the component's state. The state is the single source of truth, and any changes to the form input are managed through event handlers. Uncontrolled components, on the other hand, store their own state internally and rely on refs to access the form values. Controlled components offer more control and are easier to test, while uncontrolled components can be simpler to implement for basic use cases.
+A **controlled** component drives a form input from React state — you pass `value`/`checked` plus an `onChange` handler, and React state is the single source of truth. An **uncontrolled** component lets the DOM keep the value; you read it via a `ref` (or on submit) and seed the initial value with `defaultValue`/`defaultChecked`. Controlled inputs are the right default when you need validation, conditional UI, or to derive other state from the value. Uncontrolled inputs are simpler for write-once forms and for `<input type="file">`, which is always uncontrolled. React 19 also added first-class form support via the form `action` prop, `useFormStatus`, and `useActionState`, which often removes the need for per-field controlled state.
 
 ---
 
@@ -12,94 +12,140 @@ Controlled components in React are those where the form data is handled by the c
 
 ### Controlled components
 
-Controlled components are those where the form data is handled by the component's state. The state is the single source of truth, and any changes to the form input are managed through event handlers.
-
-#### Example
+A controlled input passes both `value` (or `checked`) and `onChange` to the element. React state holds the truth; every keystroke flows through a setter.
 
 ```jsx
-class ControlledComponent extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { value: '' };
-  }
+import { useState } from 'react';
 
-  handleChange = (event) => {
-    this.setState({ value: event.target.value });
-  };
+function ControlledForm() {
+  const [name, setName] = useState('');
 
-  handleSubmit = (event) => {
-    alert('A name was submitted: ' + this.state.value);
+  function handleSubmit(event) {
     event.preventDefault();
-  };
-
-  render() {
-    return (
-      <form onSubmit={this.handleSubmit}>
-        <label>
-          Name:
-          <input
-            type="text"
-            value={this.state.value}
-            onChange={this.handleChange}
-          />
-        </label>
-        <input type="submit" value="Submit" />
-      </form>
-    );
+    alert('A name was submitted: ' + name);
   }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Name:
+        <input
+          type="text"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+      </label>
+      <input type="submit" value="Submit" />
+    </form>
+  );
 }
 ```
 
 ### Uncontrolled components
 
-Uncontrolled components store their own state internally and rely on refs to access the form values. This approach is more similar to traditional HTML form elements.
-
-#### Example
+An uncontrolled input keeps its value in the DOM. Seed the initial value with `defaultValue` (or `defaultChecked` for checkboxes/radios), and read the current value through a `ref` when you need it.
 
 ```jsx
-class UncontrolledComponent extends React.Component {
-  constructor(props) {
-    super(props);
-    this.inputRef = React.createRef();
-  }
+import { useRef } from 'react';
 
-  handleSubmit = (event) => {
-    alert('A name was submitted: ' + this.inputRef.current.value);
+function UncontrolledForm() {
+  const inputRef = useRef(null);
+
+  function handleSubmit(event) {
     event.preventDefault();
-  };
-
-  render() {
-    return (
-      <form onSubmit={this.handleSubmit}>
-        <label>
-          Name:
-          <input type="text" ref={this.inputRef} />
-        </label>
-        <input type="submit" value="Submit" />
-      </form>
-    );
+    alert('A name was submitted: ' + inputRef.current.value);
   }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Name:
+        <input type="text" defaultValue="" ref={inputRef} />
+      </label>
+      <input type="submit" value="Submit" />
+    </form>
+  );
 }
 ```
+
+`defaultValue` is only consulted on the initial render — changing it later does not update the DOM. Pairing `value` with no `onChange` (or vice versa) makes the input read-only or warns in development; pick one mode per field.
+
+### `<input type="file">` is always uncontrolled
+
+File inputs cannot be controlled — their `value` is read-only for security reasons (a page must not be able to set the user's chosen file). Always read files via a `ref` or from the `change`/`submit` event, even in an otherwise controlled form.
+
+```jsx
+function FileForm() {
+  const fileRef = useRef(null);
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    const file = fileRef.current.files[0];
+    // upload file...
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input type="file" ref={fileRef} />
+      <button type="submit">Upload</button>
+    </form>
+  );
+}
+```
+
+### React 19 form actions
+
+React 19 made `<form action={...}>` a first-class way to handle submissions without per-field controlled state. The action receives a `FormData` object, and `useFormStatus` / `useActionState` expose pending and result state.
+
+```jsx
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return <button disabled={pending}>{pending ? 'Saving...' : 'Save'}</button>;
+}
+
+async function saveName(prevState, formData) {
+  const name = formData.get('name');
+  // ...persist...
+  return { ok: true, name };
+}
+
+function NameForm() {
+  const [state, formAction] = useActionState(saveName, null);
+  return (
+    <form action={formAction}>
+      <input name="name" defaultValue={state?.name ?? ''} />
+      <SubmitButton />
+    </form>
+  );
+}
+```
+
+This pattern uses uncontrolled inputs (`defaultValue` plus `name`) and reads them out of `FormData` in the action — often the simplest choice for plain submit-style forms.
 
 ### Key differences
 
 #### State management
 
-- Controlled components: The state is managed by the React component.
-- Uncontrolled components: The state is managed by the DOM.
+- Controlled: React state owns the value; the DOM mirrors it.
+- Uncontrolled: The DOM owns the value; React reads it on demand.
 
 #### Data flow
 
-- Controlled components: Data flows from the component's state to the input element.
-- Uncontrolled components: Data flows from the input element to the component via refs.
+- Controlled: `state -> value -> input`, and `onChange -> setState`.
+- Uncontrolled: `defaultValue -> input`, then `ref.current.value` (or `FormData`) when read.
 
-#### Use cases
+#### When to use which
 
-- Controlled components: Preferred when you need to enforce validation, conditionally disable/enable inputs, or perform other complex interactions.
-- Uncontrolled components: Useful for simple forms or when you need to integrate with non-React code.
+- Controlled: validation as the user types, conditional disabling, formatting, deriving other state, or anything that needs to react to every keystroke.
+- Uncontrolled: simple submit-once forms, integration with non-React code, file inputs, and forms built around React 19 actions.
 
 ## Further reading
 
-- [React documentation on controlled and uncontrolled components](https://react.dev/learn/sharing-state-between-components#controlled-and-uncontrolled-components)
-- [React refs and the DOM](https://react.dev/learn/manipulating-the-dom-with-refs)
+- [React documentation on `<input>` controlled vs uncontrolled](https://react.dev/reference/react-dom/components/input#controlling-an-input-with-a-state-variable)
+- [React documentation on manipulating the DOM with refs](https://react.dev/learn/manipulating-the-dom-with-refs)
+- [React documentation on `<form>` with actions](https://react.dev/reference/react-dom/components/form)
+- [React documentation on `useActionState`](https://react.dev/reference/react/useActionState)
+- [React documentation on `useFormStatus`](https://react.dev/reference/react-dom/hooks/useFormStatus)

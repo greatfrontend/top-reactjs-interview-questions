@@ -4,7 +4,7 @@ title: What is the difference between state and props in React?
 
 ## TL;DR
 
-In React, `state` is a local data storage that is managed within a component and can change over time, while `props` are read-only attributes passed from a parent component to a child component. State is used for data that changes within a component, whereas props are used to pass data and event handlers to child components.
+**State** is data a component owns and can update over time; **props** are data a component receives from its parent and is not allowed to mutate. State changes trigger a re-render of the owning component (and its descendants); prop changes happen because the parent re-rendered with new values. Together they implement React's one-way data flow: state lives at the lowest common ancestor that needs it, flows down as props, and changes flow back up via callbacks passed as props.
 
 ---
 
@@ -12,99 +12,96 @@ In React, `state` is a local data storage that is managed within a component and
 
 ### State
 
-State is a built-in object in React components that holds data or information about the component. It is managed within the component and can change over time, usually in response to user actions or network responses. When the state changes, the component re-renders to reflect the new state.
+State is data a component owns and can change over time, usually in response to user interaction, network responses, or timers. When state changes, React schedules a re-render of that component so the UI reflects the new value.
 
-- State is local to the component and cannot be accessed or modified outside of it
-- State can be initialized in the constructor of a class component or using the `useState` hook in a functional component
-- State changes are asynchronous and should be done using the `setState` method in class components or the updater function returned by `useState` in functional components
-
-Example of state in a class component:
-
-```jsx
-class MyComponent extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      count: 0,
-    };
-  }
-
-  increment = () => {
-    this.setState({ count: this.state.count + 1 });
-  };
-
-  render() {
-    return (
-      <div>
-        <p>Count: {this.state.count}</p>
-        <button onClick={this.increment}>Increment</button>
-      </div>
-    );
-  }
-}
-```
-
-Example of state in a functional component:
+- State is local: a parent cannot read a child's state directly.
+- In function components, state is declared with the `useState` hook (or `useReducer` for more complex transitions).
+- Setters are **asynchronous and batched** — React groups updates triggered in the same event (and, since React 18, also in promises, timeouts, and native event handlers) and re-renders once.
+- The term **updater function** specifically refers to the `setX(prev => next)` form passed to a setter — not the setter itself. Use it whenever the next value depends on the previous one, so batched updates compose correctly.
 
 ```jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 
-function MyComponent() {
+function Counter() {
   const [count, setCount] = useState(0);
+
+  // Wrong: reads a possibly stale `count` if multiple updates batch together
+  // const increment = () => setCount(count + 1);
+
+  // Right: the updater function gets the latest value
+  const increment = () => setCount((prev) => prev + 1);
 
   return (
     <div>
       <p>Count: {count}</p>
-      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <button onClick={increment}>Increment</button>
+      <button
+        onClick={() => {
+          // Both updates apply; final count goes up by 2
+          increment();
+          increment();
+        }}>
+        Increment twice
+      </button>
     </div>
   );
 }
 ```
 
+> Class components use `this.setState`, but writing `this.setState({ count: this.state.count + 1 })` is the exact stale-read anti-pattern the React docs warn against — pass a function (`this.setState(prev => ({ count: prev.count + 1 }))`) for the same reason. New code should use `useState` in a function component.
+
 ### Props
 
-Props (short for properties) are read-only attributes passed from a parent component to a child component. They are used to pass data and event handlers down the component tree. Props are immutable, meaning they cannot be changed by the child component.
-
-- Props are passed to the child component as an argument to the component function or as a property on the `this` object in class components
-- Props allow components to be reusable by passing different data to them
-- Props can be used to pass functions as well, enabling child components to communicate with parent components
-
-Example of props in a class component:
+Props (short for "properties") are the inputs a parent passes to a child. From the **child's perspective** they are read-only — you must not assign to them. From the system's perspective they are not "immutable" in any deep sense; the parent simply re-renders with a new value, and the child receives the new props on its next render.
 
 ```jsx
-class ParentComponent extends React.Component {
-  render() {
-    return <ChildComponent message="Hello, World!" />;
-  }
+function Parent() {
+  const [name, setName] = useState('World');
+  return (
+    <>
+      <input value={name} onChange={(event) => setName(event.target.value)} />
+      <Greeting message={`Hello, ${name}!`} />
+    </>
+  );
 }
 
-class ChildComponent extends React.Component {
-  render() {
-    return <p>{this.props.message}</p>;
-  }
+function Greeting({ message }) {
+  // Read-only here. Mutating `message` would be a bug.
+  return <p>{message}</p>;
 }
 ```
 
-Example of props in a functional component:
+Props can carry data, JSX (`children`), and callbacks. Callback props are how children communicate **upward** — the child invokes the function, the parent updates its state, and new props flow down on the next render.
+
+### One-way data flow, lifted state, and derived values
+
+These three ideas tie state and props together:
+
+- **One-way data flow.** Data moves down the tree as props. To affect a parent, a child calls a function the parent passed in. There is no two-way binding.
+- **Lifting state up.** When two siblings need the same data, move the `useState` to their nearest common ancestor and pass the value (and a setter) down as props. This keeps a single source of truth.
+- **Derived state vs state.** Anything you can compute from props or existing state during render should be **computed**, not stored. Storing a derived value duplicates the source of truth and creates sync bugs; just calculate it in the render body (and reach for `useMemo` only if the computation is expensive).
 
 ```jsx
-function ParentComponent() {
-  return <ChildComponent message="Hello, World!" />;
-}
-
-function ChildComponent(props) {
-  return <p>{props.message}</p>;
+function Cart({ items }) {
+  // Derived from props — do NOT put this in useState
+  const total = items.reduce((sum, item) => sum + item.price, 0);
+  return <p>Total: {total}</p>;
 }
 ```
 
 ### Key differences
 
-- State is managed within the component, while props are passed from a parent component
-- State can change over time, while props are immutable
-- State is used for data that changes within a component, while props are used to pass data and event handlers to child components
+|  | State | Props |
+| --- | --- | --- |
+| Owned by | The component itself | The parent |
+| Mutable by | The component (via its setter) | No one (read-only in the child) |
+| Triggers re-render of | The owning component | The receiving component, when the parent passes new values |
+| Typical use | Internal, changing data | Configuration, data, and callbacks passed in |
 
 ## Further reading
 
-- [React documentation on state](https://react.dev/learn/state-a-components-memory)
-- [React documentation on components and props](https://react.dev/learn/passing-props-to-a-component)
-- [React Hooks documentation](https://react.dev/reference/react/hooks)
+- [React documentation: State — A component's memory](https://react.dev/learn/state-a-components-memory)
+- [React documentation: Passing props to a component](https://react.dev/learn/passing-props-to-a-component)
+- [React documentation: Sharing state between components (lifting state up)](https://react.dev/learn/sharing-state-between-components)
+- [React documentation: Queueing a series of state updates (batching and updaters)](https://react.dev/learn/queueing-a-series-of-state-updates)
+- [React documentation: Choosing the state structure (avoiding redundant/derived state)](https://react.dev/learn/choosing-the-state-structure)

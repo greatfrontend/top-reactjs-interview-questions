@@ -4,29 +4,30 @@ title: What are render props in React and what are they for?
 
 ## TL;DR
 
-Render props in React are a technique for sharing code between components using a prop whose value is a function. This function returns a React element and allows you to pass data to the child component. It helps in reusing component logic without using higher-order components or hooks.
+Render props in React are a technique for sharing code between components using a prop whose value is a function. The component calls that function with some internal state or data, and the function returns the React element to render. The prop does not have to be named `render` — passing a function as `children` is the more common modern form.
 
 ```jsx
-class DataFetcher extends React.Component {
-  state = { data: null };
+import { useEffect, useState } from 'react';
 
-  componentDidMount() {
-    fetch(this.props.url)
+function DataFetcher({ url, children }) {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetch(url)
       .then((response) => response.json())
-      .then((data) => this.setState({ data }));
-  }
+      .then(setData);
+  }, [url]);
 
-  render() {
-    return this.props.render(this.state.data);
-  }
+  return children(data);
 }
 
 // Usage
-<DataFetcher
-  url="/api/data"
-  render={(data) => <div>{data ? data.name : 'Loading...'}</div>}
-/>;
+<DataFetcher url="/api/data">
+  {(data) => <div>{data ? data.name : 'Loading...'}</div>}
+</DataFetcher>;
 ```
+
+Render props were popular before hooks. As of modern React, custom hooks have largely replaced them for sharing stateful logic, though render props are still useful for components that own a piece of UI structure (e.g. virtualized lists, headless component libraries).
 
 ---
 
@@ -34,42 +35,41 @@ class DataFetcher extends React.Component {
 
 ### Definition
 
-Render props is a pattern in React for sharing code between components using a prop whose value is a function. This function is called a "render prop" because it is used to determine what to render.
+Render props is a pattern in React for sharing code between components by passing a function as a prop. The component invokes that function with some piece of state or data and renders whatever it returns. The pattern gets its name from the prop, which is conventionally called `render` — though `children` as a function is just as common, and any prop name works.
 
 ### Purpose
 
 Render props are used to:
 
-- Share logic between components without using higher-order components (HOCs) or hooks
+- Share logic between components without using higher-order components (HOCs)
 - Make components more reusable and composable
 - Improve code readability and maintainability
 
+In modern React, custom hooks are the preferred way to share _stateful logic_ between function components. Render props remain a good fit when the shared component also needs to own some piece of UI structure (e.g. wrapping children in an event listener container, virtualized lists, or "headless" UI libraries).
+
 ### How it works
 
-A component that uses a render prop takes a function as a prop. This function is called within the component's `render` method to produce the desired output.
+A component that uses a render prop takes a function as a prop. The component calls this function during render with whatever state or data it wants to expose, and renders the React element that the function returns.
 
 ### Example
 
-Here is a simple example to illustrate the concept:
+Here is a simple example using a function component and hooks:
 
 ```jsx
-class MouseTracker extends React.Component {
-  state = { x: 0, y: 0 };
+import { useState } from 'react';
 
-  handleMouseMove = (event) => {
-    this.setState({
-      x: event.clientX,
-      y: event.clientY,
-    });
+function MouseTracker({ render }) {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (event) => {
+    setPosition({ x: event.clientX, y: event.clientY });
   };
 
-  render() {
-    return (
-      <div style={{ height: '100vh' }} onMouseMove={this.handleMouseMove}>
-        {this.props.render(this.state)}
-      </div>
-    );
-  }
+  return (
+    <div style={{ height: '100vh' }} onMouseMove={handleMouseMove}>
+      {render(position)}
+    </div>
+  );
 }
 
 // Usage
@@ -82,14 +82,43 @@ class MouseTracker extends React.Component {
 />;
 ```
 
-In this example, `MouseTracker` is a component that tracks the mouse position and passes the coordinates to the `render` prop function. The `render` prop function then determines how to display the coordinates.
+In this example, `MouseTracker` tracks the mouse position and passes the coordinates to the `render` prop function. The `render` prop function then determines how to display the coordinates.
+
+### `children` as a function variant
+
+A widely used variation passes the function as `children` instead of a named `render` prop. It reads more naturally because the consumer's UI lives between the component's tags:
+
+```jsx
+<MouseTracker>
+  {({ x, y }) => (
+    <h1>
+      The mouse position is ({x}, {y})
+    </h1>
+  )}
+</MouseTracker>
+```
+
+The component's implementation just calls `children(...)` instead of `render(...)`:
+
+```jsx
+return (
+  <div style={{ height: '100vh' }} onMouseMove={handleMouseMove}>
+    {children(position)}
+  </div>
+);
+```
+
+### Performance caveat
+
+Defining the render prop inline (which is the usual style) creates a new function on every render of the parent. That new function reference defeats `React.memo` on the render-prop component itself, because the `render` (or `children`) prop is never referentially equal between renders. If the wrapping component is expensive to re-render, you can wrap the function in `useCallback`, hoist it to module scope, or — more commonly — switch to a custom hook, which sidesteps the issue entirely.
 
 ### Benefits
 
 - **Reusability**: The logic for tracking the mouse position is encapsulated in `MouseTracker`, making it reusable across different parts of the application.
-- **Separation of concerns**: The `MouseTracker` component is responsible for tracking the mouse position, while the `render` prop function is responsible for rendering the UI.
-- **Flexibility**: Different UI representations can be created by passing different `render` prop functions to the same `MouseTracker` component.
+- **Separation of concerns**: The `MouseTracker` component is responsible for tracking the mouse position, while the render-prop function is responsible for rendering the UI.
+- **Flexibility**: Different UI representations can be created by passing different functions to the same `MouseTracker` component.
 
 ## Further reading
 
-- [Advanced React patterns](https://kentcdodds.com/blog/compound-components-with-react-hooks)
+- [Render props (legacy React docs)](https://legacy.reactjs.org/docs/render-props.html)
+- [Reusing logic with custom hooks (react.dev)](https://react.dev/learn/reusing-logic-with-custom-hooks)

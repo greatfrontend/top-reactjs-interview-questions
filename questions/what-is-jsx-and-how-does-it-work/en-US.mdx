@@ -12,11 +12,11 @@ JSX stands for JavaScript XML. It is a syntax extension for JavaScript that allo
 
 ### What is JSX?
 
-JSX stands for JavaScript XML. It is a syntax extension for JavaScript that allows you to write HTML-like code within JavaScript. JSX is primarily used with React to describe what the UI should look like.
+JSX is a syntax extension for JavaScript that lets you describe UI trees with an HTML-like syntax. Although it was popularized by React, JSX itself is a separate spec and is also used by other libraries such as Preact and Solid. TypeScript supports it natively in `.tsx` files.
 
 ### How does JSX work?
 
-JSX is not valid JavaScript by itself. It needs to be transformed into regular JavaScript before it can be executed by the browser. This transformation is usually done by a tool like Babel.
+JSX is not valid JavaScript by itself. A compiler — typically Babel or the bundler's built-in transform (SWC, esbuild, Oxc) — converts JSX into ordinary JavaScript function calls before the browser sees it.
 
 ### JSX syntax
 
@@ -28,17 +28,20 @@ const element = <h1>Hello, world!</h1>;
 
 ### Transformation process
 
-When you write JSX, it is transformed into JavaScript function calls. For example, the JSX code:
+Since React 17 (2020), the default transform is the **automatic JSX runtime**. Instead of compiling to `React.createElement`, the compiler imports `jsx` / `jsxs` helpers from `react/jsx-runtime` and emits calls to those. A consequence is that you no longer need to `import React from 'react'` just to use JSX:
 
 ```jsx
+// Source
 const element = <h1>Hello, world!</h1>;
 ```
 
-is transformed into:
-
 ```javascript
-const element = React.createElement('h1', null, 'Hello, world!');
+// Output with the automatic runtime (conceptually)
+import { jsx as _jsx } from 'react/jsx-runtime';
+const element = _jsx('h1', { children: 'Hello, world!' });
 ```
+
+The older "classic" transform compiled the same JSX to `React.createElement('h1', null, 'Hello, world!')` and required `React` to be in scope. The classic form is still useful as a mental model for what JSX desugars to, but new projects should use the automatic runtime.
 
 ### Embedding expressions
 
@@ -57,15 +60,50 @@ You can use quotes to specify string literals as attributes and curly braces to 
 const element = <img src={user.avatarUrl} alt="User Avatar" />;
 ```
 
+Because JSX attributes compile to JavaScript object keys, a few HTML attribute names are renamed to avoid clashing with reserved words or to follow JS camelCase conventions:
+
+- `class` becomes `className`
+- `for` becomes `htmlFor`
+- Event handlers are camelCased: `onclick` becomes `onClick`, `onchange` becomes `onChange`
+- Most other DOM properties (`tabIndex`, `readOnly`, `maxLength`, etc.) use camelCase
+
+### Fragments
+
+To return multiple elements without an extra wrapper DOM node, use a fragment. The shorthand syntax is `<>...</>`:
+
+```jsx
+function List() {
+  return (
+    <>
+      <li>One</li>
+      <li>Two</li>
+    </>
+  );
+}
+```
+
+The longer form `<Fragment key={id}>...</Fragment>` is needed when you must pass a `key`.
+
 ### JSX is an expression
 
-After compilation, JSX expressions become regular JavaScript function calls and evaluate to JavaScript objects. This means you can use JSX inside if statements, for loops, and assign it to variables.
+After compilation, JSX expressions become regular JavaScript function calls and evaluate to JavaScript objects. This means you can use JSX inside `if` statements, assign it to variables, and pass it as a prop or argument.
 
 ### JSX prevents injection attacks
 
-By default, React DOM escapes any values embedded in JSX before rendering them. This ensures that you can never inject anything that's not explicitly written in your application.
+By default, React DOM escapes any values embedded in JSX with `{}` before rendering them, which neutralizes the most common XSS vector — injecting markup via untrusted strings:
+
+```jsx
+const userInput = '<img src=x onerror="alert(1)" />';
+const safe = <div>{userInput}</div>; // rendered as text, not as HTML
+```
+
+This protection is **not** absolute. Two notable escape hatches still bypass escaping and can introduce XSS if fed untrusted data:
+
+- `dangerouslySetInnerHTML={{ __html: ... }}` injects raw HTML into the DOM.
+- URL-valued attributes such as `href` and `src` are not sanitized by React — `href="javascript:..."` will execute if the URL string comes from an attacker-controlled source. Validate URLs yourself.
 
 ## Further reading
 
-- [React JSX documentation](https://react.dev/learn/writing-markup-with-jsx)
+- [React: Writing markup with JSX](https://react.dev/learn/writing-markup-with-jsx)
+- [React: Introducing the new JSX transform](https://legacy.reactjs.org/blog/2020/09/22/introducing-the-new-jsx-transform.html)
 - [Babel](https://babeljs.io/)

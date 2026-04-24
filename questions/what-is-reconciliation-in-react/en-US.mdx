@@ -16,49 +16,59 @@ Reconciliation is a key concept in React that deals with how React updates the D
 
 ### The virtual DOM
 
-React maintains a virtual DOM to optimize updates. When a component's state or props change, React creates a new virtual DOM tree. This new tree is then compared to the previous virtual DOM tree to identify what has changed.
+React maintains a virtual DOM to optimize updates. The virtual DOM isn't a copy of the real DOM — it's a tree of plain JavaScript objects describing what the UI _should_ look like (essentially the return values of your components). When a component renders, React produces a new tree of these element descriptions and compares it against the previous tree to figure out what changed.
 
 ### The diffing algorithm
 
-The process of comparing the new virtual DOM tree with the previous one is called "diffing." React uses a highly optimized diffing algorithm to perform this comparison. The algorithm works in the following way:
+The process of comparing the new tree with the previous one is called "diffing." React uses an O(n) heuristic algorithm based on two assumptions: elements of different types produce different trees, and the developer can hint at stable identity for list children using `key`. The algorithm works as follows:
 
-1. **Element type comparison**: If the elements are of different types, React will replace the old element with the new one.
-2. **Key comparison**: If elements are of the same type but have different keys, React will treat them as different elements and replace the old one with the new one.
-3. **Props and state comparison**: If elements are of the same type and have the same keys, React will compare their props and state to determine what has changed.
+1. **Element type comparison**: If the elements at the same position are of different types (for example a `<div>` becomes a `<span>`, or `<ComponentA />` becomes `<ComponentB />`), React unmounts the old subtree and mounts a fresh one — state is thrown away.
+2. **Same type, different props**: If the element type is the same, React keeps the same DOM node (or component instance) and updates only the props that changed. Component state is preserved across the update because state is owned by the component instance, not derived by diffing.
+3. **List children and keys**: When rendering arrays of children, React uses the `key` prop to match items between renders. Stable keys let React move, insert, and delete list items efficiently; without them (or with index keys on a reordering list), React may unmount and remount items unnecessarily, losing their state.
+
+### Fiber, lanes, and bailouts
+
+Since React 16, reconciliation runs on the Fiber architecture, which splits the work into small units that can be paused, resumed, and prioritized. React 18+ assigns updates to "lanes" so urgent work (like input) can interrupt non-urgent work (like a `startTransition`-wrapped update).
+
+React also performs several bailouts to skip unnecessary work:
+
+- If a component re-renders but its output is referentially equal to the previous render in the relevant ways, React can skip updating its children.
+- `React.memo` wraps a component so it bails out of re-rendering when its props are shallow-equal to the previous render.
+- `useMemo` and `useCallback` preserve referential equality for derived values and callbacks.
+- The **React Compiler** (RC/stable as of 2025) automatically inserts the equivalent of `memo`, `useMemo`, and `useCallback` for you, so most apps no longer need to hand-write these optimizations.
 
 ### Updating the DOM
 
-Once the diffing algorithm has identified the changes, React updates only the parts of the actual DOM that have changed. This makes the updates efficient and fast, as React avoids re-rendering the entire DOM.
+Once the diffing phase ("render phase") has identified the changes, React enters the "commit phase" and applies them to the real DOM in a single synchronous pass. This split is what allows the render phase to be interruptible while the commit stays atomic.
 
 ### Example
 
-Here is a simple example to illustrate reconciliation:
+Here is a simple example to illustrate reconciliation. Note the use of the functional updater `setCount(c => c + 1)` — passing a function avoids the stale-state bug you'd hit by reading `count` directly inside the handler.
 
 ```jsx
-class MyComponent extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { count: 0 };
+import { useState } from 'react';
+
+function MyComponent() {
+  const [count, setCount] = useState(0);
+
+  function increment() {
+    setCount((c) => c + 1);
   }
 
-  increment = () => {
-    this.setState({ count: this.state.count + 1 });
-  };
-
-  render() {
-    return (
-      <div>
-        <p>{this.state.count}</p>
-        <button onClick={this.increment}>Increment</button>
-      </div>
-    );
-  }
+  return (
+    <div>
+      <p>{count}</p>
+      <button onClick={increment}>Increment</button>
+    </div>
+  );
 }
 ```
 
-In this example, when the `increment` method is called, the state changes, and React creates a new virtual DOM tree. The diffing algorithm compares the new tree with the previous one and updates only the `<p>` element with the new count value.
+When `increment` runs, React schedules a re-render. It calls `MyComponent` again, gets a new element tree, and diffs it against the previous tree. Everything matches by type, so React keeps the existing DOM nodes and updates only the text inside `<p>`.
 
 ## Further reading
 
-- [React documentation on reconciliation](https://react.dev/learn/preserving-and-resetting-state)
-- [Understanding the virtual DOM](https://www.freecodecamp.org/news/what-is-the-virtual-dom-in-react/)
+- [React documentation on preserving and resetting state](https://react.dev/learn/preserving-and-resetting-state)
+- [Render and commit](https://react.dev/learn/render-and-commit)
+- [React Compiler](https://react.dev/learn/react-compiler)
+- [React Fiber Architecture](https://github.com/acdlite/react-fiber-architecture)

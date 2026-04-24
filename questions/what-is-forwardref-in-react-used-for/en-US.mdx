@@ -4,51 +4,41 @@ title: What is `forwardRef()` in React used for?
 
 ## TL;DR
 
-`forwardRef()` in React is used to pass a ref through a component to one of its child components. This is useful when you need to access a DOM element or a child component's instance directly from a parent component. You wrap your functional component with `forwardRef()` and use the `ref` parameter to forward the ref to the desired child element.
+As of React 19 (December 2024), `forwardRef()` is **deprecated**. Function components can now accept `ref` as a regular prop, so wrapping in `forwardRef()` is no longer required. `forwardRef()` historically existed because, before React 19, function components could not receive a `ref` prop and `forwardRef()` was the official workaround for forwarding a parent's ref down to a child DOM node or component.
 
 ```jsx
-import React, { forwardRef } from 'react';
+// Modern (React 19+): ref is a regular prop
+function MyInput({ ref, ...props }) {
+  return <input ref={ref} {...props} />;
+}
 
-const MyComponent = forwardRef((props, ref) => <input ref={ref} {...props} />);
+// Legacy (React 18 and earlier): wrap with forwardRef
+import { forwardRef } from 'react';
+const MyInputLegacy = forwardRef((props, ref) => (
+  <input ref={ref} {...props} />
+));
 ```
 
 ---
 
 ## What is `forwardRef()` in React used for?
 
-### Introduction
+### The modern answer (React 19+)
 
-In React, `forwardRef()` is a higher-order function that allows you to forward a ref through a component to one of its child components. This is particularly useful when you need to access a DOM element or a child component's instance directly from a parent component.
-
-### Why use `forwardRef()`?
-
-There are several scenarios where `forwardRef()` is beneficial:
-
-- **Accessing DOM elements**: When you need to manipulate a DOM element directly, such as focusing an input field.
-- **Interacting with child components**: When you need to call methods or access properties of a child component instance.
-
-### How to use `forwardRef()`
-
-To use `forwardRef()`, you wrap your functional component with it and use the `ref` parameter to forward the ref to the desired child element.
-
-#### Example
-
-Here is a simple example demonstrating how to use `forwardRef()`:
+In React 19, `ref` is just a regular prop on function components. You can destructure it like any other prop and pass it through to a DOM element or child component. There is no longer any reason to reach for `forwardRef()` in new code:
 
 ```jsx
-import React, { forwardRef, useRef } from 'react';
+import { useRef } from 'react';
 
-// Define a functional component and wrap it with forwardRef
-const MyInput = forwardRef((props, ref) => <input ref={ref} {...props} />);
+function MyInput({ ref, ...props }) {
+  return <input ref={ref} {...props} />;
+}
 
-const ParentComponent = () => {
+function ParentComponent() {
   const inputRef = useRef(null);
 
   const focusInput = () => {
-    // Access the input element and focus it
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
+    inputRef.current?.focus();
   };
 
   return (
@@ -57,26 +47,64 @@ const ParentComponent = () => {
       <button onClick={focusInput}>Focus Input</button>
     </div>
   );
-};
-
-export default ParentComponent;
+}
 ```
 
-In this example:
+The React team ships a codemod that automatically converts existing `forwardRef()` usages to the new prop form. `forwardRef()` itself still works for now but logs a deprecation warning and is expected to be removed in a future major.
 
-1. `MyInput` is a functional component wrapped with `forwardRef()`.
-2. The `ref` parameter is forwarded to the `input` element inside `MyInput`.
-3. In `ParentComponent`, a ref (`inputRef`) is created using `useRef()`.
-4. The `inputRef` is passed to `MyInput`, allowing the parent component to access the input element directly.
-5. The `focusInput` function uses the ref to focus the input element when the button is clicked.
+### Why `forwardRef()` existed (legacy context)
 
-### Important considerations
+Before React 19, `ref` was a "magic" prop that React intercepted — passing `ref` to a function component did nothing useful. `forwardRef()` was the API React provided to opt a function component into receiving a ref alongside its props, so the parent could reach a specific DOM node inside it (e.g. focus an input, measure a node, integrate with imperative third-party libraries).
 
-- **Functional components only**: `forwardRef()` is used with functional components. Class components can directly use refs without `forwardRef()`.
-- **Ref forwarding**: Ensure that the ref is forwarded to a DOM element or a class component instance, not another functional component.
+```jsx
+import { forwardRef, useRef } from 'react';
+
+// Legacy pattern — still works in React 19, but deprecated
+const MyInput = forwardRef((props, ref) => <input ref={ref} {...props} />);
+
+function ParentComponent() {
+  const inputRef = useRef(null);
+  return <MyInput ref={inputRef} placeholder="Type here..." />;
+}
+```
+
+### `useImperativeHandle`
+
+When you want to expose a custom imperative API to the parent (rather than the raw DOM node), pair `ref` with `useImperativeHandle`. This is unchanged in React 19 — only the ref-forwarding mechanism has changed.
+
+```jsx
+import { useImperativeHandle, useRef } from 'react';
+
+function FancyInput({ ref }) {
+  const inputRef = useRef(null);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focus: () => inputRef.current?.focus(),
+      clear: () => {
+        if (inputRef.current) inputRef.current.value = '';
+      },
+    }),
+    [],
+  );
+
+  return <input ref={inputRef} />;
+}
+```
+
+The parent now sees `{ focus, clear }` on the ref instead of the underlying input element. Use this sparingly — it is an escape hatch out of the declarative model.
+
+### Things to keep in mind
+
+- **Class components**: A `ref` attached to a class component receives the class instance directly. They have never needed `forwardRef()`, and that is unchanged.
+- **Forward to a DOM node or imperative handle**: A ref must ultimately be attached to a DOM element, a class instance, or an object returned from `useImperativeHandle`. Forwarding it to another function component just makes that component the new owner of the ref prop.
+- **Migration**: If you maintain a library that ships `forwardRef`-wrapped components, dropping the wrapper requires a peer-dependency bump to React 19. Many libraries currently ship both forms during the transition.
 
 ## Further reading
 
-- [React documentation on `forwardRef()`](https://react.dev/reference/react/forwardRef)
+- [React documentation on `forwardRef()` (legacy)](https://react.dev/reference/react/forwardRef)
+- [React 19 release notes — `ref` as a prop](https://react.dev/blog/2024/12/05/react-19#ref-as-a-prop)
 - [Using the `useRef` Hook](https://react.dev/reference/react/useRef)
-- [Refs and the DOM](https://react.dev/learn/manipulating-the-dom-with-refs)
+- [`useImperativeHandle`](https://react.dev/reference/react/useImperativeHandle)
+- [Manipulating the DOM with refs](https://react.dev/learn/manipulating-the-dom-with-refs)

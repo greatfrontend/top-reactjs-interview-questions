@@ -17,34 +17,49 @@ React strict mode is a feature in React that helps developers identify potential
 To use React strict mode, you can wrap your component tree with the `StrictMode` component:
 
 ```jsx
-import React from 'react';
-import ReactDOM from 'react-dom';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
 
-ReactDOM.render(
-  <React.StrictMode>
+const root = createRoot(document.getElementById('root'));
+root.render(
+  <StrictMode>
     <App />
-  </React.StrictMode>,
-  document.getElementById('root'),
+  </StrictMode>,
 );
 ```
 
+If you're using a framework like Next.js, StrictMode is enabled in development by default, so you usually don't need to wire it up by hand.
+
 ### Benefits of React strict mode
 
-#### Identifying unsafe lifecycle methods
+#### Detecting unexpected side effects (the headline behavior)
 
-React strict mode helps identify components that use unsafe lifecycle methods, such as `componentWillMount`, `componentWillReceiveProps`, and `componentWillUpdate`. These methods are considered unsafe because they can lead to bugs and unexpected behavior. React strict mode will warn you if any of your components use these methods.
+In React 18+, StrictMode intentionally double-invokes the following in development only:
 
-#### Warning about legacy string ref API usage
+- Function component bodies (and class `render`/constructor)
+- `useState`, `useMemo`, and `useReducer` initializers and updater functions
+- Effects: each effect mounts, immediately unmounts, then mounts again (`mount → unmount → remount`)
 
-React strict mode warns you if you are using the legacy string ref API. The string ref API is considered legacy and is not recommended for use in new code. Instead, you should use the callback ref API or the `React.createRef` API.
+The effect remount behavior is the most asked-about StrictMode behavior in interviews. It surfaces effects that aren't safely re-runnable — for example, an effect that subscribes to something but doesn't return a cleanup function will leak a subscription on every remount. Fixing your effects so the remount cycle is a no-op makes your components compatible with future features like reusable state across unmounts.
 
-#### Detecting unexpected side effects
+React 19 keeps this strict effect behavior and continues to use it as the contract function components are expected to satisfy.
 
-React strict mode helps detect unexpected side effects by intentionally double-invoking certain lifecycle methods and functions. This helps ensure that your components are resilient to future changes and that they do not rely on side effects that may not always be executed.
+#### Warning about legacy and deprecated APIs
+
+StrictMode warns about APIs that are no longer recommended, including:
+
+- The legacy string ref API (use `useRef` instead — that's the modern default in function components)
+- Use of `findDOMNode`
+- Deprecated context APIs
+
+#### Surfacing unsafe class lifecycle methods
+
+In legacy class components, StrictMode flags `componentWillMount`, `componentWillReceiveProps`, and `componentWillUpdate` as unsafe. This matters less today since most new code uses function components, but it's still relevant if you're maintaining a class-based codebase.
 
 #### Ensuring components are resilient to future changes
 
-By enabling React strict mode, you can ensure that your components are more resilient to future changes in React. The additional checks and warnings help you identify potential issues early, making it easier to maintain and update your codebase.
+The additional checks make it easier to spot components that quietly depend on a single mount or hidden side effects, so your codebase stays compatible as React adds features that may mount, unmount, and remount components more aggressively.
 
 ## Further reading
 

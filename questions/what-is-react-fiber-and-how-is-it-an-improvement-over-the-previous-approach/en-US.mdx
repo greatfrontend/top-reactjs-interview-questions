@@ -22,15 +22,27 @@ The previous stack-based algorithm processed updates in a single, synchronous pa
 
 #### Time slicing
 
-React Fiber introduces the concept of time slicing, which allows React to prioritize updates based on their urgency. For example, user interactions like clicks and key presses can be prioritized over less critical updates. This ensures that the UI remains responsive even during heavy rendering tasks.
+Time slicing is the chunking mechanism that lets Fiber split rendering work into small units and yield back to the browser between them. Fiber tracks how much time has been spent on a render pass and pauses if it would otherwise block the main thread, then resumes work on the next idle frame. This keeps input, scroll, and paint responsive even during a large render.
 
-#### Concurrency
+#### Prioritization with lanes and transitions
 
-With Fiber, React can work on multiple tasks concurrently. This means that React can start rendering updates while still processing other tasks, leading to a smoother and more responsive user experience.
+Separate from time slicing is the question of _which_ work to do first. In React 18+, Fiber uses a "lanes" model to assign priorities to updates. Urgent updates (such as input or click handlers) run on high-priority lanes, while updates wrapped in `startTransition` or coming from `useDeferredValue` run on lower-priority lanes that can be interrupted by more urgent work.
+
+#### Double-buffered work-in-progress trees
+
+Fiber maintains two trees: the "current" tree that reflects what's on screen, and a "work-in-progress" tree that React builds in memory. Because the new tree is constructed off-screen, React can pause, throw away, or restart the work-in-progress tree without ever showing a half-rendered UI to the user. The two trees swap atomically once the commit phase completes.
+
+#### Opt-in concurrent rendering
+
+Concurrent rendering features (transitions, `Suspense` for data, automatic batching across async boundaries, and so on) are opt-in via the new root API. Calling `createRoot(container).render(<App />)` enables concurrent features for the tree; the legacy `ReactDOM.render` API has been removed in React 19.
 
 #### Error boundaries
 
-React Fiber introduced error boundaries, which allow developers to catch and handle errors in the component tree gracefully. This was not possible with the previous stack-based algorithm, where errors could cause the entire application to crash.
+Error boundaries let components catch render-time errors in their subtree and show a fallback UI instead of crashing the whole app. They were introduced as a public React 16 API alongside Fiber, but they're conceptually independent of the Fiber scheduler — error boundaries are about error containment, not about how work is scheduled.
+
+#### Owner stacks (React 19.1)
+
+React 19.1 added improved "owner stacks" in development, which give clearer component-level stack traces for errors and warnings by walking the Fiber tree's owner relationships rather than relying purely on JavaScript call stacks. This makes it much easier to track down where a bad prop or thrown error originated.
 
 #### Improved support for animations
 
@@ -38,33 +50,37 @@ Fiber's incremental rendering and time slicing capabilities make it easier to im
 
 ### Code example
 
-Here's a simple example to illustrate how React Fiber improves rendering performance:
+Here's a simple example showing how to opt into Fiber's concurrent rendering for a large list:
 
 ```jsx
-class MyComponent extends React.Component {
-  state = {
-    items: Array.from({ length: 10000 }, (_, i) => i),
-  };
+import { useState, useTransition } from 'react';
 
-  render() {
-    return (
-      <div>
-        {this.state.items.map((item) => (
-          <div key={item}>{item}</div>
-        ))}
-      </div>
-    );
+function BigList() {
+  const [items, setItems] = useState([]);
+  const [isPending, startTransition] = useTransition();
+
+  function loadItems() {
+    startTransition(() => {
+      setItems(Array.from({ length: 10000 }, (_, i) => i));
+    });
   }
+
+  return (
+    <div>
+      <button onClick={loadItems}>Load items</button>
+      {isPending && <p>Loading…</p>}
+      {items.map((item) => (
+        <div key={item}>{item}</div>
+      ))}
+    </div>
+  );
 }
 ```
 
-With the previous stack-based algorithm, rendering this component could cause the UI to freeze. With React Fiber, the rendering work is broken down into smaller units, allowing React to pause and resume work, keeping the UI responsive.
+A purely synchronous render of 10,000 items will still block the main thread in Fiber — Fiber doesn't magically time-slice every render. It's the concurrent-rendering APIs (`startTransition`, `useDeferredValue`, `Suspense`) that let Fiber treat the work as interruptible. By marking the state update as a transition, React can render the list on a low-priority lane and yield to user input in between, keeping the UI responsive.
 
 ## Further reading
 
 - [React Fiber Architecture](https://github.com/acdlite/react-fiber-architecture)
 - [React Blog: Concurrent Features](https://react.dev/blog/2022/03/29/react-v18#gradually-adopting-concurrent-features)
-
----
-
-If you found this explanation helpful and want to deepen your understanding of React internals, visit our [Top ReactJS Interview Questions repository](https://github.com/greatfrontend/top-reactjs-interview-questions) - a handpicked collection of 50 questions exploring how React works under the hood.
+- [React 19.1 release notes](https://react.dev/blog)

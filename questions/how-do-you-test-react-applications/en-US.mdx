@@ -4,7 +4,7 @@ title: How do you test React applications?
 
 ## TL;DR
 
-To test React applications, you can use tools like Jest and React Testing Library. Jest is a JavaScript testing framework that works well with React, and React Testing Library provides utilities to test React components in a way that resembles how users interact with them. You can write unit tests for individual components, integration tests for component interactions, and end-to-end tests using tools like Cypress.
+To test React applications, use Jest or Vitest as the test runner together with React Testing Library, which encourages testing components the way users interact with them. Drive interactions with `@testing-library/user-event` (preferred over `fireEvent`), mock network calls with MSW, and write end-to-end tests with Playwright (or Cypress). For React 19 features like async components and Server Components, lean on async queries (`findBy*`, `waitFor`).
 
 ---
 
@@ -12,14 +12,18 @@ To test React applications, you can use tools like Jest and React Testing Librar
 
 ### Unit testing
 
-Unit testing involves testing individual components in isolation. Jest is a popular choice for unit testing React applications. It provides a test runner, assertion library, and mocking capabilities.
+Unit testing covers individual components in isolation. Jest and Vitest are the two dominant runners — Vitest is the natural choice for Vite-based projects and has largely caught up with Jest in features. Both pair with React Testing Library, which renders components and queries the DOM the way a user would.
 
-#### Example
+Add `@testing-library/jest-dom` once in your setup file (e.g. `setupTests.ts`) so its matchers are registered globally — the older `@testing-library/jest-dom/extend-expect` import path is no longer needed:
 
 ```javascript
-import React from 'react';
+// setupTests.ts
+import '@testing-library/jest-dom';
+```
+
+```javascript
+// MyComponent.test.tsx
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect';
 import MyComponent from './MyComponent';
 
 test('renders the component with the correct text', () => {
@@ -30,61 +34,109 @@ test('renders the component with the correct text', () => {
 
 ### Integration testing
 
-Integration testing involves testing the interaction between multiple components. React Testing Library is useful for this as it allows you to render components and interact with them as a user would.
-
-#### Example
+Integration tests exercise multiple components together. Prefer `@testing-library/user-event` over `fireEvent` — it simulates real user interactions (focus, hover, typing) much more faithfully and returns a promise, so you `await` the action.
 
 ```javascript
-import React from 'react';
-import { render, fireEvent, screen } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import ParentComponent from './ParentComponent';
 
-test('updates child component when parent state changes', () => {
+test('updates child component when parent state changes', async () => {
+  const user = userEvent.setup();
   render(<ParentComponent />);
-  fireEvent.click(screen.getByText('Update Child'));
-  expect(screen.getByText('Child Updated')).toBeInTheDocument();
+
+  await user.click(screen.getByRole('button', { name: 'Update Child' }));
+
+  expect(await screen.findByText('Child Updated')).toBeInTheDocument();
+});
+```
+
+Note `findByText` (async) instead of `getByText` for assertions on UI that appears after an update — `findBy*` retries until the element appears or times out, and is the standard tool for anything asynchronous. For more complex polling, use `waitFor`.
+
+### Testing custom hooks
+
+Use `renderHook` from `@testing-library/react` to test hooks in isolation:
+
+```javascript
+import { renderHook, act } from '@testing-library/react';
+import { useCounter } from './useCounter';
+
+test('increments the counter', () => {
+  const { result } = renderHook(() => useCounter());
+  act(() => result.current.increment());
+  expect(result.current.count).toBe(1);
+});
+```
+
+### Mocking network requests with MSW
+
+Mock Service Worker (MSW) intercepts requests at the network layer rather than stubbing `fetch`, so the same handlers work in unit tests, Storybook, and the dev server. It is the de facto standard for API mocking in React tests.
+
+```javascript
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+
+const server = setupServer(
+  http.get('/api/user', () => HttpResponse.json({ name: 'Ada' })),
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+```
+
+### Testing async and Server Components in React 19
+
+React 19 introduced async components and stabilized Server Components. For client-rendered async components, await the data with `findBy*`/`waitFor` — RTL handles the suspended render automatically. For Server Components, run the component as a normal async function in a Node test and assert on the returned tree, or test them through an integration test with a framework like Next.js. Keep network calls mocked at the boundary (MSW, or by stubbing the data-fetching module).
+
+```javascript
+test('renders user data once loaded', async () => {
+  render(<UserProfile id="42" />);
+  expect(await screen.findByText('Ada')).toBeInTheDocument();
 });
 ```
 
 ### End-to-end testing
 
-End-to-end (E2E) testing involves testing the entire application flow from the user's perspective. Cypress is a popular tool for E2E testing in React applications.
-
-#### Example
+End-to-end tests drive the whole application in a real browser. Playwright has become the most popular choice for new projects — it ships parallel execution, multi-browser support, auto-waiting, and a strong trace viewer out of the box. Cypress is still widely used and a fine option in existing codebases.
 
 ```javascript
-describe('My Application', () => {
-  it('should allow a user to log in', () => {
-    cy.visit('/login');
-    cy.get('input[name="username"]').type('user');
-    cy.get('input[name="password"]').type('password');
-    cy.get('button[type="submit"]').click();
-    cy.url().should('include', '/dashboard');
-  });
+// Playwright
+import { test, expect } from '@playwright/test';
+
+test('user can log in', async ({ page }) => {
+  await page.goto('/login');
+  await page.getByLabel('Username').fill('user');
+  await page.getByLabel('Password').fill('password');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(/\/dashboard/);
 });
 ```
 
 ### Snapshot testing
 
-Snapshot testing involves capturing the rendered output of a component and comparing it to a saved snapshot. Jest provides built-in support for snapshot testing.
-
-#### Example
+Snapshot testing captures the rendered output of a component and compares it to a saved snapshot on subsequent runs. With React 19, `react-test-renderer` is deprecated — render with React Testing Library instead and snapshot the resulting markup:
 
 ```javascript
-import React from 'react';
-import renderer from 'react-test-renderer';
+import { render } from '@testing-library/react';
 import MyComponent from './MyComponent';
 
 test('matches the snapshot', () => {
-  const tree = renderer.create(<MyComponent />).toJSON();
-  expect(tree).toMatchSnapshot();
+  const { asFragment } = render(<MyComponent />);
+  expect(asFragment()).toMatchSnapshot();
 });
 ```
+
+Use snapshot tests sparingly — they're easy to update reflexively, which can let regressions slip through. Reserve them for stable presentational output.
 
 ## Further reading
 
 - [Jest documentation](https://jestjs.io/docs/getting-started)
+- [Vitest documentation](https://vitest.dev/)
 - [React Testing Library documentation](https://testing-library.com/docs/react-testing-library/intro)
+- [`user-event` documentation](https://testing-library.com/docs/user-event/intro)
+- [`renderHook` API](https://testing-library.com/docs/react-testing-library/api/#renderhook)
+- [Mock Service Worker (MSW)](https://mswjs.io/)
+- [Playwright documentation](https://playwright.dev/)
 - [Cypress documentation](https://docs.cypress.io/guides/overview/why-cypress)
 - [Snapshot testing with Jest](https://jestjs.io/docs/snapshot-testing)

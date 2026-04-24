@@ -4,47 +4,68 @@ title: What is the consequence of using array indices as the value for `key`s in
 
 ## TL;DR
 
-Using array indices as the value for `key`s in React can lead to performance issues and bugs. When the order of items changes, React may not correctly identify which items have changed, leading to unnecessary re-renders or incorrect component updates. It's better to use unique identifiers for `key`s to ensure React can efficiently manage and update the DOM.
+Using array indices as `key`s causes React to reconcile the list incorrectly when items are reordered, inserted, or removed. Because the key identifies a position rather than an item, React reuses the wrong component instances — leaving stale local state, focus, and DOM attached to the wrong rows. The fix is to use a stable, unique identifier from the data (e.g. `item.id`). Index keys are only safe when the list is static and never reordered, filtered, or prepended to.
 
 ---
 
 ## Consequence of using array indices as the value for `key`s in React
 
-### Performance issues
+### Incorrect reconciliation, not just "slow renders"
 
-When array indices are used as `key`s, React may not efficiently update the DOM. If the order of items in the array changes, React will not be able to correctly identify which items have been added, removed, or moved. This can lead to unnecessary re-renders and decreased performance.
+The real problem is correctness, not performance. React's `key` is the identity React uses to match an element across renders. When the key is the array index, the identity tracks the **slot** in the array rather than the **item** in the slot. After a reorder, insert, or delete, React still matches `key={0}` to `key={0}`, so it:
 
-### Incorrect component updates
+- Keeps the same component instance mounted for what is now a different item.
+- Preserves local `useState`, refs, focus, scroll position, and uncontrolled input values on the wrong row.
+- Skips bailouts it would otherwise hit, because props for the reused instance changed.
 
-Using array indices as `key`s can cause bugs in your application. For example, if the order of items changes, React may reuse the same component instances for different items, leading to incorrect state and props being passed to components. This can result in unexpected behavior and hard-to-debug issues.
+In other words, the bug is "state and DOM tied to the wrong items." Re-render cost is a secondary consequence.
 
-### Example
+### The classic input/checkbox state-bleed bug
 
-Consider the following example where array indices are used as `key`s:
+This is the canonical demonstration. Each row owns an uncontrolled `<input>`; the user types into the second one, then the list is reordered or the first item is deleted.
 
 ```jsx
-const items = ['Item 1', 'Item 2', 'Item 3'];
-
-const List = () => (
-  <ul>
-    {items.map((item, index) => (
-      <li key={index}>{item}</li>
-    ))}
-  </ul>
-);
+function TodoList({ todos, onDelete }) {
+  return (
+    <ul>
+      {todos.map((todo, index) => (
+        // Bug: key is the index
+        <li key={index}>
+          <input type="checkbox" defaultChecked={todo.done} />
+          <input type="text" defaultValue={todo.title} />
+          <button onClick={() => onDelete(todo.id)}>Delete</button>
+        </li>
+      ))}
+    </ul>
+  );
+}
 ```
 
-If the order of `items` changes, React may not correctly update the DOM, leading to performance issues and potential bugs.
+If the user checks the box on the second row and then deletes the first row, the second item's data shifts up to index `0`, but React keeps the original `<li key={0}>` mounted with its checked checkbox and previously typed text. The visible label changes; the DOM state does not. Switching to `key={todo.id}` fixes it because React then unmounts the deleted row and keeps the surviving row's DOM intact.
+
+### When index keys are acceptable
+
+Index keys are fine when **all** of the following hold:
+
+- The list is static (never reordered or filtered).
+- Items are never inserted or removed from anywhere except the end.
+- Each item has no per-row state, focus, or uncontrolled input that could leak.
+
+A render-once nav menu built from a constant array fits. A live, editable, sortable, or paginated list does not.
+
+### Omitting the `key` is even worse
+
+If you leave `key` off entirely, React falls back to using the index and prints a `Warning: Each child in a list should have a unique "key" prop` in development. Suppressing the warning by passing `key={index}` does not fix the underlying issue — it just hides the message.
 
 ### Better approach
 
-Instead of using array indices, use unique identifiers for `key`s. This ensures that React can efficiently manage and update the DOM.
+Use a stable id that comes from the data, not from the render position.
 
 ```jsx
 const items = [
-  { id: 1, name: 'Item 1' },
-  { id: 2, name: 'Item 2' },
-  { id: 3, name: 'Item 3' },
+  { id: 'a1', name: 'Item 1' },
+  { id: 'b2', name: 'Item 2' },
+  { id: 'c3', name: 'Item 3' },
 ];
 
 const List = () => (
@@ -56,7 +77,7 @@ const List = () => (
 );
 ```
 
-In this example, using `item.id` as the `key` ensures that React can correctly identify and update items when the order changes.
+If the data has no natural id, generate one when the item is created (e.g. `crypto.randomUUID()`) and store it on the item — do not generate a fresh id inside `map`, because it would change every render and defeat reconciliation entirely.
 
 ## Further reading
 

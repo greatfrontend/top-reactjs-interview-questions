@@ -4,81 +4,129 @@ title: How would one optimize the performance of React contexts to reduce rerend
 
 ## TL;DR
 
-To optimize the performance of React contexts and reduce rerenders, you can use techniques such as memoizing context values, splitting contexts, and using selectors. Memoizing context values with `useMemo` ensures that the context value only changes when its dependencies change. Splitting contexts allows you to isolate state changes to specific parts of your application. Using selectors with libraries like `use-context-selector` can help you only rerender components that actually need the updated context value.
+The first thing to know in 2026 is that the **React Compiler** auto-memoizes components and values, so a lot of the manual `useMemo`/`useCallback` work that used to be required for context performance is now done for you — adopt it before reaching for other tricks. Beyond that, the canonical patterns are: split a single context into a state context and a dispatch (or setter) context so consumers that only dispatch don't rerender on state changes; memoize the value object you pass to the provider; wrap consumer components in `React.memo`; and reach for selector libraries like `use-context-selector` when you need to subscribe to a slice of a large value.
 
 ```javascript
-const value = useMemo(() => ({ state, dispatch }), [state, dispatch]);
+const value = useMemo(() => ({ state }), [state]); // dispatch is already stable
 ```
 
 ---
 
 ## How to optimize the performance of React contexts to reduce rerenders
 
-### Memoizing context values
+### Reach for the React Compiler first
 
-One of the most effective ways to reduce unnecessary rerenders is to memoize the context value. By using `useMemo`, you can ensure that the context value only changes when its dependencies change.
+The React Compiler (stable as of 2025) automatically memoizes component output, hook return values, and JSX based on dependency analysis of your code. For most applications this dramatically reduces the rerender pressure that motivates manual context optimization in the first place. Enable it in your build (`babel-plugin-react-compiler` for Babel/Vite/Next.js) and re-measure before adding hand-rolled memoization — many of the patterns below become unnecessary or shrink to a single annotation.
 
-```javascript
-import React, { createContext, useMemo, useState } from 'react';
+The compiler doesn't, however, change the fundamental rule of context: **every consumer of a context rerenders whenever the provider's `value` reference changes**. The patterns below are about controlling when that reference changes and which components see it.
 
-const MyContext = createContext();
+### Split state and dispatch into two contexts
 
-const MyProvider = ({ children }) => {
-  const [state, setState] = useState(initialState);
-
-  const value = useMemo(() => ({ state, setState }), [state]);
-
-  return <MyContext.Provider value={value}>{children}</MyContext.Provider>;
-};
-```
-
-### Splitting contexts
-
-Another technique is to split your context into multiple smaller contexts. This way, you can isolate state changes to specific parts of your application, reducing the number of components that need to rerender.
+The single most effective pattern is splitting a context into two: one that exposes the (frequently changing) state and another that exposes the (stable) updater. Components that only need to dispatch don't rerender when state changes, because they only subscribe to the dispatch context whose value never changes.
 
 ```javascript
-const UserContext = createContext();
-const ThemeContext = createContext();
+import {
+  createContext,
+  useContext,
+  useReducer,
+  useMemo,
+  type ReactNode,
+} from 'react';
 
-const UserProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+const StateContext = createContext(null);
+const DispatchContext = createContext(null);
 
+function reducer(state, action) {
+  // ...
+}
+
+const initialState = { count: 0 };
+
+export function CounterProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(reducer, initialState);
+
+  // No need to memoize `dispatch` — useReducer guarantees it's stable.
+  // Memoize state only if you wrap it in an object.
   return (
-    <UserContext.Provider value={{ user, setUser }}>
-      {children}
-    </UserContext.Provider>
+    <DispatchContext.Provider value={dispatch}>
+      <StateContext.Provider value={state}>{children}</StateContext.Provider>
+    </DispatchContext.Provider>
   );
-};
+}
 
-const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState('light');
-
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-};
+export const useCounterState = () => useContext(StateContext);
+export const useCounterDispatch = () => useContext(DispatchContext);
 ```
 
-### Using selectors
+A button that only dispatches actions can call `useCounterDispatch()` and never rerender when `state` updates. This is the pattern recommended in the React docs and used by most production state libraries.
 
-Using selectors can help you only rerender components that actually need the updated context value. Libraries like `use-context-selector` can be very useful for this purpose.
+### Memoize the value object you pass to a provider
+
+If you must pass a single object value, memoize it so its reference is stable across renders. Note that hook return values like `dispatch` from `useReducer` and the setter from `useState` are already referentially stable — you don't need to include them in the dependency list.
+
+```javascript
+const value = useMemo(() => ({ state }), [state]);
+// `dispatch` is stable, so it doesn't belong in the deps array.
+
+return (
+  <MyContext.Provider value={value}>
+    {/* Pass dispatch via a separate context as shown above */}
+    {children}
+  </MyContext.Provider>
+);
+```
+
+### Wrap consumers in `React.memo`
+
+When a context value does change, every consumer rerenders. Wrapping a consumer (or its parent) in `React.memo` prevents that rerender from cascading into descendants whose props haven't changed:
+
+```javascript
+const Item = React.memo(function Item({ id }) {
+  // ...
+});
+```
+
+This composes well with split contexts: the dispatch-only consumer doesn't rerender at all, and the state-consuming consumer rerenders but its memoized children don't.
+
+### Use the new `use(Context)` hook for conditional reads
+
+React 19 added the `use` hook, which can read a context inside conditionals or loops. It still subscribes the component to the context, but it removes the awkward "always call `useContext` at the top" constraint.
+
+```javascript
+import { use } from 'react';
+
+function Avatar() {
+  if (someCondition) {
+    const theme = use(ThemeContext);
+    // ...
+  }
+}
+```
+
+### Selectors with `use-context-selector`
+
+For very large context values where consumers only care about a slice, `use-context-selector` lets a component subscribe to a derived value and only rerender when that derived value changes. **Important**: `use-context-selector` requires using its own `createContext`, not React's built-in one — selectors don't work with a context created by `react`.
 
 ```javascript
 import { createContext, useContextSelector } from 'use-context-selector';
 
-const MyContext = createContext();
+const MyContext = createContext(null);
 
-const MyComponent = () => {
-  const state = useContextSelector(MyContext, (v) => v.state);
-
-  return <div>{state}</div>;
-};
+function Counter() {
+  // Only rerenders when `state.count` changes, even if other parts of the
+  // value change.
+  const count = useContextSelector(MyContext, (v) => v.state.count);
+  return <div>{count}</div>;
+}
 ```
+
+If your needs grow beyond what selectors give you, this is usually the point at which a dedicated state library (Zustand, Jotai, Redux Toolkit) becomes the better answer — they're built around selector-based subscriptions and avoid context's all-consumers-rerender model entirely.
 
 ## Further reading
 
 - [React documentation on context](https://react.dev/learn/passing-data-deeply-with-context)
-- [useMemo Hook documentation](https://react.dev/reference/react/useMemo)
-- [use-context-selector library](https://github.com/dai-shi/use-context-selector)
+- [Scaling up with reducer and context (React docs)](https://react.dev/learn/scaling-up-with-reducer-and-context)
+- [`use` hook reference](https://react.dev/reference/react/use)
+- [React Compiler documentation](https://react.dev/learn/react-compiler)
+- [`useMemo` hook documentation](https://react.dev/reference/react/useMemo)
+- [`use-context-selector` library](https://github.com/dai-shi/use-context-selector)

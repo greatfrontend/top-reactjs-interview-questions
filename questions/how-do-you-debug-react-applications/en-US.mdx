@@ -4,7 +4,7 @@ title: How do you debug React applications?
 
 ## TL;DR
 
-To debug React applications, you can use the React Developer Tools browser extension to inspect component hierarchies and state. Additionally, you can use `console.log` statements to log data and errors, and leverage breakpoints in your code using browser developer tools. For more advanced debugging, you can use error boundaries to catch and handle errors in your components.
+To debug React applications, use the React Developer Tools browser extension to inspect the component tree, props/state, and rendering with the Profiler. Enable Strict Mode during development to surface unsafe patterns, and rely on React 19.1 owner stacks for clearer component-aware stack traces. Use error boundaries (or the `react-error-boundary` package) to catch render-time errors, and reach for `console.log`, breakpoints, and the React DevTools "log" button for deeper inspection.
 
 ---
 
@@ -12,35 +12,42 @@ To debug React applications, you can use the React Developer Tools browser exten
 
 ### Using React Developer Tools
 
-The React Developer Tools browser extension is a powerful tool for inspecting and debugging React applications. It allows you to:
+The React Developer Tools browser extension is the primary tool for inspecting and debugging React apps. The two tabs:
 
-- Inspect the component hierarchy
-- View and edit component state and props
-- Trace component re-renders
+- **Components** — inspect the component tree, view/edit props and state and hooks live, jump to the component's source, and use the "Log to console" / "View source" buttons. Toggle "Highlight updates when components render" to spot wasted re-renders visually.
+- **Profiler** — record an interaction and see a flamegraph of every commit, which components rendered, how long each took, and **why** each rendered (props changed, state changed, hooks changed, parent re-rendered). Indispensable for diagnosing performance issues.
 
-You can install the extension from the [Chrome Web Store](https://chrome.google.com/webstore/detail/react-developer-tools) or [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/react-devtools/).
+Install from the [Chrome Web Store](https://chrome.google.com/webstore/detail/react-developer-tools) or [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/react-devtools/).
 
-### Using `console.log` statements
+### Owner stacks (React 19.1)
 
-Adding `console.log` statements in your code can help you understand the flow of your application and identify issues. For example:
+React 19.1 introduced **owner stacks**, which surface the chain of components that rendered the failing component (the "owner" tree, what the developer wrote in JSX) instead of the parent fiber chain. Errors and warnings in the console now point to the JSX site that actually rendered the broken component, which is the single biggest day-to-day debugging improvement in years. Available in development builds via `captureOwnerStack()` and shown automatically in error overlays in modern frameworks.
 
-```javascript
-function MyComponent(props) {
-  console.log('Rendering MyComponent with props:', props);
-  return <div>{props.message}</div>;
-}
+### Strict Mode
+
+Wrap your tree in `<StrictMode>` during development to surface common bugs early. It intentionally double-invokes component bodies, `useState` initializers, reducers, and effects (mount → unmount → remount) so you notice impure renders, missing effect cleanup, and stale closures before they ship.
+
+```jsx
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+);
 ```
 
-### Using breakpoints
+### Logging and breakpoints
 
-Browser developer tools, such as Chrome DevTools, allow you to set breakpoints in your code. This can help you pause execution and inspect the current state of your application. To set a breakpoint:
+Plain `console.log` still works, but a few React-specific habits make it more useful:
 
-1. Open the browser's developer tools (usually by pressing `F12` or `Ctrl+Shift+I`).
-2. Navigate to the "Sources" tab.
-3. Find the relevant file and line of code.
-4. Click on the line number to set a breakpoint.
+- Right-click a component in the DevTools Components tab and pick **Log component data to console** to dump its props, state, and hooks without editing source.
+- Use **`debugger`** statements inside a render or effect — DevTools pauses there and you can inspect closures and hook call order.
+- In Chrome DevTools, enable **"Pause on uncaught exceptions"** and **"Pause on caught exceptions"** when chasing an error you can't reproduce reliably.
+- For tracking why a component re-renders, prefer the DevTools Profiler ("Why did this render?") over hand-rolled logs. The historical [`why-did-you-render`](https://github.com/welldone-software/why-did-you-render) library is mostly class-era and is rarely needed today, especially once the React Compiler removes most needless re-renders automatically.
 
-### Using Error Boundaries
+### Using error boundaries
 
 Error boundaries are React components that catch JavaScript errors in their child component tree. You can implement error boundaries in two ways:
 
@@ -139,6 +146,8 @@ function MyComponent() {
 ## Further reading
 
 - [React Developer Tools](https://react.dev/learn/react-developer-tools)
+- [React Docs: `<StrictMode>`](https://react.dev/reference/react/StrictMode)
+- [React Docs: `captureOwnerStack`](https://react.dev/reference/react/captureOwnerStack)
+- [React 19.1 release notes (owner stacks)](https://react.dev/blog/2025/03/28/react-19-1)
 - [Error boundaries in React](https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary)
-- [Using the Chrome DevTools](https://developers.google.com/web/tools/chrome-devtools)
-- [JavaScript debugging and error handling](https://developer.mozilla.org/en-US/docs/Learn_web_development/Core/Scripting/Debugging_JavaScript)
+- [`react-error-boundary`](https://github.com/bvaughn/react-error-boundary)

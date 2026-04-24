@@ -4,23 +4,41 @@ title: What are some pitfalls about using context in React?
 
 ## TL;DR
 
-Using context in React can lead to performance issues if not managed properly. It can cause unnecessary re-renders of components that consume the context, even if the part of the context they use hasn't changed. Additionally, overusing context for state management can make the code harder to understand and maintain. It's important to use context sparingly and consider other state management solutions like Redux or Zustand for more complex state needs.
+Context in React is convenient but easy to misuse. The biggest pitfalls are passing a fresh object/array as the provider `value` on every render (which forces every consumer to re-render), assuming `React.memo` will stop context-driven re-renders (it won't), and reaching for context as a general-purpose state manager. For frequently-changing or independent slices of state, split context into multiple providers, memoize the value, or use a dedicated state library like Redux, Zustand, or Jotai.
 
 ---
 
-## Pitfalls about using context in React
+## Pitfalls of using context in React
 
-### Performance issues
+### Unnecessary re-renders from an unstable provider value
 
-One of the main pitfalls of using context in React is the potential for performance issues. When the context value changes, all components that consume the context will re-render, even if they don't use the part of the context that changed. This can lead to unnecessary re-renders and degrade the performance of your application.
-
-#### Example
+When a context value changes by reference, every component that reads that context re-renders — even if it only uses a field that hasn't actually changed. The most common cause is constructing a new object inline as the provider's `value`, which makes a fresh reference on every parent render:
 
 ```jsx
-const MyContext = React.createContext();
-
+// Pitfall — `value` is a new object every render, so every consumer re-renders
 function ParentComponent() {
-  const [value, setValue] = React.useState(0);
+  const [user, setUser] = useState(null);
+  const [theme, setTheme] = useState('light');
+
+  return (
+    <MyContext.Provider value={{ user, setUser, theme, setTheme }}>
+      <ChildComponent />
+    </MyContext.Provider>
+  );
+}
+```
+
+Fix it by memoizing the value (or letting the React Compiler do it for you):
+
+```jsx
+function ParentComponent() {
+  const [user, setUser] = useState(null);
+  const [theme, setTheme] = useState('light');
+
+  const value = useMemo(
+    () => ({ user, setUser, theme, setTheme }),
+    [user, theme],
+  );
 
   return (
     <MyContext.Provider value={value}>
@@ -28,36 +46,54 @@ function ParentComponent() {
     </MyContext.Provider>
   );
 }
-
-function ChildComponent() {
-  const value = React.useContext(MyContext);
-  console.log('ChildComponent re-rendered');
-  return <div>{value}</div>;
-}
 ```
 
-In this example, `ChildComponent` will re-render every time the `value` in `ParentComponent` changes, even if `ChildComponent` doesn't need to update.
+Note: only **consumers** of the context re-render when the value changes — not "all components in the subtree." Components that don't call `useContext`/`use(MyContext)` are unaffected.
 
-### Overusing context
+### `React.memo` doesn't stop context-driven re-renders
 
-Using context for state management can make the code harder to understand and maintain. Context is best suited for global state that doesn't change frequently, such as theme settings or user authentication status. Overusing context for more complex state management can lead to a tangled and hard-to-follow codebase.
+A common surprise: wrapping a consumer in `React.memo` does **not** prevent re-renders triggered by a context value change. `memo` only skips re-renders caused by changing props. If the component reads a context whose value changed, it re-renders regardless. The fix is to make the context value stable (above) or split the context.
+
+### Putting too much unrelated state in one context
+
+If you cram an entire app's state into a single context, every change to any slice re-renders every consumer. Split it into smaller, focused providers — for example, separate `AuthContext`, `ThemeContext`, and `CartContext` — so that a cart update doesn't re-render every theme consumer. You can also split read and write APIs into separate contexts so components that only need to dispatch don't re-render when state changes.
+
+### No built-in selectors
+
+Unlike Redux's `useSelector`, React context has no built-in way to subscribe to a slice of the value. Any change to the value re-runs every consumer. Workarounds include:
+
+- Splitting the context into smaller pieces (preferred).
+- The community `use-context-selector` library, which adds selector-based subscriptions.
+
+### Using context as a state manager
+
+Context is a transport mechanism for passing values down the tree, not a state manager. It has no caching, no devtools, no middleware, no fine-grained updates. For complex client state, prefer Redux Toolkit, Zustand, or Jotai. For server state (data from APIs), use TanStack Query, SWR, or RTK Query — don't store fetched data in context.
 
 ### Debugging difficulties
 
-Debugging issues related to context can be challenging. Since context updates can trigger re-renders in multiple components, it can be difficult to trace the source of a bug or performance issue. This is especially true in larger applications with many context providers and consumers.
+Because context updates can fan out across the tree, tracking down which provider caused a re-render can be hard, especially with nested providers. The React DevTools "Profiler" tab and "Why did this render?" highlighting help here, but it's still a good reason to keep providers small and focused.
 
-### Lack of fine-grained control
+### React 19: `use(Context)` instead of `useContext`
 
-Context provides a way to pass data through the component tree without having to pass props down manually at every level. However, it lacks fine-grained control over which components should re-render when the context value changes. This can lead to performance bottlenecks if not managed carefully.
+In React 19 you can read a context with the new `use` API. Unlike `useContext`, `use` can be called inside conditionals and loops:
 
-### Alternatives to context
+```jsx
+import { use } from 'react';
 
-For more complex state management needs, consider using other state management solutions like Redux, Zustand, or Recoil. These libraries provide more fine-grained control over state updates and can help avoid some of the pitfalls associated with using context.
+function Profile() {
+  const user = use(UserContext);
+  return <div>{user.name}</div>;
+}
+```
+
+`useContext` still works and is not going away — `use(Context)` is just more flexible.
 
 ## Further reading
 
-- [React Context](https://react.dev/learn/passing-data-deeply-with-context)
-- [React memo Performance Optimization](https://react.dev/reference/react/memo#skipping-re-rendering-when-props-are-unchanged)
-- [Redux](https://redux.js.org/)
+- [Passing data deeply with context](https://react.dev/learn/passing-data-deeply-with-context)
+- [`use` API reference](https://react.dev/reference/react/use)
+- [`React.memo`](https://react.dev/reference/react/memo)
+- [Redux Toolkit](https://redux-toolkit.js.org/)
 - [Zustand](https://github.com/pmndrs/zustand)
-- [Recoil](https://recoiljs.org/)
+- [Jotai](https://jotai.org/)
+- [`use-context-selector`](https://github.com/dai-shi/use-context-selector)

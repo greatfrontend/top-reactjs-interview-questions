@@ -4,51 +4,90 @@ title: Why does React recommend against mutating state?
 
 ## TL;DR
 
-React recommends against mutating state because it can lead to unexpected behavior and bugs. React relies on state immutability to efficiently determine when to re-render components. When state is mutated directly, React may not detect the changes, leading to stale or incorrect UI updates. Instead, always create a new state object using methods like `setState` or the `useState` hook.
+React recommends against mutating state because several of its mechanisms depend on the previous and next state being **different objects** (reference inequality). When you mutate state in place, the reference does not change, which breaks `Object.is` bailouts in `useState`/`useReducer`, breaks `React.memo` and `useMemo`/`useEffect` dependency comparisons, and can cause tearing under concurrent rendering. It also defeats time-travel debugging in React DevTools. Always produce a **new** object/array (with the spread operator, array methods like `map`/`filter`/`toSorted`, or a library such as Immer) and pass it to the state setter.
 
 ---
 
 ## Why does React recommend against mutating state?
 
-### React's rendering mechanism
+### A quick terminology note
 
-React uses a virtual DOM to optimize rendering. When state changes, React compares the new virtual DOM with the previous one to determine the minimal set of changes needed to update the actual DOM. This process is called reconciliation.
+In modern React, state is updated by the setter returned from `useState` (or by `dispatch` from `useReducer`). The class-based `this.setState` API still exists but is rarely used in new code. Both APIs share the same expectation: you give React a **new** state value rather than mutating the existing one. The rest of this answer focuses on the hooks-based APIs.
 
-### Immutability and state comparison
+### Where reference equality actually matters
 
-React relies on immutability to efficiently detect changes. When state is immutable, React can quickly determine if a component needs to re-render by comparing references. If the references are different, React knows that the state has changed.
+A common misconception is that mutating state breaks the "virtual DOM diff." That is not quite right — the diff happens against the rendered element tree, not against the state object. The places where state immutability genuinely matters are:
+
+- **`Object.is` bailout in `useState` / `useReducer`**: When you call the setter (or return a value from a reducer), React compares the new value with the current one using `Object.is`. If they are the same reference, React can skip re-rendering the component. Mutate-in-place returns the same reference, so React thinks nothing changed and skips the render — but the data has actually changed, so the UI goes stale.
+- **`React.memo`, `useMemo`, `useCallback`, and `useEffect` dependencies**: These all compare values across renders with `Object.is`. A mutated array or object still has the same reference, so memoized children will not re-render and effects will not re-run, even though their underlying data is now different.
+- **Concurrent rendering and tearing**: Since React 18, rendering can be interrupted, paused, or even abandoned. If you mutate state during a render, an in-progress render and a discarded render can read different values from the same object — producing **tearing**, where different parts of the UI reflect different versions of the state.
+- **DevTools and time-travel debugging**: React DevTools (and tools like Redux DevTools) rely on snapshots of past states to let you step backwards. Mutation overwrites those snapshots, so the history becomes meaningless.
+
+### React schedules a render either way
+
+Calling `setState`/`dispatch` always _schedules_ a render — React does not refuse to render because you passed the same reference. What the reference comparison controls is what happens _after_ the render is queued: whether the component bails out (skips actually rendering), and whether downstream `React.memo`/`useMemo`/`useEffect` consumers see a "change." Mutation is a problem precisely because it produces "looks the same to React, actually different in memory" — the worst of both worlds.
 
 ### Problems with mutating state
 
-1. **Stale UI updates**: Directly mutating state can lead to React not detecting changes, resulting in the UI not updating as expected.
-2. **Debugging difficulties**: Mutating state directly can make it harder to track state changes and debug issues.
-3. **Unexpected behavior**: Mutating state can lead to unpredictable behavior, especially when multiple components depend on the same state.
+1. **Stale UI updates**: The bailout above means the UI does not refresh when the underlying data changed.
+2. **Broken memoization**: Memoized children, memoized values, and effects all compare by reference and will silently skip updates.
+3. **Tearing under concurrent features** such as `startTransition` and `Suspense`.
+4. **Lost debuggability**: Time-travel and "previous props/state" inspection in React DevTools stop working correctly.
+5. **Hard-to-track bugs**: Multiple components or hooks may close over the same object reference. Mutating it can have spooky action-at-a-distance effects.
 
 ### How to update state correctly
 
-Instead of mutating state directly, always create a new state object. For example, when using the `useState` hook:
+Always produce a new value:
 
 ```javascript
-const [state, setState] = useState(initialState);
+const [user, setUser] = useState({ name: 'Ada', age: 36 });
 
-// Incorrect: Directly mutating state
-state.value = newValue;
+// Incorrect: mutates the existing object — same reference, bailout fires.
+user.age = 37;
+setUser(user);
 
-// Correct: Creating a new state object
-setState({ ...state, value: newValue });
+// Correct: a brand new object.
+setUser({ ...user, age: 37 });
+
+// Equally correct, and safer when the new value depends on the old one
+// (avoids stale-closure issues across batched updates):
+setUser((prev) => ({ ...prev, age: 37 }));
 ```
 
-When using class components and `setState`:
+For arrays, prefer non-mutating methods like `map`, `filter`, `concat`, the spread operator, or the newer `toSorted`/`toReversed`/`toSpliced` (avoid `push`, `splice`, `sort`, `reverse` on state):
 
 ```javascript
-this.setState((prevState) => ({
-  ...prevState,
-  value: newValue,
-}));
+const [items, setItems] = useState([3, 1, 2]);
+
+// Incorrect: sort() mutates in place.
+items.sort();
+setItems(items);
+
+// Correct.
+setItems([...items].sort((a, b) => a - b));
+// Or, with the modern non-mutating method:
+setItems(items.toSorted((a, b) => a - b));
 ```
+
+### When the spread gets painful: Immer
+
+Spreading deeply nested state by hand is verbose and error-prone. [Immer](https://immerjs.github.io/immer/) is the de facto solution: you write code that _looks_ like mutation against a draft, and Immer produces a new immutable state for you. It is built into Redux Toolkit's `createSlice`, and the `useImmer` / `useImmerReducer` hooks plug directly into React.
+
+```javascript
+import { produce } from 'immer';
+
+setUser((prev) =>
+  produce(prev, (draft) => {
+    draft.address.city = 'Singapore';
+  }),
+);
+```
+
+You get the ergonomics of mutation and the guarantees of immutability.
 
 ## Further reading
 
-- [React documentation on state](https://react.dev/learn/state-a-components-memory)
-- [React documentation on reconciliation](https://react.dev/learn/preserving-and-resetting-state)
+- [React documentation — Updating objects in state](https://react.dev/learn/updating-objects-in-state)
+- [React documentation — Updating arrays in state](https://react.dev/learn/updating-arrays-in-state)
+- [Immer documentation](https://immerjs.github.io/immer/)
 - [Why not to mutate state in React](https://daveceddia.com/why-not-modify-react-state-directly/)

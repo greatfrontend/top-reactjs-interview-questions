@@ -14,6 +14,8 @@ const withExtraProps = (WrappedComponent) => {
 const EnhancedComponent = withExtraProps(MyComponent);
 ```
 
+HOCs are largely a legacy pattern. The current React docs (React 19) discourage HOCs in favor of custom hooks for sharing logic between function components. You'll still see HOCs in older code and in libraries (e.g. `connect` from React Redux), but for new code, prefer hooks.
+
 ---
 
 ## What are higher order components in React?
@@ -21,6 +23,8 @@ const EnhancedComponent = withExtraProps(MyComponent);
 ### Definition
 
 Higher order components (HOCs) are functions in React that take a component as an argument and return a new component. The new component typically wraps the original component and adds additional props, state, or behavior. HOCs are a pattern for reusing component logic.
+
+As of React 19, the official documentation discourages HOCs for new code and recommends custom hooks instead. HOCs remain mostly relevant for compatibility with older codebases and libraries.
 
 ### Purpose
 
@@ -39,9 +43,16 @@ import React from 'react';
 
 // Define the HOC
 const withExtraProps = (WrappedComponent) => {
-  return (props) => {
+  const ComponentWithExtraProps = (props) => {
     return <WrappedComponent {...props} extraProp="value" />;
   };
+
+  // Set a useful displayName for debugging in React DevTools
+  const wrappedName =
+    WrappedComponent.displayName || WrappedComponent.name || 'Component';
+  ComponentWithExtraProps.displayName = `withExtraProps(${wrappedName})`;
+
+  return ComponentWithExtraProps;
 };
 
 // Define a component to be wrapped
@@ -60,7 +71,7 @@ const App = () => {
 export default App;
 ```
 
-In this example, `withExtraProps` is an HOC that adds an `extraProp` to `MyComponent`. The `EnhancedComponent` now has access to `extraProp`.
+In this example, `withExtraProps` is an HOC that adds an `extraProp` to `MyComponent`. The `EnhancedComponent` now has access to `extraProp`. The `displayName` convention `withExtraProps(MyComponent)` makes the component identifiable in React DevTools.
 
 ### Common use cases
 
@@ -72,15 +83,18 @@ In this example, `withExtraProps` is an HOC that adds an `extraProp` to `MyCompo
 ### Best practices
 
 - **Do not mutate the original component**: Always return a new component.
-- **Use HOCs sparingly**: Overusing HOCs can make the code harder to understand.
-- **Name the HOC properly**: Use a descriptive name that indicates what the HOC does.
+- **Do not create HOCs inside the render method**: Calling `withExtraProps(MyComponent)` inside another component's render produces a brand-new component type on every render, so React unmounts and remounts the subtree, losing all state and DOM. Apply HOCs at the module level.
+- **Set a `displayName`**: Wrap the inner name as `HOCName(WrappedName)` so React DevTools shows something useful instead of `Anonymous`.
+- **Watch for prop-name collisions**: An HOC that injects, say, an `extraProp` will silently overwrite any `extraProp` the caller passes in (or vice versa, depending on spread order). Namespace injected props or document them clearly.
+- **Forward refs explicitly**: Wrapping a component in an HOC means a `ref` passed by the consumer lands on the wrapper, not the inner component. In React 19, `forwardRef` is deprecated and `ref` is now a regular prop on function components, so the simplest fix is to accept `ref` as a prop and forward it: `<WrappedComponent {...props} ref={props.ref} extraProp="value" />`. For pre-19 codebases, you'd use `React.forwardRef` inside the HOC.
+- **Use HOCs sparingly**: Overusing HOCs can make the code harder to understand and creates deeply nested wrapper trees ("wrapper hell"). Custom hooks usually compose more cleanly.
 
 ### Alternatives
 
+- **Custom hooks** (preferred for new code): Custom hooks can share stateful logic between function components without adding extra wrapper components to the tree. This is the React 19 recommendation.
 - **Render props**: A pattern where a component uses a function as a prop to determine what to render.
-- **Hooks**: Custom hooks can be used to share logic between functional components.
 
 ## Further reading
 
-- [Understanding higher order components in React](https://medium.com/@franleplant/react-higher-order-components-in-depth-cf9032ee6c3e)
-- [HOCs vs Render Props vs Hooks](https://gist.github.com/bradwestfall/4fa683c8f4fcd781a38a8d623bec20e7)
+- [Higher-order components (legacy React docs)](https://legacy.reactjs.org/docs/higher-order-components.html)
+- [Reusing logic with custom hooks (react.dev)](https://react.dev/learn/reusing-logic-with-custom-hooks)

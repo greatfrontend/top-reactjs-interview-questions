@@ -33,39 +33,52 @@ const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
 
 #### Expensive calculations
 
-If you have a function that performs a computationally expensive calculation, you can use `useMemo` to ensure that this calculation is only performed when necessary.
+If you have a function that performs a computationally expensive calculation, you can use `useMemo` to ensure that this calculation is only performed when necessary. Genuinely expensive work means things like filtering or sorting a large list, parsing a big payload, or running a heavy synchronous algorithm — not trivial arithmetic.
 
 ```javascript
-const expensiveCalculation = (num) => {
-  // Some expensive calculation
-  return num * 2;
+const filterAndSortLargeList = (items, query) => {
+  // Genuinely expensive: scans every item and sorts the result.
+  return items
+    .filter((item) => item.name.toLowerCase().includes(query.toLowerCase()))
+    .toSorted((a, b) => a.name.localeCompare(b.name));
 };
 
-const MyComponent = ({ number }) => {
-  const memoizedValue = useMemo(() => expensiveCalculation(number), [number]);
+const MyComponent = ({ items, query }) => {
+  const visibleItems = useMemo(
+    () => filterAndSortLargeList(items, query),
+    [items, query],
+  );
 
-  return <div>{memoizedValue}</div>;
+  return <List items={visibleItems} />;
 };
 ```
 
-#### Avoiding unnecessary renders
+#### Preserving referential equality for memoized children
 
-`useMemo` can also be useful for avoiding unnecessary renders of child components. If a child component depends on a value that is expensive to compute, you can use `useMemo` to ensure that the value is only recomputed when necessary.
+This is the most common practical reason to reach for `useMemo`. Every render produces a new object/array literal, which breaks `React.memo` (or `useEffect` dependency) bailouts on a child. Memoizing the value keeps its reference stable across renders.
 
 ```javascript
-const MyComponent = ({ items }) => {
-  const sortedItems = useMemo(() => {
-    return items.sort((a, b) => a - b);
-  }, [items]);
+const Parent = ({ items }) => {
+  // Without useMemo, `sortedItems` would be a new array on every render,
+  // and `MemoChild` would re-render even when `items` is unchanged.
+  const sortedItems = useMemo(() => [...items].sort((a, b) => a - b), [items]);
 
-  return <ChildComponent sortedItems={sortedItems} />;
+  return <MemoChild sortedItems={sortedItems} />;
 };
+
+const MemoChild = React.memo(function MemoChild({ sortedItems }) {
+  return <ul>{/* ... */}</ul>;
+});
 ```
+
+Note that `useMemo` on a value alone does not prevent the child from re-rendering — the child must also be wrapped in `React.memo` (or otherwise short-circuit). Also, `[...items].sort(...)` (or `items.toSorted(...)`) is used here because `Array.prototype.sort` mutates in place; mutating a prop is a bug waiting to happen.
 
 ### Caveats
 
 - **Overuse**: Overusing `useMemo` can lead to more complex code without significant performance benefits. It should be used judiciously.
 - **Dependencies**: Make sure to correctly specify all dependencies. Missing dependencies can lead to stale values, while extra dependencies can lead to unnecessary recalculations.
+- **It is only a hint**: `useMemo` is a performance hint, not a guarantee. React is allowed to throw away the cached value and recompute it (for example, to free memory). Never rely on `useMemo` for correctness — only for optimization.
+- **The React Compiler changes the calculus**: As of 2026, the React Compiler is stable. When enabled, it auto-memoizes components and values for you, which largely removes the need to write `useMemo` (and `useCallback`) by hand. New codebases on the Compiler should reach for `useMemo` only for genuinely expensive work that the compiler cannot infer, or to satisfy a specific reference-equality requirement.
 
 ## Further reading
 

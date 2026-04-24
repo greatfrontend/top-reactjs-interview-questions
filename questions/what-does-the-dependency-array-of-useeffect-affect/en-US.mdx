@@ -27,18 +27,21 @@ useEffect(() => {
 ### How the dependency array affects `useEffect`
 
 1. **Empty dependency array (`[]`)**:
-   - The effect runs only once after the initial render.
-   - This is similar to the behavior of `componentDidMount` in class components.
+   - The effect runs once after the initial render and its cleanup runs once on unmount.
+   - This is roughly analogous to `componentDidMount` plus `componentWillUnmount`, but with an important caveat: in development with Strict Mode, React intentionally mounts, unmounts, and remounts each component to surface bugs in effect cleanup. Your effect (and its cleanup) will run twice on the initial mount in development. Production runs the effect once.
 
    ```javascript
    useEffect(() => {
-     // This code runs only once after the initial render
+     // This code runs after the initial render
+     return () => {
+       // Cleanup runs on unmount
+     };
    }, []);
    ```
 
 2. **Dependency array with variables**:
    - The effect runs after the initial render and whenever any of the specified dependencies change.
-   - React performs a shallow comparison of the dependencies to determine if they have changed.
+   - React compares each dependency with its previous value using `Object.is` (reference equality, not a deep or shallow object comparison). Inline objects, arrays, or functions therefore change identity on every render unless memoized.
 
    ```javascript
    useEffect(() => {
@@ -55,6 +58,21 @@ useEffect(() => {
      // This code runs after every render
    });
    ```
+
+### Cleanup behavior on dependency change
+
+When dependencies change, React first runs the previous effect's cleanup function (if any) before running the effect again with the new values. The same is true on unmount. This means dependency changes effectively perform a tear-down/set-up cycle, which matters for subscriptions, intervals, and event listeners.
+
+```javascript
+useEffect(() => {
+  const subscription = source.subscribe(id);
+  return () => subscription.unsubscribe(); // runs before next effect or on unmount
+}, [id]);
+```
+
+### The `react-hooks/exhaustive-deps` lint rule
+
+The official `eslint-plugin-react-hooks` ships an `exhaustive-deps` rule that warns when reactive values used inside an effect are missing from the dependency array. Treat its warnings as bugs — silencing the rule is almost always the wrong fix and a common source of stale closures.
 
 ### Common pitfalls
 
@@ -74,22 +92,37 @@ useEffect(() => {
    }, [count]); // Ensure `count` is included in the dependency array
    ```
 
+   In React 19, `useEffectEvent` (now stable) provides a way to read the latest value of a prop or state from inside an effect without making the effect re-subscribe on every change. It is the recommended escape hatch for the "I want the latest value, but I do not want this effect to re-run" pattern:
+
+   ```javascript
+   const onTick = useEffectEvent(() => {
+     console.log(count); // always reads the latest count
+   });
+
+   useEffect(() => {
+     const handle = setInterval(onTick, 1000);
+     return () => clearInterval(handle);
+   }, []); // effect does not need `count` in its deps
+   ```
+
 2. **Functions as dependencies**:
    - Functions are recreated on every render, so including them in the dependency array can cause the effect to run more often than necessary.
    - Use `useCallback` to memoize functions if they need to be included in the dependency array.
 
    ```javascript
    const handleClick = useCallback(() => {
-     // Handle click
+     console.log('clicked');
    }, []);
 
    useEffect(() => {
-     // This effect will not re-run unnecessarily because `handleClick` is memoized
-   }, [handleClick]);
+     window.addEventListener('click', handleClick);
+     return () => window.removeEventListener('click', handleClick);
+   }, [handleClick]); // stable identity, so this effect does not re-subscribe each render
    ```
 
 ## Further reading
 
 - [React Docs: Using the Effect Hook](https://react.dev/reference/react/useEffect)
 - [React Docs: Rules of Hooks](https://react.dev/reference/rules/rules-of-hooks)
+- [React Docs: `useEffectEvent`](https://react.dev/reference/react/useEffectEvent)
 - [Overreacted: A Complete Guide to useEffect](https://overreacted.io/a-complete-guide-to-useeffect/)

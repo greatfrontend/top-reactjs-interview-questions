@@ -4,15 +4,16 @@ title: What is the Flux pattern and what are its benefits?
 
 ## TL;DR
 
-The Flux pattern is an architectural design used for managing state in applications, particularly in React ecosystems. It enforces a unidirectional data flow, making it easier to manage and debug application state.
+The Flux pattern is an architectural design Facebook introduced for managing state in React applications. It enforces a unidirectional data flow, making it easier to manage and debug application state. Today Flux is largely historical — it has been superseded by libraries it inspired, such as Redux, Zustand, and the built-in `useReducer` + Context combination — but its single-source-of-truth and unidirectional-flow ideas are still the foundation of those tools.
 
 - **Core components**:
-  - **Dispatcher**: Manages actions and dispatches them to stores.
-  - **Stores**: Hold the state and logic of the application.
-  - **Actions**: Payloads of information sent from the application to the dispatcher.
-  - **View**: React components that re-render when stores update.
+  - **Dispatcher**: Single hub that manages actions and dispatches them to all registered stores.
+  - **Stores**: Hold the state and business logic; act as change emitters that notify subscribed views.
+  - **Actions**: Plain payloads of information sent from the application to the dispatcher.
+  - **View**: React components that subscribe to stores and re-render when stores emit changes.
 - **Benefits**:
   - Predictable state management due to unidirectional data flow.
+  - Single source of truth for application state.
   - Improved debugging and testing.
   - Clear separation of concerns.
 
@@ -20,7 +21,7 @@ Example flow:
 
 1. User interacts with the **View**.
 2. **Actions** are triggered and dispatched by the **Dispatcher**.
-3. **Stores** process the actions and update their state.
+3. **Stores** process the actions, update their state, and emit a change event.
 4. **View** re-renders based on the updated state.
 
 ---
@@ -29,14 +30,25 @@ Example flow:
 
 ### Overview
 
-Flux is a design pattern introduced by Facebook to manage the flow of data in React applications. It enforces a unidirectional data flow, where data flows in one direction through specific components:
+Flux is a design pattern introduced by Facebook around 2014 to manage the flow of data in React applications. It enforces a unidirectional data flow, where data flows in one direction through specific components:
 
-1. **Dispatcher**: Acts as a central hub, dispatching actions to stores.
-2. **Stores**: Manage the application's state and contain the business logic.
-3. **Actions**: Represent the payloads of information sent to the dispatcher.
-4. **View**: Consists of React components that listen to stores for changes and re-render accordingly.
+1. **Dispatcher**: A single central hub that dispatches every action to all registered store callbacks.
+2. **Stores**: Manage the application's state and contain the business logic. Each store is a single source of truth for a slice of state and acts as a change emitter that views subscribe to.
+3. **Actions**: Plain objects representing the payloads of information sent to the dispatcher.
+4. **View**: React components that listen to stores for changes and re-render accordingly.
 
 This structure simplifies state management, especially for complex applications, by ensuring data flows in a predictable and traceable manner.
+
+### Historical context
+
+In 2026, you will rarely build a new app on top of the original Flux library. The pattern has been superseded by:
+
+- **Redux** — the most popular successor, which collapses Flux's many stores into a single store with pure reducer functions.
+- **Zustand**, **Jotai**, **Recoil** — lighter-weight stores that drop the dispatcher entirely.
+- **`useReducer` + Context** — a built-in React combination that captures the same action/reducer idea without an external library.
+- **Server-state libraries** like TanStack Query and SWR for data fetched from APIs.
+
+Understanding Flux is still useful because every one of these tools borrows its core ideas: a single source of truth, immutable state transitions, and unidirectional data flow.
 
 ### Unidirectional data flow
 
@@ -49,18 +61,12 @@ Unlike traditional MVC patterns, where data can flow in multiple directions, Flu
 ### Code example
 
 ```javascript
-const Dispatcher = require('flux').Dispatcher;
+import { Dispatcher } from 'flux';
+
 const dispatcher = new Dispatcher();
 
-// Action
-const action = {
-  type: 'INCREMENT',
-  payload: { amount: 1 },
-};
-
-dispatcher.dispatch(action);
-
-// Store
+// Store — register with the dispatcher before any actions are dispatched,
+// otherwise the first dispatch will be a no-op for this store.
 class CounterStore {
   constructor() {
     this.count = 0;
@@ -74,8 +80,14 @@ class CounterStore {
 }
 const store = new CounterStore();
 
-// Dispatching an action
-dispatcher.dispatch({ type: 'INCREMENT', payload: { amount: 1 } });
+// Action
+const action = {
+  type: 'INCREMENT',
+  payload: { amount: 1 },
+};
+
+// Dispatching an action — the registered store callback runs now.
+dispatcher.dispatch(action);
 ```
 
 ## Benefits of the Flux pattern
@@ -99,10 +111,6 @@ The unidirectional data flow ensures that the application's state transitions ar
 - Actions encapsulate events and payloads.
 - Stores handle state and business logic.
 - Views focus on rendering the UI.
-
-### Compatibility with React
-
-Flux's unidirectional data flow aligns well with React's declarative component model, enabling seamless integration.
 
 ## Further reading
 

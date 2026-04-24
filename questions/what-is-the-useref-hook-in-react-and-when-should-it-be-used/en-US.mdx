@@ -13,7 +13,7 @@ function TextInputWithFocusButton() {
   const inputEl = useRef(null);
 
   useEffect(() => {
-    inputEl.current.focus();
+    inputEl.current?.focus();
   }, []);
 
   return <input ref={inputEl} type="text" />;
@@ -26,7 +26,12 @@ function TextInputWithFocusButton() {
 
 ### Introduction to `useRef`
 
-The `useRef` hook in React is a function that returns a mutable `ref` object whose `.current` property is initialized to the passed argument (`initialValue`). The returned object will persist for the full lifetime of the component.
+The `useRef` hook in React is a function that returns a mutable `ref` object whose `.current` property is initialized to the passed argument (`initialValue`). The returned object will persist for the full lifetime of the component. Updating `ref.current` does not trigger a re-render.
+
+A few important rules:
+
+- Do not read or write `ref.current` during rendering. React only guarantees the ref's value is settled after commit; mutating it during render makes components impure and is disallowed.
+- It is fine (and expected) to read or write `ref.current` inside event handlers, effects, or callbacks.
 
 ### Key use cases for `useRef`
 
@@ -43,50 +48,25 @@ function TextInputWithFocusButton() {
   const inputEl = useRef(null);
 
   useEffect(() => {
-    inputEl.current.focus();
+    inputEl.current?.focus();
   }, []);
 
   return <input ref={inputEl} type="text" />;
 }
 ```
 
-In this example, the `useRef` hook is used to create a reference to the input element, and the `useEffect` hook is used to focus the input element when the component mounts.
+In this example, the `useRef` hook is used to create a reference to the input element, and the `useEffect` hook is used to focus the input element when the component mounts. The optional chaining (`?.`) guards against the rare case where the element is not yet attached, which is a good habit under React 19's stricter dev-mode checks.
 
-#### Storing mutable values
+#### Storing mutable values across renders
 
-`useRef` can also be used to store mutable values that do not cause a re-render when updated. This is useful for keeping track of values that change over time but do not need to trigger a re-render.
-
-Example:
-
-```javascript
-import React, { useRef } from 'react';
-
-function Timer() {
-  const count = useRef(0);
-
-  const increment = () => {
-    count.current += 1;
-    console.log(count.current);
-  };
-
-  return <button onClick={increment}>Increment</button>;
-}
-```
-
-In this example, the `count` variable is stored in a `useRef` object, and its value is incremented without causing the component to re-render.
-
-#### Keeping a reference to a value
-
-`useRef` can be used to keep a reference to a value without triggering a re-render. This is useful for storing values that need to persist across renders but do not need to cause a re-render when they change.
-
-Example:
+`useRef` can also be used to store any mutable value that should persist across renders without causing one. Common examples are interval/timeout IDs, the previous value of a prop or state, an instance of a non-React object (e.g. a chart or map controller), or a counter used inside event handlers.
 
 ```javascript
 import React, { useRef, useState, useEffect } from 'react';
 
 function Example() {
   const [count, setCount] = useState(0);
-  const prevCountRef = useRef();
+  const prevCountRef = useRef(undefined);
 
   useEffect(() => {
     prevCountRef.current = count;
@@ -102,9 +82,46 @@ function Example() {
 }
 ```
 
-In this example, `prevCountRef` is used to keep a reference to the previous value of `count` without causing a re-render.
+Here `prevCountRef` holds the previous value of `count` across renders, but updating it does not itself cause a re-render.
+
+### Refs in React 19
+
+React 19 changed how refs interoperate with components in two important ways:
+
+#### `ref` is now a regular prop — `forwardRef` is deprecated
+
+In function components, `ref` is now an ordinary prop. You can accept it directly in your props and pass it to a DOM node (or to another component) without wrapping the component in `React.forwardRef`. `forwardRef` still works but is deprecated and scheduled for removal in a future major.
+
+```javascript
+// React 19+: just accept `ref` as a prop.
+function FancyInput({ ref, ...props }) {
+  return <input ref={ref} {...props} />;
+}
+
+// Usage is unchanged at the call site:
+function Parent() {
+  const inputRef = useRef(null);
+  return <FancyInput ref={inputRef} placeholder="Type..." />;
+}
+```
+
+#### Cleanup functions from ref callbacks
+
+Ref callbacks may now return a cleanup function, which React runs when the ref detaches (similar to `useEffect`). This removes the need for the older "called with `null`" pattern.
+
+```javascript
+<input
+  ref={(node) => {
+    node.focus();
+    return () => {
+      // runs when the element unmounts or the ref changes
+    };
+  }}
+/>
+```
 
 ## Further reading
 
 - [React documentation on `useRef`](https://react.dev/reference/react/useRef)
 - [Using the `useRef` hook](https://react.dev/learn/manipulating-the-dom-with-refs)
+- [React 19 release notes](https://react.dev/blog/2024/12/05/react-19)

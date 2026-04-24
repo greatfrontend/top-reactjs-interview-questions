@@ -4,60 +4,89 @@ title: What are the benefits of using hooks in React?
 
 ## TL;DR
 
-Hooks in React allow you to use state and other React features without writing a class. They make it easier to reuse stateful logic between components, improve code readability, and simplify the codebase by reducing the need for lifecycle methods. Hooks like `useState` and `useEffect` are commonly used to manage state and side effects in functional components.
+Hooks let you use state and other React features in plain functions, without classes. They were introduced to solve real pain points in the class-component era — "wrapper hell" from HOCs and render props, the awkwardness of `this` binding, and the difficulty of sharing stateful logic between components. Custom hooks make that logic genuinely reusable through composition. React 19 expands the set further with hooks like `use`, `useActionState`, `useOptimistic`, and `useFormStatus` for promises, forms, and optimistic UI.
 
 ---
 
 ## Benefits of using hooks in React
 
-### Simplified state management
+### Why hooks were introduced
 
-Hooks like `useState` allow you to add state to functional components without converting them to class components. This makes the code more concise and easier to read.
+Before hooks (React 16.8, Feb 2019), the main ways to share stateful logic between components were higher-order components (HOCs) and render props. Both produced deeply nested component trees — the so-called "wrapper hell" you'd see in React DevTools — and made it hard to follow data flow. Class components also forced you to bind `this` for handlers, split related logic across `componentDidMount`/`componentDidUpdate`/`componentWillUnmount`, and made it nearly impossible to extract a piece of stateful behaviour without restructuring the component tree.
 
-```javascript
-const [count, setCount] = useState(0);
-```
+Hooks solve all of these by moving stateful logic into plain functions you can compose, with no `this`, no extra wrappers, and no lifecycle-method scatter.
 
-### Improved code readability
+### Reusable logic via custom hooks
 
-Hooks help in breaking down complex components into smaller, reusable pieces of logic. This makes the code more modular and easier to understand.
+Custom hooks let you extract any combination of state, effects, and other hooks into a function that any component can call. This is composition rather than inheritance, and it scales much better than HOCs — you can use as many custom hooks in a component as you want without nesting.
 
-### Reusable logic
+```jsx
+function useOnlineStatus() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const on = () => setIsOnline(true);
+    const off = () => setIsOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
+  }, []);
+  return isOnline;
+}
 
-Custom hooks allow you to extract and reuse stateful logic across multiple components. This promotes code reuse and reduces duplication.
-
-```javascript
-function useCustomHook() {
-  const [state, setState] = useState(initialState);
-  // Custom logic here
-  return [state, setState];
+function StatusBar() {
+  const isOnline = useOnlineStatus();
+  return <div>{isOnline ? 'Online' : 'Offline'}</div>;
 }
 ```
 
-### Reduced need for lifecycle methods
+Because custom hooks are just function calls, you also break complex components into smaller, named pieces of logic — making them easier to read.
 
-Hooks like `useEffect` can replace lifecycle methods such as `componentDidMount`, `componentDidUpdate`, and `componentWillUnmount`. This simplifies the component lifecycle management.
+### Simplified state management
 
-```javascript
+`useState` adds local state to any function component without converting it to a class:
+
+```jsx
+const [count, setCount] = useState(0);
+```
+
+For more complex state transitions, `useReducer` gives you a Redux-style reducer locally to a component or feature.
+
+### Side effects without lifecycle methods
+
+`useEffect` replaces `componentDidMount`, `componentDidUpdate`, and `componentWillUnmount` with a single API where setup and cleanup live next to each other instead of being scattered across three methods:
+
+```jsx
 useEffect(() => {
-  // Side effect logic here
+  // setup (mount + when dependencies change)
   return () => {
-    // Cleanup logic here
+    // cleanup (unmount + before next run)
   };
 }, [dependencies]);
 ```
 
-### Better separation of concerns
+### No more `this`
 
-Hooks allow you to separate concerns by grouping related logic together. This makes the codebase more maintainable and easier to debug.
+Function components and hooks have no `this`, so there's nothing to bind, no `.bind(this)` in constructors, and no surprises about what `this` refers to in a callback.
 
-### Enhanced testing
+### React 19 hooks unlock new patterns
 
-Functional components with hooks are generally easier to test compared to class components. Hooks can be tested in isolation, making unit tests more straightforward.
+React 19 adds several hooks that solve problems custom hooks alone could not:
+
+- **`use(promise)`** — read a promise (or context) inside a component, integrating with Suspense for loading states.
+- **`useActionState`** — manage a form action's state (pending, error, result) with a single hook.
+- **`useFormStatus`** — read the pending state of the nearest parent `<form>` from a child, e.g. to disable a submit button.
+- **`useOptimistic`** — show an optimistic UI update while a mutation is in flight, automatically reverting on failure.
+
+Combined with the React Compiler (RC/stable by 2026), these reduce a lot of the manual `useMemo`/`useCallback` and form-state boilerplate that earlier hook-based code needed.
 
 ## Further reading
 
-- [React Hooks documentation](https://react.dev/reference/react/hooks)
-- [Using the State Hook](https://react.dev/reference/react/useState)
-- [Using the Effect Hook](https://react.dev/reference/react/useEffect)
-- [Building Your Own Hooks](https://react.dev/learn/reusing-logic-with-custom-hooks)
+- [Built-in React hooks](https://react.dev/reference/react/hooks)
+- [Reusing logic with custom hooks](https://react.dev/learn/reusing-logic-with-custom-hooks)
+- [Introducing hooks (the original motivation)](https://legacy.reactjs.org/docs/hooks-intro.html)
+- [`use` API reference](https://react.dev/reference/react/use)
+- [`useActionState`](https://react.dev/reference/react/useActionState)
+- [`useOptimistic`](https://react.dev/reference/react/useOptimistic)

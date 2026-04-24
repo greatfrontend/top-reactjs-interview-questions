@@ -37,8 +37,7 @@ Here's a simple example to illustrate the concept:
 2. **Client-side hydration**: When the HTML is sent to the client, React hydrates it with the following code:
 
    ```jsx
-   import React from 'react';
-   import ReactDOM from 'react-dom';
+   import { hydrateRoot } from 'react-dom/client';
 
    function App() {
      const handleClick = () => {
@@ -48,10 +47,56 @@ Here's a simple example to illustrate the concept:
      return <button onClick={handleClick}>Click me</button>;
    }
 
-   ReactDOM.hydrate(<App />, document.getElementById('root'));
+   hydrateRoot(document.getElementById('root'), <App />);
    ```
 
-In this example, the server sends the static HTML with a button to the client. React then hydrates the button by attaching the `onClick` event listener, making it interactive.
+In this example, the server sends the static HTML with a button to the client. React then hydrates the button by attaching the `onClick` event listener, making it interactive. (Note: `ReactDOM.hydrate` from `react-dom` was removed in React 18 — always use `hydrateRoot` from `react-dom/client`.)
+
+### Selective and streaming hydration (React 18+)
+
+React 18 introduced **selective hydration** powered by `Suspense`. With streaming SSR (`renderToPipeableStream` / `renderToReadableStream`), the server can flush HTML in chunks as data becomes ready, and the client can hydrate parts of the tree independently — a slow `Suspense` boundary no longer blocks the rest of the page from becoming interactive. React also prioritizes hydrating the part of the tree the user is currently interacting with.
+
+```jsx
+import { Suspense } from 'react';
+
+function Page() {
+  return (
+    <>
+      <Header />
+      <Suspense fallback={<Skeleton />}>
+        <Comments />
+      </Suspense>
+      <Footer />
+    </>
+  );
+}
+```
+
+### Stable IDs across server and client
+
+Generating IDs (e.g. for `aria-labelledby` or form `htmlFor`) with `Math.random()` or counters causes hydration mismatches because the server and client produce different values. Use the `useId` hook to get a stable, deterministic ID that matches on both sides.
+
+```jsx
+import { useId } from 'react';
+
+function Field() {
+  const id = useId();
+  return (
+    <>
+      <label htmlFor={id}>Name</label>
+      <input id={id} />
+    </>
+  );
+}
+```
+
+### Suppressing intentional mismatches
+
+If a value is genuinely expected to differ between server and client (e.g. a timestamp or a value derived from `window`), add `suppressHydrationWarning` to silence the warning for that single element. Use it sparingly — it does not fix the mismatch, it only hides the warning.
+
+```jsx
+<time suppressHydrationWarning>{new Date().toISOString()}</time>
+```
 
 ### Benefits of hydration
 
@@ -61,11 +106,12 @@ In this example, the server sends the static HTML with a button to the client. R
 
 ### Challenges of hydration
 
-1. **Mismatch issues**: If the server-rendered HTML does not match the client-side React components, it can cause errors and warnings.
-2. **Performance overhead**: Hydration can be resource-intensive, especially for large applications.
+1. **Mismatch issues**: If the server-rendered HTML does not match the client-side React components, React logs an error. React 19 improved hydration error messages by showing a precise diff of the mismatching attributes/text instead of the previous vague "text content did not match" warning, making them much easier to debug.
+2. **Performance overhead**: Hydration can be resource-intensive on large pages. Selective hydration and breaking the tree into `Suspense` boundaries help spread the cost.
 
 ## Further reading
 
-- [React documentation on hydration](https://react.dev/reference/react-dom/client/hydrateRoot)
-- [Server-side rendering in React](https://react.dev/reference/react-dom/server)
-- [Next.js documentation on hydration](https://nextjs.org/docs/basic-features/pages#hydration)
+- [React Docs: `hydrateRoot`](https://react.dev/reference/react-dom/client/hydrateRoot)
+- [React Docs: `renderToPipeableStream`](https://react.dev/reference/react-dom/server/renderToPipeableStream)
+- [React Docs: `useId`](https://react.dev/reference/react/useId)
+- [New Suspense SSR architecture in React 18](https://github.com/reactwg/react-18/discussions/37)
