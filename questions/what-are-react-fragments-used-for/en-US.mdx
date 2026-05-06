@@ -25,10 +25,13 @@ React Fragments allow you to group multiple elements without adding extra nodes 
 
 ### Avoiding unnecessary DOM nodes
 
-Using React Fragments helps avoid unnecessary wrapper elements in the DOM. The performance impact of one extra `<div>` is negligible in practice, so the real reasons to reach for a fragment are usually structural rather than performance-related:
+Using React Fragments helps avoid unnecessary wrapper elements in the DOM.
 
-- **Valid HTML structure**: Some elements have strict children rules. A `<table>` cannot contain a `<div>` between it and its `<tr>` rows; a `<tr>` cannot contain a `<div>` between it and its `<td>` cells. Fragments let a component return multiple `<tr>` or `<td>` siblings without breaking the table.
-- **CSS layout integrity**: When the parent uses Flexbox or CSS Grid, an extra wrapper `<div>` becomes a flex/grid item itself and disrupts the layout. Fragments keep the children as direct descendants of the layout container.
+> **Common misconception:** Fragments are often described as a performance optimization, on the assumption that one extra `<div>` per component is a meaningful cost. In practice, the cost is negligible. Browsers can render thousands of additional DOM nodes without measurable impact. The actual reasons to reach for a fragment are structural, not performance-related.
+
+- **Valid HTML structure**: Some elements have strict children rules. A `<table>` cannot contain a `<div>` between it and its `<tr>` rows; a `<tr>` cannot contain a `<div>` between it and its `<td>` cells; a `<select>` only accepts `<option>` and `<optgroup>` children. Fragments let a component return multiple `<tr>`, `<td>`, or `<option>` siblings without breaking the parent's HTML contract.
+- **CSS layout integrity**: When the parent uses Flexbox or CSS Grid, an extra wrapper `<div>` becomes a flex/grid item itself and disrupts the layout (the wrapper takes the grid slot, not its children). Fragments keep the children as direct descendants of the layout container.
+- **HOC and composition**: A higher-order component or render-prop helper that wraps `children` cannot wrap them in a `<div>` without breaking layout for every consumer. Returning the children inside a fragment lets the wrapper add behavior without adding DOM.
 - **Cleaner markup**: Avoiding pointless wrapper `<div>`s makes the rendered HTML easier to read and style.
 
 ### Syntax
@@ -57,21 +60,36 @@ There are two ways to use React Fragments:
    );
    ```
 
-### Adding keys to fragments
+### When to use `<Fragment>` instead of `<>`
 
-If you need to add a `key` to a fragment, you must use the full `React.Fragment` syntax — the shorthand `<>...</>` does not accept props of any kind. This typically comes up when rendering a list where each item needs to render multiple sibling elements.
+The shorthand `<>...</>` is concise but does not accept any props, including `key`. The single case that requires the explicit `React.Fragment` form is when a `key` is needed, which happens whenever a `map` produces items that each render more than one sibling element.
+
+The shorthand version below is incorrect because React cannot attach a key to a `<>...</>` fragment. React will emit a warning about a missing `key`:
 
 ```jsx
-return (
+// Bug: <></> cannot accept a key, so React has no way to identify these fragments
+{items.map((item) => (
   <>
-    {items.map((item) => (
-      <React.Fragment key={item.id}>
-        <ChildComponent />
-      </React.Fragment>
-    ))}
+    <dt>{item.term}</dt>
+    <dd>{item.definition}</dd>
   </>
-);
+))}
 ```
+
+The fix is to use the full `Fragment` form so you can pass a `key`:
+
+```jsx
+import { Fragment } from 'react';
+
+{items.map((item) => (
+  <Fragment key={item.id}>
+    <dt>{item.term}</dt>
+    <dd>{item.definition}</dd>
+  </Fragment>
+))}
+```
+
+`key` is the only prop `Fragment` accepts. There is no `className`, `style`, or event handler. If any of those are needed, use a real wrapper element instead.
 
 ### Use cases
 
