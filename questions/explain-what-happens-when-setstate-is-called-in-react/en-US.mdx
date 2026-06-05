@@ -4,7 +4,7 @@ title: Explain what happens when the `useState` setter function is called in Rea
 
 ## TL;DR
 
-When the setter function returned by the `useState` hook is called in React, it schedules an update to the component's state value. React then queues a re-render of the component with the new state. This process is typically asynchronous, and React batches multiple state updates together for performance.
+When the setter function returned by the `useState` hook is called in React, it schedules an update to the component's state value. React then queues a re-render of the component with the new state. This process is typically asynchronous, and React batches multiple state updates together for performance. The same mechanism applies to other state setters such as `useReducer`'s `dispatch` — it is distinct from the legacy class-based `this.setState`.
 
 ---
 

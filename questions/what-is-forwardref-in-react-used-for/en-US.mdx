@@ -4,7 +4,7 @@ title: What is `forwardRef()` in React used for?
 
 ## TL;DR
 
-As of React 19 (December 2024), `forwardRef()` is **deprecated**. Function components can now accept `ref` as a regular prop, so wrapping in `forwardRef()` is no longer required. `forwardRef()` historically existed because, before React 19, function components could not receive a `ref` prop and `forwardRef()` was the official workaround for forwarding a parent's ref down to a child DOM node or component.
+As of React 19 (December 2024), `forwardRef()` is **no longer necessary** — function components can now accept `ref` as a regular prop, so wrapping in `forwardRef()` is no longer required. React plans to deprecate `forwardRef()` in a future release. `forwardRef()` historically existed because, before React 19, function components could not receive a `ref` prop and `forwardRef()` was the official workaround for forwarding a parent's ref down to a child DOM node or component.
 
 ```jsx
 // Modern (React 19+): ref is a regular prop
@@ -50,7 +50,7 @@ function ParentComponent() {
 }
 ```
 
-The React team ships a codemod that automatically converts existing `forwardRef()` usages to the new prop form. `forwardRef()` itself still works for now but logs a deprecation warning and is expected to be removed in a future major.
+The React team ships a codemod that automatically converts existing `forwardRef()` usages to the new prop form. `forwardRef()` itself still works for now and is expected to be deprecated, then removed, in a future major.
 
 ### Why `forwardRef()` existed (legacy context)
 
@@ -59,7 +59,7 @@ Before React 19, `ref` was a "magic" prop that React intercepted — passing `re
 ```jsx
 import { forwardRef, useRef } from 'react';
 
-// Legacy pattern — still works in React 19, but deprecated
+// Legacy pattern — still works in React 19, but no longer necessary
 const MyInput = forwardRef((props, ref) => <input ref={ref} {...props} />);
 
 function ParentComponent() {

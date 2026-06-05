@@ -88,9 +88,9 @@ Here `prevCountRef` holds the previous value of `count` across renders, but upda
 
 React 19 changed how refs interoperate with components in two important ways:
 
-#### `ref` is now a regular prop — `forwardRef` is deprecated
+#### `ref` is now a regular prop — `forwardRef` is no longer required
 
-In function components, `ref` is now an ordinary prop. You can accept it directly in your props and pass it to a DOM node (or to another component) without wrapping the component in `React.forwardRef`. `forwardRef` still works but is deprecated and scheduled for removal in a future major.
+In function components, `ref` is now an ordinary prop. You can accept it directly in your props and pass it to a DOM node (or to another component) without wrapping the component in `React.forwardRef`. `forwardRef` still works but is no longer necessary, and React plans to deprecate, then remove, it in a future major.
 
 ```javascript
 // React 19+: just accept `ref` as a prop.

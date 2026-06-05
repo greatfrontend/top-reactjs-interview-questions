@@ -50,7 +50,7 @@ const sameElement = React.createElement(
 );
 ```
 
-Internally each element carries a `$$typeof` symbol (`Symbol.for('react.element')` / `'react.transitional.element'` in newer versions) that React and serializers use to recognise a real element and prevent injection attacks from JSON. Elements are cheap to create and are throwaway descriptions — React diffs them against the previous tree and updates the actual DOM.
+Internally each element carries a `$$typeof` symbol (`Symbol.for('react.element')` / `'react.transitional.element'` in newer versions) that React and serializers use to recognize a real element and prevent injection attacks from JSON. Elements are cheap to create and are throwaway descriptions — React diffs them against the previous tree and updates the actual DOM.
 
 ## React component
 

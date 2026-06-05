@@ -12,7 +12,7 @@ Hooks let you use state and other React features in plain functions, without cla
 
 ### Why hooks were introduced
 
-Before hooks (React 16.8, Feb 2019), the main ways to share stateful logic between components were higher-order components (HOCs) and render props. Both produced deeply nested component trees — the so-called "wrapper hell" you'd see in React DevTools — and made it hard to follow data flow. Class components also forced you to bind `this` for handlers, split related logic across `componentDidMount`/`componentDidUpdate`/`componentWillUnmount`, and made it nearly impossible to extract a piece of stateful behaviour without restructuring the component tree.
+Before hooks (React 16.8, Feb 2019), the main ways to share stateful logic between components were higher-order components (HOCs) and render props. Both produced deeply nested component trees — the so-called "wrapper hell" you'd see in React DevTools — and made it hard to follow data flow. Class components also forced you to bind `this` for handlers, split related logic across `componentDidMount`/`componentDidUpdate`/`componentWillUnmount`, and made it nearly impossible to extract a piece of stateful behavior without restructuring the component tree.
 
 Hooks solve all of these by moving stateful logic into plain functions you can compose, with no `this`, no extra wrappers, and no lifecycle-method scatter.
 
@@ -86,7 +86,6 @@ Combined with the React Compiler (RC/stable by 2026), these reduce a lot of the 
 
 - [Built-in React hooks](https://react.dev/reference/react/hooks)
 - [Reusing logic with custom hooks](https://react.dev/learn/reusing-logic-with-custom-hooks)
-- [Introducing hooks (the original motivation)](https://legacy.reactjs.org/docs/hooks-intro.html)
 - [`use` API reference](https://react.dev/reference/react/use)
 - [`useActionState`](https://react.dev/reference/react/useActionState)
 - [`useOptimistic`](https://react.dev/reference/react/useOptimistic)
