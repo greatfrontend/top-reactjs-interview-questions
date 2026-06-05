@@ -518,7 +518,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
     <!-- Update here: /questions/what-is-forwardref-in-react-used-for/en-US.mdx -->
 
-    As of React 19 (December 2024), `forwardRef()` is **deprecated**. Function components can now accept `ref` as a regular prop, so wrapping in `forwardRef()` is no longer required. `forwardRef()` historically existed because, before React 19, function components could not receive a `ref` prop and `forwardRef()` was the official workaround for forwarding a parent's ref down to a child DOM node or component.
+    As of React 19 (December 2024), `forwardRef()` is **no longer necessary** — function components can now accept `ref` as a regular prop, so wrapping in `forwardRef()` is no longer required. React plans to deprecate `forwardRef()` in a future release. `forwardRef()` historically existed because, before React 19, function components could not receive a `ref` prop and `forwardRef()` was the official workaround for forwarding a parent's ref down to a child DOM node or component.
     
     ```jsx
     // Modern (React 19+): ref is a regular prop
@@ -1104,7 +1104,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
     <!-- Update here: /questions/explain-what-happens-when-setstate-is-called-in-react/en-US.mdx -->
 
-    When the setter function returned by the `useState` hook is called in React, it schedules an update to the component's state value. React then queues a re-render of the component with the new state. This process is typically asynchronous, and React batches multiple state updates together for performance.
+    When the setter function returned by the `useState` hook is called in React, it schedules an update to the component's state value. React then queues a re-render of the component with the new state. This process is typically asynchronous, and React batches multiple state updates together for performance. The same mechanism applies to other state setters such as `useReducer`'s `dispatch` — it is distinct from the legacy class-based `this.setState`.
 
     <!-- Update here: /questions/explain-what-happens-when-setstate-is-called-in-react/en-US.mdx -->
 
