@@ -1,6 +1,6 @@
-# Top React.js Interview Questions (Updated for 2025)
+# Top React.js Interview Questions (Updated for 2026)
 
-**Updated for 2025!** Curated top React.js interview questions with high quality answers for acing your Front End Engineer interviews, brought to you by [GreatFrontEnd](https://www.greatfrontend.com/?utm_source=github&utm_medium=referral&utm_campaign=top-reactjs-qns&gnrs=yangshun).
+**Updated for 2026!** Curated top React.js interview questions with high quality answers for acing your Front End Engineer interviews, brought to you by [GreatFrontEnd](https://www.greatfrontend.com/?utm_source=github&utm_medium=referral&utm_campaign=top-reactjs-qns&gnrs=yangshun).
 
 Looking for more? Read our blog post [100+ React interview questions and answers](https://www.greatfrontend.com/blog/100-react-interview-questions-straight-from-ex-interviewers?utm_source=github&utm_medium=referral&utm_campaign=top-reactjs-qns) compiled from ex-FAANG interviewers, including React 19 coverage (Actions, Server Components, the `use` hook, and the React Compiler).
 
