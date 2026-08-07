@@ -171,7 +171,7 @@ Defining a function or object inline (`onClick={() => doThing(id)}`, `style={{ c
 
 ### Prop drilling and the over-correction into context
 
-Passing a prop through five layers that don't use it is annoying, but the fix isn't always context. Often the right answer is to lift state to the right place, compose components differently (children, slots), or pull in a state library for genuinely global state. Wrapping every shared value in context invites the [context pitfalls](/questions/what-are-some-pitfalls-of-using-context-in-react) — every consumer re-renders on every change.
+Passing a prop through five layers that don't use it is annoying, but the fix isn't always context. Often the right answer is to lift state to the right place, compose components differently (children, slots), or pull in a state library for genuinely global state. Wrapping every shared value in context invites the [context pitfalls](/questions/quiz/what-are-some-pitfalls-about-using-context-in-react) — every consumer re-renders on every change.
 
 ### Overusing `useMemo` and `useCallback`
 
