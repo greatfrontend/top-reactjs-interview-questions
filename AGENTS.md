@@ -87,7 +87,130 @@ For GitHub Actions, consider using [`voidzero-dev/setup-vp`](https://github.com/
 - [ ] Run `vp check` and `vp test` to validate changes.
 <!--VITE PLUS END-->
 
-## Authoring MDX content (`questions/**/*.mdx`)
+## Authoring React question content (`questions/**`)
+
+These guidelines apply when creating a new React question or substantially editing an existing question. Match the current repository structure and optimize for the question experience on GitHub, in the generated README, and in the GreatFrontEnd quiz renderer.
+
+Treat these rules as normative for new questions and substantial rewrites. Preserve good legacy content that is outside the scope of the requested change; do not rewrite an answer solely for stylistic uniformity.
+
+### Folder and source contract
+
+Each question lives in its own slug directory:
+
+```text
+questions/<slug>/
+  metadata.json
+  en-US.mdx
+  zh-CN.mdx (generated translation, when available)
+  en-US.langnostic.json (generated translation state, when available)
+```
+
+- Treat `en-US.mdx` as the source locale.
+- Use the translation workflow for localized content. Do not manually edit `*.langnostic.json` files.
+- Keep the directory name, `metadata.json` slug, internal links, and asset paths consistent.
+- Keep the frontmatter title aligned with the canonical question title in `data/react-questions.csv`.
+- Keep `ranking` and `section` aligned with `data/react-questions.csv`.
+- Follow the live metadata schema. Use `access`, not the legacy `premium` field, and include the current `frameworks` and `section` fields.
+- Do not treat `published: true` as permission to leave incomplete or placeholder content.
+
+### Answer structure
+
+Every `en-US.mdx` answer should use this outer structure:
+
+1. Frontmatter containing `title`.
+2. `## TL;DR` immediately after frontmatter.
+3. A horizontal-rule delimiter (`---`) after the TL;DR.
+4. A flexible detailed answer organized around the question.
+5. `## Further reading` as the final section when meaningful references exist.
+
+The TL;DR is extracted into the repository README, so it must stand on its own outside the full article:
+
+- Answer the question directly before adding nuance.
+- Keep it concise and useful as an interview response.
+- Do not use headings or callouts within the TL;DR.
+- Do not depend on definitions, examples, or links that appear only later in the article.
+- Keep the terminating `---` delimiter in place so README generation can find the section.
+
+The detailed answer does not need one universal heading template. Use only the sections the topic needs, such as how an API works, when to use it, tradeoffs, pitfalls, or a focused example. Explain the core answer before historical background or advanced edge cases.
+
+Use `## Further reading` only for meaningful references. Prefer primary sources, especially official React, React DOM, framework, and library documentation. Do not leave an empty section.
+
+### Writing style and tone
+
+- Write for interview-prep learners and practicing React engineers, not repository maintainers.
+- Teach the answer a candidate should give before expanding into deeper reference material.
+- Use a concise, direct, practical tone. Be decisive without becoming academic or hard to follow.
+- Use sentence case for headings and bullet points.
+- Keep prose scannable with short paragraphs, purposeful bullets, and tables only when they add clarity.
+- Prefer explicit conditions, tradeoffs, and explanations of why over broad theory dumps or generic "it depends" phrasing.
+- Use precise terminology and consistent names for React APIs, component boundaries, rendering phases, and state.
+- State assumptions, caveats, environment boundaries, and exclusions explicitly.
+- Avoid first-person voice, hype, rhetorical filler, unresolved brainstorming, and self-referential article language.
+- Replace vague or promotional phrases such as "enhance user experience", "foster", "seamless", and "dynamic and responsive" with the concrete behavior, benefit, or cost.
+- Make section introductions useful. They should orient the reader, explain why the section matters, or preview the decision being discussed rather than repeat the heading.
+
+### React-specific technical accuracy
+
+- Distinguish React core behavior from React DOM, framework, data library, compiler, and bundler behavior.
+- Name the relevant environment when behavior differs between client rendering, server rendering, hydration, React Server Components, and Client Components.
+- Verify version-sensitive claims against primary sources. Identify the relevant React version and whether an API is stable, experimental, legacy, or deprecated.
+- Prefer function components and Hooks for modern examples. Use class components only for legacy context or an explicit comparison.
+- Use precise distinctions such as render versus commit, re-render versus remount, queued state update versus immediate mutation, and read-only props versus deeply immutable data.
+- Do not present framework-specific behavior or third-party Suspense, caching, routing, or data-fetching behavior as a guarantee made by React itself.
+- Avoid unqualified performance claims. Explain the actual cost, state the conditions under which an optimization helps, or recommend profiling.
+- Keep historical background subordinate to current guidance unless the question explicitly asks about history or internals.
+
+### Code examples
+
+- Keep examples minimal, internally consistent, and directly relevant to the claim they support.
+- Use `jsx` or `tsx` fences for component code and `js` or `ts` for non-JSX code.
+- Include imports when readers need them to identify where an API comes from.
+- Model correct Hook dependencies, Effect cleanup, stable list keys, immutable updates, semantic HTML, and accessible behavior where applicable.
+- Do not introduce imaginary APIs, pseudocode that appears runnable, or correctness bugs merely to shorten an example.
+- Prefer modern React APIs. If an example uses a legacy API, label it and explain why it remains relevant.
+- Do not add a large example when a smaller snippet or precise prose makes the point more clearly.
+
+### Callouts and admonitions
+
+Use GitHub-flavored admonitions for high-value points in the detailed answer. They render on GitHub and in the GreatFrontEnd MDX pipeline.
+
+| Type | Use for |
+| --- | --- |
+| `[!WARNING]` | Correctness and production footguns, such as stale closures, missing cleanup, unstable keys, conditional Hook calls, accessibility regressions, and hydration mismatches. |
+| `[!IMPORTANT]` | Central conceptual distinctions, anti-patterns, and scope boundaries. |
+| `[!TIP]` | Actionable defaults and recommendations, such as deriving values during render or profiling before memoizing. |
+| `[!NOTE]` | Version, renderer, framework, environment, and other non-obvious clarifications. |
+
+Use only these four variants. Do not introduce `[!CAUTION]`; use `[!WARNING]` for hazards and `[!IMPORTANT]` for anti-patterns.
+
+Formatting rules:
+
+- Put `> [!TYPE] Short title` on the first line, followed by a quoted blank line and one focused body paragraph.
+- Keep the title concise and omit a trailing period.
+- Use the body to explain why or when the point matters rather than restating the title.
+- Use callouts sparingly. Do not wrap every recommendation or caveat.
+- Keep callouts out of the TL;DR; reserve them for the detailed answer.
+
+Example:
+
+```markdown
+> [!WARNING] Do not omit reactive dependencies
+>
+> Missing dependencies can leave an Effect synchronized with stale props or state. Change the Effect's structure instead of suppressing the `exhaustive-deps` warning.
+```
+
+### Content quality rules
+
+- No `TODO`, `Work-in-progress`, placeholder text, commented-out draft notes, or unfinished examples in ready-quality content.
+- No empty `Further reading` sections.
+- Every explanatory heading should be followed by framing prose before a table, list, code block, or another heading. `## Further reading` is exempt because it naturally contains a link list.
+- Avoid back-to-back explanatory headings.
+- Prefer concrete guidance and tradeoffs over encyclopedic background or broad historical surveys.
+- Cross-link related questions when that reduces duplication, but summarize the local point instead of outsourcing the explanation entirely.
+- Verify internal links, code behavior, API status, and version-sensitive claims before finishing.
+- Preserve good existing structure whenever possible.
+
+### Literal braces in MDX
 
 MDX parses `{...}` as a JSX expression, so any literal curly braces in prose or example strings will try to evaluate an identifier and fail at build time (e.g. `"hello {user}"` throws because `user` is not defined).
 
@@ -97,4 +220,19 @@ When writing literal braces in MDX prose, use one of:
 - Inline code: `` `{user}` ``
 - HTML entities: `&#123;user&#125;`
 
-This does not apply inside fenced code blocks (```` ``` ````), where braces are already treated as literal text.
+This does not apply inside fenced code blocks (` ``` `), where braces are already treated as literal text.
+
+### Validation
+
+Run these checks for substantive question changes:
+
+```bash
+vp run gen
+vp check
+vp test
+git diff --check
+```
+
+- Review the generated `README.md` diff after `vp run gen`, especially the extracted TL;DR and question ordering.
+- Run the translation workflow only when localized content is intentionally in scope.
+- When editing this repository inside a GreatFrontEnd submodule checkout, also follow the parent repository's question-generation checks so the MDX is compiled through the consuming web app.
