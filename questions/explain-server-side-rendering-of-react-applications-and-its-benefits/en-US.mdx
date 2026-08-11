@@ -4,7 +4,7 @@ title: Explain server-side rendering of React applications and its benefits
 
 ## TL;DR
 
-Server-side rendering (SSR) in React involves rendering React components on the server and sending the resulting HTML to the client. The browser displays that HTML immediately, then `hydrateRoot` attaches event handlers so the page becomes interactive. Modern React supports streaming SSR via `renderToPipeableStream` (Node) and `renderToReadableStream` (Web), and React Server Components let parts of the tree render only on the server. Benefits include faster perceived loads and better SEO; tradeoffs include a slower TTFB, the cost of hydration, and the risk of hydration mismatches.
+Server-side rendering (SSR) renders React output to HTML on the server and sends it to the browser. `hydrateRoot` then attaches React to matching client-rendered output so interactive Client Components can work. Modern React streams with `renderToPipeableStream` for Node streams or `renderToReadableStream` for Web Streams. React 19.2 supports Web Streams in Node too, although the React team recommends Node streams there for performance. Benefits include earlier content and crawlable HTML; tradeoffs include server work, hydration cost, and mismatch risk.
 
 ---
 
@@ -23,14 +23,14 @@ Server-side rendering (SSR) is a technique where the server renders the initial 
 
 ### Streaming SSR and React Server Components
 
-Modern React provides two streaming server APIs:
+Modern React provides two primary streaming server APIs:
 
 - `renderToPipeableStream` for Node.js streams.
-- `renderToReadableStream` for Web Streams (used in edge and worker runtimes).
+- `renderToReadableStream` for Web Streams. React 19.2 also supports it in Node, but `renderToPipeableStream` is recommended for Node because Node streams are faster and support compression more naturally.
 
-Both let you wrap parts of the tree in `<Suspense>` so the server can flush the shell first and stream the slow parts in as their data resolves.
+Both let you wrap parts of the tree in `<Suspense>` so the server can flush the shell first and stream slower parts as their data resolves. React 19.2 briefly batches nearby server-rendered boundary reveals so content can appear together, using heuristics to avoid delaying important loading metrics.
 
-React Server Components (RSC) take this further: components marked as server-only never ship to the client and can fetch data directly. Components that need state, effects, or browser APIs are marked with the `'use client'` directive at the top of the file, defining a "client boundary". Frameworks like Next.js (App Router) and Remix build on these primitives.
+React Server Components (RSC) are a separate architecture from SSR. Their component code runs on the server and is not included in the client bundle, although their rendered output can be part of the response. Modules that need state, effects, or browser APIs use the `'use client'` directive to define a client boundary. Frameworks such as Next.js App Router integrate RSC with SSR and streaming.
 
 ### Code example
 
@@ -64,7 +64,7 @@ Any interactive piece (e.g. a button with `onClick`) would live in a separate fi
 
 Hydration is not free. The browser has to download, parse, and execute the JS bundle, then walk the DOM and attach handlers. For large apps this can delay Time To Interactive even though pixels appeared quickly.
 
-Hydration mismatches occur when the HTML produced on the server does not match what React renders on the client during hydration — for example, rendering `new Date().toLocaleString()` or `Math.random()` on both sides, or branching on `window`. React 19 logs detailed diffs and recovers by re-rendering the mismatched subtree on the client; the fix is usually to gate browser-only output behind `useEffect` or a `<ClientOnly>` boundary.
+Hydration mismatches occur when server HTML differs from the client's initial render—for example, rendering time or randomness independently on both sides, or branching on `window`. React 19 reports a consolidated diff and may regenerate a mismatched tree on the client. The fix is to render deterministic initial content, pass the server value to the client, or intentionally switch browser-only content after hydration.
 
 ## Benefits of server-side rendering
 
@@ -93,5 +93,6 @@ Hydration mismatches occur when the HTML produced on the server does not match w
 - [React Server Components](https://react.dev/reference/rsc/server-components)
 - [`renderToPipeableStream`](https://react.dev/reference/react-dom/server/renderToPipeableStream)
 - [`renderToReadableStream`](https://react.dev/reference/react-dom/server/renderToReadableStream)
+- [React 19.2 release notes](https://react.dev/blog/2025/10/01/react-19-2)
 - [`hydrateRoot`](https://react.dev/reference/react-dom/client/hydrateRoot)
 - [`'use client'` directive](https://react.dev/reference/rsc/use-client)

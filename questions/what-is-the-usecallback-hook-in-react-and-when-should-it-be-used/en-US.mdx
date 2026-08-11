@@ -12,7 +12,7 @@ const memoizedCallback = useCallback(() => {
 }, [a, b]);
 ```
 
-> Note for 2026: with the **React Compiler** (stable in React 19), most components no longer need manual `useCallback` / `useMemo` / `React.memo` — the compiler memoizes automatically. New code targeting a compiler-enabled project should generally not reach for `useCallback` unless profiling shows a specific need.
+> React Compiler 1.0 is a separate, optional build-time optimizer. When enabled, it memoizes compatible components and values and can reduce the need for manual `useCallback`, `useMemo`, and `memo`. Check profiling and compiled output before adding manual memoization to Compiler-enabled code.
 
 ---
 
@@ -20,7 +20,7 @@ const memoizedCallback = useCallback(() => {
 
 ### What is `useCallback`?
 
-The `useCallback` hook is a React hook that returns a memoized version of the callback function that only changes if one of the dependencies has changed. It is useful for optimizing performance by preventing unnecessary re-creations of functions.
+`useCallback` caches a function definition between renders until one of its dependencies changes according to `Object.is`. It does not avoid evaluating the function expression you pass; React returns the previously cached function identity when the dependencies match. That stable identity is useful only when it avoids downstream work or is required by another Hook's dependency relationship.
 
 ### Syntax
 
@@ -90,7 +90,8 @@ useEffect(() => {
 - **It is not free**: `useCallback` itself adds bookkeeping. For a function that is not passed to a memoized child or used in a dependency array, wrapping it usually makes the code slower, not faster.
 - **The cost being avoided is downstream re-renders**, not the function literal itself. Allocating an arrow function on each render is essentially free.
 - **Dependencies must be correct**: missing dependencies cause stale closures; over-specified ones defeat the memoization.
-- **The React Compiler removes most need for it**: in a compiler-enabled codebase, prefer plain inline functions and let the compiler memoize.
+- **It is a performance cache**: React may discard the cached function for documented reasons such as suspending during the initial mount or editing the component in development. Do not rely on it for correctness.
+- **React Compiler may replace it**: in a Compiler-enabled codebase, start with plain inline functions and add manual memoization only when the Compiler does not optimize a measured hot path or a specific stable identity is required.
 
 ## Further reading
 

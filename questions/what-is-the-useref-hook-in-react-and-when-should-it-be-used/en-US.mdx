@@ -30,7 +30,7 @@ The `useRef` hook in React is a function that returns a mutable `ref` object who
 
 A few important rules:
 
-- Do not read or write `ref.current` during rendering. React only guarantees the ref's value is settled after commit; mutating it during render makes components impure and is disallowed.
+- Avoid reading or writing `ref.current` during rendering because it makes output depend on mutable data React does not track. The documented exception is predictable one-time initialization, such as filling a `null` ref with a lazily created object.
 - It is fine (and expected) to read or write `ref.current` inside event handlers, effects, or callbacks.
 
 ### Key use cases for `useRef`
@@ -55,7 +55,7 @@ function TextInputWithFocusButton() {
 }
 ```
 
-In this example, the `useRef` hook is used to create a reference to the input element, and the `useEffect` hook is used to focus the input element when the component mounts. The optional chaining (`?.`) guards against the rare case where the element is not yet attached, which is a good habit under React 19's stricter dev-mode checks.
+In this example, `useRef` holds the input DOM node and the Effect focuses it after the node has been committed. Optional chaining handles the case where the ref is not attached.
 
 #### Storing mutable values across renders
 

@@ -4,7 +4,7 @@ title: What is JSX and how does it work?
 
 ## TL;DR
 
-JSX stands for JavaScript XML. It is a syntax extension for JavaScript that allows you to write HTML-like code within JavaScript. JSX makes it easier to create React components by allowing you to write what looks like HTML directly in your JavaScript code. Under the hood, JSX is transformed into JavaScript function calls, typically using a tool like Babel. For example, `<div>Hello, world!</div>` in JSX is transformed into `React.createElement('div', null, 'Hello, world!')`.
+JSX is a syntax extension for JavaScript that lets you describe UI with HTML-like markup inside JavaScript. A build tool transforms it into ordinary function calls before the browser runs it. With the modern automatic runtime, `<div>Hello, world!</div>` becomes a call to a helper from `react/jsx-runtime`; the older classic transform used `React.createElement`.
 
 ---
 
@@ -100,10 +100,11 @@ const safe = <div>{userInput}</div>; // rendered as text, not as HTML
 This protection is **not** absolute. Two notable escape hatches still bypass escaping and can introduce XSS if fed untrusted data:
 
 - `dangerouslySetInnerHTML={{ __html: ... }}` injects raw HTML into the DOM.
-- URL-valued attributes such as `href` and `src` are not sanitized by React — `href="javascript:..."` will execute if the URL string comes from an attacker-controlled source. Validate URLs yourself.
+- React 19 blocks `javascript:` URLs in URL-valued attributes such as `href` and `src`. You should still validate attacker-controlled URLs against the schemes and destinations your application permits because other schemes, redirects, and resource types can carry their own risks.
 
 ## Further reading
 
 - [React: Writing markup with JSX](https://react.dev/learn/writing-markup-with-jsx)
 - [React: Introducing the new JSX transform](https://legacy.reactjs.org/blog/2020/09/22/introducing-the-new-jsx-transform.html)
+- [React 19 upgrade guide: `javascript:` URLs](https://react.dev/blog/2024/04/25/react-19-upgrade-guide#javascript-urls)
 - [Babel](https://babeljs.io/)

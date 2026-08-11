@@ -4,7 +4,7 @@ title: What is the difference between React Node, React Element, and a React Com
 
 ## TL;DR
 
-A **React Node** is anything React can render: a React Element, a string, a number, an array of nodes, a fragment, a portal, `null`, `undefined`, `false`, or `true`. A **React Element** is the immutable plain object React produces from JSX or `React.createElement` describing what to render. A **React Component** is a function (or, historically, a class) that accepts props and returns React Nodes. Elements describe the UI; components are the factories that produce those elements.
+A **React Node** is a value React can render, including an element, string, number, bigint, iterable of nodes, portal, or an empty value such as `null` or a boolean. React 19's type also supports promises that resolve to renderable nodes in supported rendering environments. A **React Element** is the immutable object produced by JSX or `createElement` that describes what to render. A **React Component** is a function or class React uses as an element type. Components produce nodes; elements are descriptions; nodes are the broader set of renderable values.
 
 ---
 
@@ -13,10 +13,11 @@ A **React Node** is anything React can render: a React Element, a string, a numb
 A **React Node** is anything that can appear in a JSX child position. The set includes:
 
 - React Elements (e.g. `<div />`, `<MyComponent />`)
-- Strings and numbers (rendered as text)
-- Arrays of React Nodes (commonly produced by `.map(...)`)
+- Strings, numbers, and bigints (rendered as text)
+- Arrays and other iterables of React Nodes (arrays are commonly produced by `.map(...)`)
 - Fragments (`<>...</>` or `<React.Fragment>`)
 - Portals (created with `createPortal`)
+- Promises of React Nodes in rendering environments that support suspending on them
 - `null`, `undefined`, `false`, and `true` — these are valid nodes that **render nothing** (they are skipped, not converted to text)
 
 ```jsx
@@ -50,11 +51,11 @@ const sameElement = React.createElement(
 );
 ```
 
-Internally each element carries a `$$typeof` symbol (`Symbol.for('react.element')` / `'react.transitional.element'` in newer versions) that React and serializers use to recognize a real element and prevent injection attacks from JSON. Elements are cheap to create and are throwaway descriptions — React diffs them against the previous tree and updates the actual DOM.
+React elements should be treated as opaque and immutable rather than inspected or modified directly. They are lightweight, short-lived descriptions that React reconciles with the previous output before the renderer commits host changes.
 
 ## React component
 
-A **React Component** accepts inputs (props) and returns React Nodes that describe the UI. Component names are conventionally **PascalCase** so JSX can distinguish them from host elements (`<button>` is a DOM element; `<Button>` is a component).
+A **React Component** is a function or class that React can use as an element type. It accepts props and returns React Nodes that describe the UI; an async Server Component may return a promise of a node. Component names are conventionally **PascalCase** so JSX can distinguish them from host elements (`<button>` is a DOM element; `<Button>` is a component).
 
 - **Function components** are the standard form. They are plain functions of `props` that return a node:
 
@@ -66,7 +67,7 @@ A **React Component** accepts inputs (props) and returns React Nodes that descri
 
   Hooks (`useState`, `useEffect`, `useMemo`, etc.) cover what used to require a class.
 
-- **Class components** still work but are legacy in React 19 — there are no new class-only features, the legacy lifecycles (`componentWillMount`, `componentWillReceiveProps`, `componentWillUpdate`) and string refs are gone, and new APIs (Hooks, Server Components, the React Compiler) target functions only. Prefer functions for new code.
+- **Class components** remain supported, but React recommends function components for new code. Legacy lifecycles such as `componentWillMount`, `componentWillReceiveProps`, and `componentWillUpdate` are deprecated, and Hooks are available only in functions.
 
   ```jsx
   class Welcome extends React.Component {

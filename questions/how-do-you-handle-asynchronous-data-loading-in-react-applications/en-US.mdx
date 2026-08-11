@@ -4,17 +4,17 @@ title: How do you handle asynchronous data loading in React applications?
 
 ## TL;DR
 
-In a modern React app, **don't** roll your own `useEffect` + `fetch` for data loading — the React docs explicitly recommend against it. Reach first for a dedicated data-fetching library: **TanStack Query**, **SWR**, or **RTK Query** for client-side fetching, or **Server Components** and route-level loaders (Next.js App Router, Remix/React Router) when you control the framework. In React 19, the new `use()` hook lets a component read a promise directly and suspend, which pairs naturally with `<Suspense>` for loading states and error boundaries for failures. A hand-written `useEffect`+`fetch` is a low-level fallback that needs an `AbortController`, a `response.ok` check, and careful state handling to avoid race conditions and stale updates.
+Prefer a framework's data-loading APIs or a client cache such as TanStack Query, SWR, or RTK Query because they handle caching, deduplication, race conditions, and request waterfalls. Fetching in an Effect remains valid for simple client-only cases, but it needs explicit loading/error handling, cleanup, and stale-response protection. React 19's `use` API can read a cached promise and suspend; the promise should come from a Suspense-enabled framework/cache, a route loader, or a Server Component rather than being recreated during render.
 
 ---
 
 ## Handling asynchronous data loading in React
 
-### Prefer a data-fetching library (recommended)
+### Prefer a framework or data-fetching library for production applications
 
-The React team's recommendation in `react.dev` is to use a framework's built-in data fetching or a dedicated library, because they correctly handle caching, deduplication, refetching, race conditions, retries, and loading/error states — all of which are easy to get wrong by hand.
+The React docs recommend considering a framework's built-in data fetching or a client-side cache because those layers can handle caching, deduplication, refetching, race conditions, retries, and loading/error states. Fetching in an Effect is still supported when those alternatives do not fit.
 
-**TanStack Query** is the de facto standard for client-side fetching:
+**TanStack Query** is one popular option for client-side fetching:
 
 ```jsx
 import { useQuery } from '@tanstack/react-query';
@@ -65,7 +65,7 @@ async function UserPage({ params }) {
 
 ### React 19: `use()` + `<Suspense>`
 
-React 19's `use()` hook lets a Client Component read a promise. While the promise is pending, the component **suspends** and the nearest `<Suspense>` boundary shows the fallback; if the promise rejects, the nearest error boundary catches it. The promise is typically created by a parent (often a Server Component) and passed down as a prop, so the request starts before the child renders.
+React 19's `use()` API lets a Client Component read a cached promise. While the promise is pending, the component **suspends** and the nearest `<Suspense>` boundary shows the fallback; if the promise rejects, the nearest error boundary catches it. Create or cache the promise outside the rendering Client Component—often in a route loader, Suspense-enabled data source, or Server Component—and pass it down so the same promise is reused across render attempts.
 
 ```jsx
 'use client';
@@ -128,7 +128,8 @@ function User({ id }) {
       } catch (err) {
         if (err.name !== 'AbortError') setError(err);
       } finally {
-        setLoading(false);
+        // Do not let an aborted, stale request clear a newer request's loading state.
+        if (!controller.signal.aborted) setLoading(false);
       }
     })();
 
@@ -151,7 +152,7 @@ Even with these fixes, `useEffect` does not give you caching across components, 
 | TanStack Query / SWR / RTK Query | Default for client-side fetching |
 | Server Components / route loaders | You control the framework (Next.js, Remix) |
 | `use(promise)` + `<Suspense>` | Streaming a promise from a parent in React 19+ |
-| `useEffect` + `fetch` | One-off fetches, learning, or escape hatch only |
+| `useEffect` + `fetch` | Simple client-only fetches where you handle cleanup and races |
 
 ## Further reading
 

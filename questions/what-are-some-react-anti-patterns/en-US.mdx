@@ -53,7 +53,7 @@ function Greeting({ firstName, lastName }) {
 }
 ```
 
-If the derived value is genuinely expensive, wrap it in `useMemo`. The React Compiler can also handle this for you.
+If the derived value is genuinely expensive, measure it and consider `useMemo`. React Compiler may provide equivalent memoization when enabled.
 
 ### Using `useEffect` to derive data
 
@@ -128,7 +128,7 @@ Let `eslint-plugin-react-hooks`'s `exhaustive-deps` rule catch these.
 
 ### Forgetting to clean up effects
 
-Subscriptions, timers, intervals, and event listeners need to be torn down in the effect's cleanup function. Otherwise they leak — and in `<StrictMode>` the dev-time double-mount makes the leak immediately visible (two intervals, two listeners).
+Subscriptions, timers, intervals, and event listeners need to be torn down in the Effect's cleanup function. Otherwise they leak—and at a Strict Mode root, the extra development setup/cleanup cycle makes missing cleanup easier to notice.
 
 ```jsx
 // Anti-pattern
@@ -167,7 +167,7 @@ function Component() {
 
 ### Inline functions and objects in JSX
 
-Defining a function or object inline (`onClick={() => doThing(id)}`, `style={{ color: 'red' }}`) creates a fresh reference each render. This is **not** automatically a performance problem — for the vast majority of components it's the idiomatic style, and the React docs explicitly say not to optimize prematurely. It only matters when the receiving child is wrapped in `React.memo` and the new reference defeats the memoization. With the React Compiler enabled, even those cases are usually handled for you.
+Defining a function or object inline (`onClick={() => doThing(id)}`, `style={{ color: 'red' }}`) creates a fresh reference each render. This is **not** automatically a performance problem — for the vast majority of components it's the idiomatic style, and the React docs explicitly say not to optimize prematurely. It matters when identity affects a memoized child or a Hook dependency. React Compiler can memoize many compatible cases when enabled.
 
 ### Prop drilling and the over-correction into context
 
@@ -180,7 +180,7 @@ Memoization isn't free — it costs memory plus the equality check on every rend
 - The wrapped computation is genuinely expensive, or
 - The value is passed to a `React.memo`'d child or a hook dependency array where reference stability matters.
 
-The React Compiler (RC/stable as of 2026) handles most of this automatically, making manual memoization unnecessary in many codebases.
+React Compiler 1.0 is an optional build-time optimizer that memoizes compatible code automatically. It can reduce manual memoization, but profiling and clear dependency semantics still matter.
 
 ### Deeply nested state
 

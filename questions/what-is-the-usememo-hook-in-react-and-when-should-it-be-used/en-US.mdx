@@ -4,7 +4,7 @@ title: What is the `useMemo` hook in React and when should it be used?
 
 ## TL;DR
 
-The `useMemo` hook in React is used to memoize expensive calculations so that they are only recomputed when one of the dependencies has changed. This can improve performance by avoiding unnecessary recalculations. You should use `useMemo` when you have a computationally expensive function that doesn't need to run on every render.
+`useMemo` caches a calculation result between renders while its dependencies remain `Object.is`-equal. Use it as a performance optimization for a measured expensive calculation or when a stable object/array identity enables another optimization. It is not a semantic guarantee, so code must remain correct if React discards the cache and recomputes the value. React Compiler can provide equivalent memoization for compatible code when the optional build-time optimizer is enabled.
 
 ```javascript
 const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
@@ -16,7 +16,7 @@ const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
 
 ### What is `useMemo`?
 
-The `useMemo` hook is a built-in React hook that allows you to memoize the result of a function. This means that the function will only be re-executed when one of its dependencies changes. The primary purpose of `useMemo` is to optimize performance by preventing unnecessary recalculations.
+The `useMemo` hook caches the result of a calculation between renders. React returns the cached value while every dependency remains `Object.is`-equal, unless it discards the cache for a documented reason. Its purpose is performance optimization, not correctness.
 
 ### Syntax
 
@@ -77,8 +77,8 @@ Note that `useMemo` on a value alone does not prevent the child from re-renderin
 
 - **Overuse**: Overusing `useMemo` can lead to more complex code without significant performance benefits. It should be used judiciously.
 - **Dependencies**: Make sure to correctly specify all dependencies. Missing dependencies can lead to stale values, while extra dependencies can lead to unnecessary recalculations.
-- **It is only a hint**: `useMemo` is a performance hint, not a guarantee. React is allowed to throw away the cached value and recompute it (for example, to free memory). Never rely on `useMemo` for correctness — only for optimization.
-- **The React Compiler changes the calculus**: As of 2026, the React Compiler is stable. When enabled, it auto-memoizes components and values for you, which largely removes the need to write `useMemo` (and `useCallback`) by hand. New codebases on the Compiler should reach for `useMemo` only for genuinely expensive work that the compiler cannot infer, or to satisfy a specific reference-equality requirement.
+- **It is only a cache**: React may throw away the value for documented reasons, including editing the component in development or suspending during its initial mount. Never rely on `useMemo` for correctness.
+- **React Compiler changes the calculus**: React Compiler 1.0 is a stable, optional build-time optimizer. When enabled, it memoizes compatible components and values, reducing the need for hand-written `useMemo` and `useCallback`. Keep explicit memoization when the Compiler is not enabled or when profiling and compiled output show a specific calculation or identity still needs it.
 
 ## Further reading
 

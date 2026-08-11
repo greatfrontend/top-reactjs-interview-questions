@@ -50,7 +50,7 @@ function ParentComponent() {
 }
 ```
 
-The React team ships a codemod that automatically converts existing `forwardRef()` usages to the new prop form. `forwardRef()` itself still works for now and is expected to be deprecated, then removed, in a future major.
+`forwardRef()` itself still works in React 19.2. The React documentation marks it as no longer necessary and says it will be deprecated in a future release, so migrations can be gradual and should account for the React versions supported by the application or library.
 
 ### Why `forwardRef()` existed (legacy context)
 

@@ -68,12 +68,14 @@ The shorthand version below is incorrect because React cannot attach a key to a 
 
 ```jsx
 // Bug: <></> cannot accept a key, so React has no way to identify these fragments
-{items.map((item) => (
-  <>
-    <dt>{item.term}</dt>
-    <dd>{item.definition}</dd>
-  </>
-))}
+{
+  items.map((item) => (
+    <>
+      <dt>{item.term}</dt>
+      <dd>{item.definition}</dd>
+    </>
+  ));
+}
 ```
 
 The fix is to use the full `Fragment` form so you can pass a `key`:
@@ -81,12 +83,14 @@ The fix is to use the full `Fragment` form so you can pass a `key`:
 ```jsx
 import { Fragment } from 'react';
 
-{items.map((item) => (
-  <Fragment key={item.id}>
-    <dt>{item.term}</dt>
-    <dd>{item.definition}</dd>
-  </Fragment>
-))}
+{
+  items.map((item) => (
+    <Fragment key={item.id}>
+      <dt>{item.term}</dt>
+      <dd>{item.definition}</dd>
+    </Fragment>
+  ));
+}
 ```
 
 `key` is the only prop `Fragment` accepts. There is no `className`, `style`, or event handler. If any of those are needed, use a real wrapper element instead.

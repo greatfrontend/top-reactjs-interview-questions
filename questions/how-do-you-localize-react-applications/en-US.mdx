@@ -36,15 +36,17 @@ npm install i18next react-i18next
 
 Create JSON files for each language you want to support. For example, create `en.json` and `fr.json` in a `locales` directory:
 
+`locales/en.json`:
+
 ```json
-// locales/en.json
 {
   "welcome_message": "Welcome to our application!"
 }
 ```
 
+`locales/fr.json`:
+
 ```json
-// locales/fr.json
 {
   "welcome_message": "Bienvenue dans notre application!"
 }
@@ -138,8 +140,9 @@ export default LanguageSwitcher;
 
 Most translations need to inject runtime values. Pass an options object as the second argument to `t`:
 
+`locales/en.json`:
+
 ```json
-// locales/en.json
 {
   "greeting": "Hello, {{name}}!"
 }

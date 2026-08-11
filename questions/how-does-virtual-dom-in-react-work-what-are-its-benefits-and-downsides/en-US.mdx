@@ -4,7 +4,7 @@ title: How does virtual DOM in React work? What are its benefits and downsides?
 
 ## TL;DR
 
-The virtual DOM in React is a lightweight copy of the actual DOM. When the state of a component changes, React creates a new virtual DOM tree and compares it with the previous one using a process called "reconciliation." Only the differences are then updated in the actual DOM, making updates more efficient. The benefits include improved performance and a more declarative way to manage UI. However, it can add complexity and may not be as performant for very simple applications.
+The "virtual DOM" is not a copy of the browser DOM. It is shorthand for the React element descriptions produced by components, together with React's internal Fiber tree. During rendering, React reconciles a new description with the previous one; during commit, it applies the required host-environment changes. This model enables declarative UI, batching, interruption, and multiple renderers, but diffing and retaining an extra tree have costs. It is a predictable update strategy, not a guarantee that React beats carefully written direct DOM code.
 
 ---
 
@@ -12,26 +12,26 @@ The virtual DOM in React is a lightweight copy of the actual DOM. When the state
 
 ### What is the virtual DOM?
 
-The virtual DOM is an in-memory tree of plain JavaScript objects that describe what the UI should look like. React keeps this tree (built out of React elements and internal Fiber nodes) and uses it to figure out the minimum set of changes to apply to the real DOM.
+"Virtual DOM" is an informal label for React's in-memory representation of the UI. Components return immutable React elements that describe what should be rendered; React also maintains an internal Fiber tree that tracks component identity, state, and work. Neither structure is a clone of the real DOM.
 
 The overall update cycle has two phases:
 
 - **Render phase (reconciliation)**: React calls your components, builds a new tree of elements, and diffs it against the previous tree to figure out what changed. This phase is pure and can be paused, resumed, or thrown away by the scheduler.
-- **Commit phase**: React applies the calculated changes to the real DOM and runs effects. This phase is synchronous and cannot be interrupted.
+- **Commit phase**: React applies the calculated changes to the real DOM and runs layout effects; passive effects run afterward. Committing a root is synchronous and cannot be interrupted.
 
 ### How does it work?
 
 1. **Initial render**: When a React component first renders, React builds a tree of elements (the virtual DOM) and a parallel internal Fiber tree. It then commits the corresponding nodes to the real DOM.
 2. **State change**: When state or props change, React schedules a re-render and builds a new element tree from the updated component output.
 3. **Diffing**: React walks the new tree and compares it with the previous one. The algorithm runs in O(n) by relying on two heuristics: elements of different types produce different trees, and the developer hints which children are stable across renders by giving them a `key`.
-4. **Commit**: React applies only the differences (insertions, updates, deletions) to the real DOM and then runs layout effects and effects.
+4. **Commit**: React applies the required insertions, updates, and deletions to the real DOM, runs layout effects, lets the browser paint, and later flushes passive effects as appropriate.
 
 ### Fiber, keys, and concurrent rendering
 
-- **Fiber** is the data structure React has used since v16 to represent work-in-progress trees. Each Fiber node holds enough state for React to pause work, switch to a higher-priority update, and later resume — that's what makes concurrent features like `useTransition`, `Suspense`, and `useDeferredValue` possible.
+- **Fiber** is the data structure React has used since v16 to represent work-in-progress trees. It lets React pause or abandon eligible rendering work and switch to a higher-priority update, which underpins concurrent features such as transitions, `Suspense`, and `useDeferredValue`. Synchronous work can still block.
 - **Keys** are how you tell React which children are the same across renders. Without stable keys (or with index keys on a reordered list), React assumes positional equality and may unnecessarily unmount and remount components, losing state.
 - **Concurrent rendering** lets React work on multiple versions of the tree at once, mark some updates as non-urgent, and bail out if a higher-priority update arrives — all built on top of the virtual DOM / Fiber model.
-- **The React Compiler** (stable as of 2025) builds on this model by automatically memoizing components and values at compile time, which often removes the need for hand-written `useMemo`/`useCallback` while still relying on the same diffing pipeline at runtime.
+- **React Compiler 1.0** is an optional build-time optimizer. When enabled, it can memoize compatible components and values, reducing work before reconciliation without changing the runtime reconciliation model.
 
 ### Code example
 
@@ -56,10 +56,10 @@ When the button is clicked, React renders a new element tree, diffs it against t
 
 ## Benefits of virtual DOM
 
-### Improved performance
+### Predictable, batched host updates
 
-- **Efficient updates**: By computing a minimal patch and updating only the changed parts of the DOM, React avoids the most expensive parts of direct DOM manipulation.
-- **Batched updates**: React batches multiple state updates within the same event (and across async boundaries since React 18) so the DOM is only touched once per render cycle.
+- **Targeted updates**: React computes which host nodes need to change and avoids replacing unaffected DOM subtrees. The diff itself is additional JavaScript work, so this should not be interpreted as universally faster than direct DOM manipulation.
+- **Batched updates**: React 18+ automatically batches updates from React events and many other callbacks, including promise callbacks, timers, and native event handlers. Updates separated by an `await` or another actual asynchronous boundary are not guaranteed to share a batch.
 
 ### Declarative UI
 

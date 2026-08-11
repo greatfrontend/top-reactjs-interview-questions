@@ -4,7 +4,7 @@ title: What does re-rendering mean in React?
 
 ## TL;DR
 
-Re-rendering in React refers to the process where a component updates its output to the DOM in response to changes in state or props. When a component's state or props change, React triggers a re-render to ensure the UI reflects the latest data. This process involves calling the component's render method again to produce a new virtual DOM, which is then compared to the previous virtual DOM to determine the minimal set of changes needed to update the actual DOM.
+A re-render means React calls a function component again (or calls a class component's `render`) to compute a new element description. State updates, context changes, or a parent rendering can trigger it. React then reconciles the result with the previous tree. Re-rendering is not the same as updating the DOM: if the rendered output is unchanged, the commit may perform no DOM mutations.
 
 ---
 
@@ -61,13 +61,13 @@ In this example:
 
 Re-rendering itself is usually cheap, but unnecessary re-renders of expensive subtrees can hurt performance. React provides several techniques to opt out of re-rendering:
 
-- **`React.memo`**: A higher-order component that memoizes a function component's output and skips re-rendering if its props are referentially equal (compared with `Object.is`).
+- **`memo`**: Wraps a component so React can skip re-rendering it when each prop compares equal to its previous value with `Object.is` (unless a custom comparator is provided).
 - **`useMemo` and `useCallback`**: Hooks that preserve the identity of values and functions across renders so memoized children don't see "new" props.
 - **State colocation**: Move state down so fewer components re-render when it changes.
 
 ### React Compiler
 
-The React Compiler (RC/stable as of 2025) automatically memoizes components, values, and callbacks at build time. With it enabled, much of the manual `useMemo` / `useCallback` / `React.memo` work becomes unnecessary — the compiler inserts the optimal memoization for you. The mental model still matters for debugging, but the optimization story is shifting from "manually memoize hot paths" to "write idiomatic code and let the compiler memoize."
+React Compiler 1.0 is an optional build-time optimizer. When enabled, it memoizes compatible components and values and can remove much of the need for manual `memo`, `useMemo`, and `useCallback`. It is not part of React's runtime, does not optimize code it cannot prove safe, and does not eliminate re-renders caused by a component's own state or a context value it reads changing.
 
 ## Further reading
 

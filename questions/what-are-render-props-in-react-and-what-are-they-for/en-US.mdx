@@ -7,24 +7,19 @@ title: What are render props in React and what are they for?
 Render props in React are a technique for sharing code between components using a prop whose value is a function. The component calls that function with some internal state or data, and the function returns the React element to render. The prop does not have to be named `render` — passing a function as `children` is the more common modern form.
 
 ```jsx
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-function DataFetcher({ url, children }) {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    fetch(url)
-      .then((response) => response.json())
-      .then(setData);
-  }, [url]);
-
-  return children(data);
+function Toggle({ children }) {
+  const [on, setOn] = useState(false);
+  return (
+    <>
+      <button onClick={() => setOn((value) => !value)}>Toggle</button>
+      {children(on)}
+    </>
+  );
 }
 
-// Usage
-<DataFetcher url="/api/data">
-  {(data) => <div>{data ? data.name : 'Loading...'}</div>}
-</DataFetcher>;
+<Toggle>{(on) => <p>{on ? 'On' : 'Off'}</p>}</Toggle>;
 ```
 
 Render props were popular before hooks. As of modern React, custom hooks have largely replaced them for sharing stateful logic, though render props are still useful for components that own a piece of UI structure (e.g. virtualized lists, headless component libraries).

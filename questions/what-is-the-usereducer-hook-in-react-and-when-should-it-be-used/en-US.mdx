@@ -97,7 +97,7 @@ function Counter({ initialCount }) {
 
 ### Bailing out of an update
 
-If the reducer returns the exact same value (compared with `Object.is`) as the current state, React bails out — no re-render is scheduled and no children re-render. This is one reason reducers must be pure and must not mutate the existing state object: a mutated-but-same-reference return looks like a bailout to React, but the state has actually changed.
+If the reducer returns a value that is `Object.is`-equal to the current state, React skips re-rendering the component's children. React may still call the component before ignoring the result, so code must not depend on exactly when the optimization occurs. This is one reason reducers must be pure and must not mutate the existing state object: a mutated-but-same-reference return looks unchanged to React even though memory was modified.
 
 ### When to use `useReducer`
 

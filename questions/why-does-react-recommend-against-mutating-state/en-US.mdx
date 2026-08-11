@@ -4,7 +4,7 @@ title: Why does React recommend against mutating state?
 
 ## TL;DR
 
-React recommends against mutating state because several of its mechanisms depend on the previous and next state being **different objects** (reference inequality). When you mutate state in place, the reference does not change, which breaks `Object.is` bailouts in `useState`/`useReducer`, breaks `React.memo` and `useMemo`/`useEffect` dependency comparisons, and can cause tearing under concurrent rendering. It also defeats time-travel debugging in React DevTools. Always produce a **new** object/array (with the spread operator, array methods like `map`/`filter`/`toSorted`, or a library such as Immer) and pass it to the state setter.
+React treats state as a read-only snapshot. Mutating an object or array in place keeps the same reference, so an `Object.is` state bailout, memoized child, memoized calculation, or Effect dependency may not observe a change. Mutation also alters older render snapshots that still reference the object, making behavior harder to reason about and incompatible with features that rely on snapshot semantics. Produce a new object or array with spreads, non-mutating methods such as `map`/`filter`/`toSorted`, or a helper such as Immer.
 
 ---
 
@@ -20,19 +20,19 @@ A common misconception is that mutating state breaks the "virtual DOM diff." Tha
 
 - **`Object.is` bailout in `useState` / `useReducer`**: When you call the setter (or return a value from a reducer), React compares the new value with the current one using `Object.is`. If they are the same reference, React can skip re-rendering the component. Mutate-in-place returns the same reference, so React thinks nothing changed and skips the render — but the data has actually changed, so the UI goes stale.
 - **`React.memo`, `useMemo`, `useCallback`, and `useEffect` dependencies**: These all compare values across renders with `Object.is`. A mutated array or object still has the same reference, so memoized children will not re-render and effects will not re-run, even though their underlying data is now different.
-- **Concurrent rendering and tearing**: Since React 18, rendering can be interrupted, paused, or even abandoned. If you mutate state during a render, an in-progress render and a discarded render can read different values from the same object — producing **tearing**, where different parts of the UI reflect different versions of the state.
-- **DevTools and time-travel debugging**: React DevTools (and tools like Redux DevTools) rely on snapshots of past states to let you step backwards. Mutation overwrites those snapshots, so the history becomes meaningless.
+- **Render snapshots and concurrent features**: A render conceptually receives a snapshot of props and state. Mutating an object shared by past and in-progress renders changes those snapshots behind React's back, which makes interruptible or restartable rendering unsafe to reason about.
+- **History-based tooling**: State-management tools such as Redux DevTools can record and replay immutable state snapshots. Mutation overwrites shared objects and makes that history unreliable. React DevTools itself inspects component state but does not provide Redux-style time travel.
 
-### React schedules a render either way
+### How the state bailout behaves
 
-Calling `setState`/`dispatch` always _schedules_ a render — React does not refuse to render because you passed the same reference. What the reference comparison controls is what happens _after_ the render is queued: whether the component bails out (skips actually rendering), and whether downstream `React.memo`/`useMemo`/`useEffect` consumers see a "change." Mutation is a problem precisely because it produces "looks the same to React, actually different in memory" — the worst of both worlds.
+When the next state is `Object.is`-equal to the current state, React skips re-rendering the component and its children. React may still call the component before applying that optimization in some cases, so code must not depend on exactly when the bailout occurs. Mutation is a problem because it produces "same value to React, changed data in memory."
 
 ### Problems with mutating state
 
 1. **Stale UI updates**: The bailout above means the UI does not refresh when the underlying data changed.
 2. **Broken memoization**: Memoized children, memoized values, and effects all compare by reference and will silently skip updates.
-3. **Tearing under concurrent features** such as `startTransition` and `Suspense`.
-4. **Lost debuggability**: Time-travel and "previous props/state" inspection in React DevTools stop working correctly.
+3. **Broken snapshot semantics** under interruptible or restartable rendering.
+4. **Lost debuggability**: Previous snapshots and history-based state tooling no longer represent what the application rendered.
 5. **Hard-to-track bugs**: Multiple components or hooks may close over the same object reference. Mutating it can have spooky action-at-a-distance effects.
 
 ### How to update state correctly

@@ -137,7 +137,7 @@ const [state, dispatch] = useReducer(reducer, initialCount, (count) => ({
 
 ### A note on class components
 
-Class components are no longer the recommended way to write React code in 2026 — function components with hooks (and the `key` reset pattern above) cover every case. If you're maintaining legacy code, you can reset class state by calling `this.setState(this.initialState)`, but new code should use hooks.
+React recommends function components for new code, but class components remain supported. In an existing class component, reset state with `this.setState(...)` using a fresh initial value; the `key` reset pattern also works for an entire class-component subtree.
 
 ## Further reading
 

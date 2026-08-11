@@ -84,7 +84,7 @@ function App() {
 
 #### Framework-level splitting
 
-Modern React frameworks handle code splitting for you. Next.js (App Router) and Remix / React Router (framework mode) automatically split per route and per Server / Client Component boundary, so you usually do not need `lazy` for routes — only for genuinely opt-in subtrees like modals, editors, or charts.
+React frameworks usually provide route-level code splitting and preloading conventions. For example, the Next.js App Router automatically splits application code by route segments, while React Router framework mode creates route chunks according to its build configuration. Follow the framework's current guidance before adding `lazy` around routes yourself; `lazy` remains useful for optional client-only features such as editors, charts, and rarely opened dialogs.
 
 #### Pairing `Suspense` with error boundaries
 
@@ -100,7 +100,7 @@ Modern React frameworks handle code splitting for you. Next.js (App Router) and 
 
 #### `Suspense` for data and `use()`
 
-In React 19, `Suspense` integrates with data fetching through the `use()` hook — components can `use(promise)` to suspend on data the same way `lazy` suspends on a code chunk. This means a single `<Suspense>` boundary can coordinate both code loading and data loading.
+In React 19, a component can read a cached promise with the special `use` API and suspend at the same boundary used by `lazy`. The promise should come from a Suspense-enabled framework or cache rather than being recreated during render. A single `<Suspense>` boundary can then coordinate supported code and data dependencies.
 
 #### Preloading
 

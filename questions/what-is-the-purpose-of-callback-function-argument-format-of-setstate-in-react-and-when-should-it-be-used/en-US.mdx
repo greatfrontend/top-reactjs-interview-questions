@@ -33,9 +33,9 @@ React's state setters — `this.setState` in class components and the `setX` ret
 
 The community calls this the **updater function** form (sometimes "functional updater"). Recognizing that name is helpful in interviews.
 
-### Why it exists: state updates are batched and asynchronous
+### Why it exists: state is a snapshot and updates are queued
 
-State setters do not change state immediately. React queues the update and applies it later, then re-renders. Since React 18, this batching is **automatic** and applies everywhere — event handlers, promises, `setTimeout`, native event handlers — not only inside React event handlers as in earlier versions.
+State setters do not change the state snapshot in the currently running code. React queues the update for a subsequent render. Since React 18, automatic batching applies to React events and many other callbacks, including promise callbacks, timers, and native event handlers.
 
 That means by the time the queued update actually runs, the variable you captured from the previous render may be stale.
 

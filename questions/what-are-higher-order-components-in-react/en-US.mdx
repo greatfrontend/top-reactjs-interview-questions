@@ -14,7 +14,7 @@ const withExtraProps = (WrappedComponent) => {
 const EnhancedComponent = withExtraProps(MyComponent);
 ```
 
-HOCs are largely a legacy pattern. The current React docs (React 19) discourage HOCs in favor of custom hooks for sharing logic between function components. You'll still see HOCs in older code and in libraries (e.g. `connect` from React Redux), but for new code, prefer hooks.
+HOCs were especially common before Hooks and remain valid in existing code and library APIs such as React Redux's `connect`. For new function components, custom Hooks usually share stateful logic with less wrapper nesting. An HOC can still be appropriate when the abstraction must return a component or wrap rendering rather than only share logic.
 
 ---
 
@@ -24,7 +24,7 @@ HOCs are largely a legacy pattern. The current React docs (React 19) discourage 
 
 Higher order components (HOCs) are functions in React that take a component as an argument and return a new component. The new component typically wraps the original component and adds additional props, state, or behavior. HOCs are a pattern for reusing component logic.
 
-As of React 19, the official documentation discourages HOCs for new code and recommends custom hooks instead. HOCs remain mostly relevant for compatibility with older codebases and libraries.
+The current React learning material emphasizes custom Hooks for sharing stateful logic. HOCs are still a valid composition pattern, but they are most common in older codebases and library APIs that need to enhance or wrap a component.
 
 ### Purpose
 
@@ -91,7 +91,7 @@ In this example, `withExtraProps` is an HOC that adds an `extraProp` to `MyCompo
 
 ### Alternatives
 
-- **Custom hooks** (preferred for new code): Custom hooks can share stateful logic between function components without adding extra wrapper components to the tree. This is the React 19 recommendation.
+- **Custom hooks**: Custom hooks share stateful logic between function components without adding wrapper components to the tree and are usually the simpler option for new code.
 - **Render props**: A pattern where a component uses a function as a prop to determine what to render.
 
 ## Further reading

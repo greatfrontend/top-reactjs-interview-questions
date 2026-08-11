@@ -6,10 +6,10 @@ title: What is the difference between `useEffect` and `useLayoutEffect` in React
 
 Both hooks run side effects after render, but they differ in **when** they fire relative to paint:
 
-- `useEffect` runs **asynchronously after the browser has painted**. It does not block the user from seeing the new frame. Use it for data fetching, subscriptions, logging, and most side effects.
+- `useEffect` runs after React commits. For effects not caused by an interaction, React generally lets the browser paint first; interaction-driven effects may run before paint. Use it for synchronizing with external systems when the work does not need to block paint.
 - `useLayoutEffect` runs **synchronously during the commit phase, after DOM mutations but before the browser paints**. It blocks paint, so use it only when you need to measure the DOM and write to it in the same frame to avoid a visual flicker.
 
-Both accept a dependency array with the same semantics, both fire twice on mount in Strict Mode development builds, and `useLayoutEffect` has no effect during server rendering (React warns if you use it in SSR).
+Both accept a dependency array with the same semantics. In development Strict Mode, React performs an extra setup-and-cleanup cycle before the real setup. Neither effect runs during server rendering; `useLayoutEffect` is especially unsuitable there because the server has no layout to measure.
 
 Code example:
 
@@ -36,11 +36,11 @@ function Example() {
 
 ## What is `useEffect`?
 
-`useEffect` schedules a side effect to run **after** React commits changes to the DOM **and the browser has painted**. It is non-blocking — the user sees the new frame first, then the effect runs.
+`useEffect` schedules synchronization work after React commits changes to the DOM. If the effect was not caused by an interaction, React generally lets the browser paint first. For interaction-driven effects, React may run it before paint so the event system can observe the result. If timing relative to paint is essential, use the appropriate browser scheduling API or `useLayoutEffect` rather than relying on `useEffect` always running afterward.
 
 - It is the right default for data fetching, subscriptions, event listeners, and logging.
-- The dependency array controls when it re-fires: `[a, b]` means "after any render where `a` or `b` changed (by `Object.is`)"; `[]` means "only after mount"; omitting the array means "after every render."
-- In Strict Mode during development, React mounts, unmounts, and remounts each component once, so effects (and their cleanup) fire twice. This surfaces missing cleanup logic. Production runs each effect once.
+- The dependency array controls when React re-synchronizes: `[a, b]` means after the initial commit and after commits where `a` or `b` changed by `Object.is`; `[]` means after mounting; omitting the array means after every commit.
+- In development Strict Mode, React runs one extra setup-and-cleanup cycle before the real setup. This surfaces missing cleanup logic; it is not a production behavior.
 
 ### Code example
 
@@ -51,7 +51,7 @@ function Example() {
   useEffect(() => {
     console.log('Mounted');
     return () => console.log('Cleanup on unmount');
-  }, []); // [] deps: cleanup runs only on unmount
+  }, []); // [] deps: cleanup runs on unmount (plus the Strict Mode stress test in development)
 
   return <div>Hello, World!</div>;
 }
@@ -104,7 +104,7 @@ function Tooltip({ children }) {
 
 ## `useInsertionEffect`
 
-`useInsertionEffect` fires **even earlier** than `useLayoutEffect` — before React makes any DOM mutations. It exists for CSS-in-JS libraries that need to inject `<style>` tags before layout effects read them. Application code should almost never use it; reach for `useEffect` or `useLayoutEffect` first.
+`useInsertionEffect` runs before layout effects so CSS-in-JS libraries can inject `<style>` tags before layout is read. It may run before or after the DOM itself is updated, refs are not attached yet, and it cannot update state. Application code should almost never use it; reach for `useEffect` or `useLayoutEffect` first.
 
 ## Dependency arrays and the exhaustive-deps lint rule
 
@@ -114,7 +114,7 @@ Both hooks take a dependency array with the same rules. React compares each entr
 
 ### Timing
 
-- `useEffect`: Fires asynchronously **after** the browser paints.
+- `useEffect`: Runs after commit and generally after paint for non-interaction effects, but may run before paint when caused by an interaction.
 - `useLayoutEffect`: Fires synchronously during commit, **before** the browser paints.
 
 ### Blocking behavior

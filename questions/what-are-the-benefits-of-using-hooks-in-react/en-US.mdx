@@ -4,7 +4,7 @@ title: What are the benefits of using hooks in React?
 
 ## TL;DR
 
-Hooks let you use state and other React features in plain functions, without classes. They were introduced to solve real pain points in the class-component era — "wrapper hell" from HOCs and render props, the awkwardness of `this` binding, and the difficulty of sharing stateful logic between components. Custom hooks make that logic genuinely reusable through composition. React 19 expands the set further with hooks like `use`, `useActionState`, `useOptimistic`, and `useFormStatus` for promises, forms, and optimistic UI.
+Hooks let function components use state, context, refs, effects, and other React features without classes. Custom Hooks compose reusable stateful logic without adding wrapper components. React 19 added Hooks such as `useActionState` and `useOptimistic`, while React DOM provides `useFormStatus`. React 19's similarly named `use(resource)` is an API rather than a Hook and follows different call-order rules.
 
 ---
 
@@ -71,16 +71,16 @@ useEffect(() => {
 
 Function components and hooks have no `this`, so there's nothing to bind, no `.bind(this)` in constructors, and no surprises about what `this` refers to in a callback.
 
-### React 19 hooks unlock new patterns
+### React 19 Hooks and APIs unlock new patterns
 
-React 19 adds several hooks that solve problems custom hooks alone could not:
+React 19 adds several Hooks and related APIs that solve problems custom Hooks alone could not:
 
 - **`use(promise)`** — read a promise (or context) inside a component, integrating with Suspense for loading states.
 - **`useActionState`** — manage a form action's state (pending, error, result) with a single hook.
 - **`useFormStatus`** — read the pending state of the nearest parent `<form>` from a child, e.g. to disable a submit button.
 - **`useOptimistic`** — show an optimistic UI update while a mutation is in flight, automatically reverting on failure.
 
-Combined with the React Compiler (RC/stable by 2026), these reduce a lot of the manual `useMemo`/`useCallback` and form-state boilerplate that earlier hook-based code needed.
+React Compiler 1.0 can additionally reduce manual `useMemo`/`useCallback` work in compatible code when the optional build-time optimizer is enabled.
 
 ## Further reading
 

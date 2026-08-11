@@ -4,7 +4,7 @@ title: What are some common pitfalls when doing data fetching in React?
 
 ## TL;DR
 
-Common pitfalls when doing data fetching in React include not handling loading and error states, leaking requests by not aborting them on unmount, ignoring race conditions when props or query params change, fetching during render (which loops), and triggering request waterfalls. In modern React (18+), use `AbortController` for cleanup, account for StrictMode's intentional double-invoke in development, and prefer purpose-built libraries like TanStack Query, SWR, or RTK Query for caching and deduplication. React 19's `use()` hook plus Suspense, and Server Components, are now the recommended way to read promises in components.
+Common data-fetching pitfalls include missing loading and error states, ignoring HTTP error statuses, leaving stale requests active, allowing responses to win races, recreating promises during render, and triggering request waterfalls. Prefer framework loaders or a client cache when they fit. For manual Effect-based fetching, clean up with `AbortController` and handle Strict Mode's extra development setup/cleanup cycle. React 19's `use` API can read a cached promise with Suspense, but it does not make an ordinary `fetch()` created during render safe.
 
 ---
 
@@ -24,7 +24,10 @@ function MyComponent() {
 
   useEffect(() => {
     fetch('https://api.example.com/data')
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
       .then((data) => {
         setData(data);
         setLoading(false);
@@ -56,7 +59,10 @@ function MyComponent() {
     const controller = new AbortController();
 
     fetch('https://api.example.com/data', { signal: controller.signal })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
       .then((data) => setData(data))
       .catch((error) => {
         if (error.name !== 'AbortError') setError(error);
@@ -85,7 +91,10 @@ function UserProfile({ userId }) {
     const controller = new AbortController();
 
     fetch(`/api/users/${userId}`, { signal: controller.signal })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
       .then((data) => setUser(data))
       .catch((error) => {
         if (error.name !== 'AbortError') console.error(error);
@@ -98,13 +107,13 @@ function UserProfile({ userId }) {
 }
 ```
 
-### Forgetting StrictMode's intentional double-invoke
+### Forgetting Strict Mode's extra development checks
 
-In development with `<StrictMode>`, React intentionally mounts, unmounts, and remounts every component, which fires effects twice. If your fetch has visible side effects (logging, analytics, POSTs) you may notice duplicates in dev — this is a hint that the effect needs proper cleanup, not a bug to suppress.
+In development with `<StrictMode>`, React performs an extra Effect setup-and-cleanup cycle before the real setup. If a fetch or subscription appears duplicated, treat it as a signal that the Effect needs correct cleanup. Mutations such as analytics events or POST requests usually belong in the user event that caused them, not in an Effect that runs because a component appeared.
 
-### Fetching data during render
+### Creating an uncached request during render
 
-Calling `fetch` directly in the render body kicks off a new request on every render. If the response then triggers `setState`, you get an infinite re-render loop. Note that `fetch().then()` returns a `Promise`, not the resolved value — `JSON.stringify(promise)` will not give you what you expect.
+Calling `fetch` directly in a Client Component's render body creates a new promise on every attempt. If its handler sets state, it also creates a render loop. Suspense does support reading promises during render through `use`, but the promise must be cached so the same instance is reused.
 
 ```jsx
 // Incorrect — fetch runs every render
@@ -170,9 +179,9 @@ Hand-rolled `useEffect + fetch` has no cache, no deduping, no retries, no backgr
 - **SWR** — small, focused on stale-while-revalidate.
 - **RTK Query** — built on Redux Toolkit, good fit if you already use Redux.
 
-### Not using React 19's `use()` and Suspense
+### Misusing React 19's `use()` and Suspense
 
-In React 19, you can read a promise directly with `use()` and let Suspense handle the loading state. Combined with Server Components or a framework that passes promises down, this removes most of the manual `useState`/`useEffect`/loading-flag boilerplate:
+In React 19, `use()` can read a cached promise and let Suspense handle the pending state. The promise must be reused across renders and should usually come from a Server Component, route loader, or Suspense-enabled cache. Recreating `fetch()` inside the component will repeatedly suspend instead of completing:
 
 ```jsx
 import { use, Suspense } from 'react';
@@ -191,7 +200,7 @@ function App({ userPromise }) {
 }
 ```
 
-For most apps, the right place to fetch is a **React Server Component** (in a framework like Next.js) or a route loader — the data lives close to where it's rendered, and the client never has to coordinate the request itself.
+Choose the loading layer based on the application: Server Components or route loaders avoid client waterfalls when the framework supports them, while a client cache is appropriate for browser-owned server state and background refetching. Effect-based fetching remains a low-level option for simpler cases.
 
 ## Further reading
 

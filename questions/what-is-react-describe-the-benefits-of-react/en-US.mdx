@@ -4,22 +4,22 @@ title: What is React? Describe the benefits of React
 
 ## TL;DR
 
-React is a JavaScript library created by Facebook for building user interfaces, primarily for single-page applications. It allows developers to create reusable components that manage their own state. Key benefits of React include a component-based architecture for modular code, the virtual DOM for efficient updates, a declarative UI for more readable code, one-way data binding for predictable data flow, and a strong community and ecosystem with abundant resources and tools.
+React is an open-source library maintained by Meta and the community for building user interfaces from components. Components describe UI declaratively from props, state, and context; React reconciles those descriptions and commits the necessary changes through renderers such as React DOM and React Native. Its main benefits are composability, explicit one-way data flow, reusable stateful logic through Hooks, support for client and server rendering architectures, and a broad ecosystem.
 
 **Key characteristics of React**:
 
 - **Declarative**: You describe the desired state of your UI based on data, and React handles updating the actual DOM efficiently.
 - **Component-based**: Build reusable and modular UI elements (components) that manage their own state and logic.
-- **Virtual DOM**: React uses a lightweight in-memory representation of the actual DOM, allowing it to perform updates selectively and efficiently.
+- **Reconciliation**: React compares element descriptions and commits the necessary renderer-specific changes. These descriptions are not a copy of the browser DOM.
 - **JSX**: While not mandatory, JSX provides a syntax extension that allows you to write HTML-like structures within your JavaScript code, making UI development more intuitive.
 
 ---
 
 ## What is React?
 
-React is an open-source JavaScript library developed by Meta (formerly Facebook) for building user interfaces. It focuses on the view layer of an application and is especially useful for creating single-page applications where a seamless user experience is crucial. React allows developers to build encapsulated components that manage their own state and compose them to create complex UIs.
+React is an open-source JavaScript library maintained by Meta and the community for building user interfaces. It can power small interactive widgets, single-page applications, native applications through React Native, and server-rendered applications through a framework. React lets developers compose components that derive their output from props, state, and context.
 
-Modern React is hooks-first and function-component-driven. JSX, an HTML-like syntax extension to JavaScript, is the standard way to describe UI. With React 19 (released December 2024), React also officially supports React Server Components, the `use()` hook for unwrapping promises and context, Actions for form/data mutations, and the React Compiler (RC), which automatically memoizes components so you rarely need to reach for `useMemo`/`useCallback` by hand.
+Modern React is function-component- and Hooks-oriented. JSX, an HTML-like syntax extension to JavaScript, is the standard way to describe UI. React 19 added stable Server Components, the `use` API for reading promises and context, and Actions for form and data mutations. React Compiler 1.0 is a separate, optional build-time optimizer that can memoize compatible components and values when enabled.
 
 ## Benefits of React
 
@@ -31,9 +31,9 @@ React encourages breaking down your UI into independent, reusable components. Ea
 - **Maintainable:** Changes within a component are isolated, reducing the risk of unintended side effects.
 - **Easier to test:** Components can be tested independently, ensuring their functionality and reliability.
 
-### 2. Virtual DOM and efficient updates
+### 2. Declarative rendering and reconciliation
 
-React utilizes a virtual DOM, a lightweight in-memory representation of the actual DOM. When data changes, React first updates the virtual DOM, then compares it to the previous version. This process, known as diffing, allows React to identify the minimal set of changes required in the actual DOM. By updating only the necessary elements, React minimizes expensive DOM manipulations, resulting in significant performance improvements.
+Components return React elements that describe the desired UI. React reconciles a new description with the previous one and lets the renderer commit the required host changes. This gives applications a predictable declarative update model and avoids replacing unchanged DOM nodes. It has its own rendering and diffing costs, so it is not a guarantee that React is faster than carefully written imperative DOM code.
 
 ### 3. Large and active community
 

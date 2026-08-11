@@ -4,7 +4,7 @@ title: What are the rules of React hooks?
 
 ## TL;DR
 
-React hooks have a few essential rules to ensure they work correctly. Always call hooks at the top level of your component or custom hook — never inside loops, conditions, nested functions, or after an early `return`. Only call hooks from React function components or other custom hooks (whose names must start with `use`). Lean on `eslint-plugin-react-hooks` to enforce these rules. The React Compiler (RC/stable by 2026) relaxes the need for some manual memoization, but the rules of hooks themselves still apply.
+React hooks have a few essential rules to ensure they work correctly. Call hooks at the top level of a function component or custom hook — never inside loops, conditions, nested functions, or after an early `return`. The `use` API is the exception: it is not a Hook and may be called conditionally or in loops, but it must still run inside a component or Hook and cannot be wrapped in `try`/`catch`. Lean on `eslint-plugin-react-hooks` to enforce these rules.
 
 ---
 
@@ -52,6 +52,22 @@ function MyComponent({ items }) {
   return <List items={items} selected={selected} onSelect={setSelected} />;
 }
 ```
+
+### The special case: `use`
+
+Despite its name, React's `use(resource)` API is not a Hook. You may call it inside conditions and loops because it does not store state by call order:
+
+```jsx
+function Comments({ shouldLoad, commentsPromise }) {
+  if (shouldLoad) {
+    const comments = use(commentsPromise);
+    return <CommentList comments={comments} />;
+  }
+  return null;
+}
+```
+
+`use` still must be called from a component or custom Hook. It also cannot be wrapped in `try`/`catch`; use an error boundary to handle a rejected promise.
 
 ### Only call hooks from React functions
 
@@ -117,15 +133,15 @@ export default [
 ];
 ```
 
-`eslint-plugin-react-hooks` v5 added flat-config support and ships an additional rule set for the React Compiler when you enable it.
+As of `eslint-plugin-react-hooks` v6, the `recommended` preset uses flat config by default. The package also provides Compiler-powered lint rules; keep it current when using newer APIs such as `useEffectEvent` so dependency suggestions follow their special semantics.
 
 ### A note on the React Compiler
 
-The React Compiler (RC and on track for stable in 2026) auto-memoizes components and values, removing most of the need for hand-written `useMemo` and `useCallback`. It does **not** change the rules of hooks — your hooks still have to be called unconditionally at the top level, from components or custom hooks. The compiler actually relies on those rules to do its job safely, and will refuse to optimize components that violate them.
+React Compiler 1.0 is a stable, optional build-time tool. When it is enabled, it can reduce the need for hand-written `useMemo`, `useCallback`, and `memo`. It does **not** change the rules above: ordinary Hooks must still be called unconditionally at the top level, and `use` retains its separate rules. The Compiler relies on code following the Rules of React and skips optimizations it cannot safely apply.
 
 ## Further reading
 
 - [Rules of hooks](https://react.dev/reference/rules/rules-of-hooks)
 - [Built-in React hooks](https://react.dev/reference/react/hooks)
-- [`eslint-plugin-react-hooks`](https://www.npmjs.com/package/eslint-plugin-react-hooks)
+- [`eslint-plugin-react-hooks` reference](https://react.dev/reference/eslint-plugin-react-hooks)
 - [React Compiler](https://react.dev/learn/react-compiler)

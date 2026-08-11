@@ -4,7 +4,7 @@ title: What is reconciliation in React?
 
 ## TL;DR
 
-Reconciliation in React is the process through which React updates the DOM to match the virtual DOM. When a component's state or props change, React creates a new virtual DOM tree and compares it with the previous one. This comparison process is called "diffing." React then updates only the parts of the actual DOM that have changed, making the updates efficient and fast.
+Reconciliation is React's render-phase process for matching a newly returned element tree with the previous tree. Element types, positions, and keys determine whether React preserves a component and its state or replaces it. Reconciliation calculates the required changes; the separate commit phase applies those changes to the DOM. A render can therefore occur without any DOM mutation.
 
 ---
 
@@ -12,7 +12,7 @@ Reconciliation in React is the process through which React updates the DOM to ma
 
 ### Introduction
 
-Reconciliation is a key concept in React that deals with how React updates the DOM to match the virtual DOM. The virtual DOM is a lightweight copy of the actual DOM, and React uses it to determine the most efficient way to update the user interface.
+Reconciliation is how React matches a new tree of element descriptions with the previous tree. It determines which component identities and state to preserve and which host changes may be needed. The later commit phase applies those changes to the DOM.
 
 ### The virtual DOM
 
@@ -33,9 +33,9 @@ Since React 16, reconciliation runs on the Fiber architecture, which splits the 
 React also performs several bailouts to skip unnecessary work:
 
 - If a component re-renders but its output is referentially equal to the previous render in the relevant ways, React can skip updating its children.
-- `React.memo` wraps a component so it bails out of re-rendering when its props are shallow-equal to the previous render.
+- `memo` wraps a component so React can skip re-rendering it when every prop compares equal to its previous value with `Object.is` (unless a custom comparator says otherwise).
 - `useMemo` and `useCallback` preserve referential equality for derived values and callbacks.
-- The **React Compiler** (RC/stable as of 2025) automatically inserts the equivalent of `memo`, `useMemo`, and `useCallback` for you, so most apps no longer need to hand-write these optimizations.
+- **React Compiler 1.0**, when enabled, applies memoization to compatible code at build time and can reduce the need for hand-written `memo`, `useMemo`, and `useCallback`. It is optional and may skip code it cannot safely optimize.
 
 ### Updating the DOM
 

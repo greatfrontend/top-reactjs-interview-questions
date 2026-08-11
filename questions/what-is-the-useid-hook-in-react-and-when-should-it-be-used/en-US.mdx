@@ -30,7 +30,7 @@ The `useId` hook was added in React 18. It returns a stable string ID tied to th
 
 ### Why `useId` exists: SSR and hydration
 
-The actual motivation for `useId` is server-side rendering. Before React 18, generating IDs with a module-level counter (`let next = 0; const id = next++;`) caused **hydration mismatches**: the server and the client could increment the counter in a different order, producing different IDs in the HTML versus the client tree. React would then warn (and in React 18+, throw away the hydrated subtree).
+The actual motivation for `useId` is server-side rendering. Before React 18, generating IDs with a module-level counter (`let next = 0; const id = next++;`) could cause **hydration mismatches**: the server and client might increment the counter in a different order, producing different IDs. React reports mismatches and may regenerate the affected tree on the client, depending on where and how the mismatch occurs.
 
 Module-level counters were already fragile before React 18. Any re-render, multiple `renderToString` calls sharing module state, or a tree shape that differed between server and client could desynchronize the counter. React 18's **concurrent rendering** and **streaming SSR** amplified the problem: Suspense boundaries can resolve out of order, the renderer can pause and resume work, and streamed chunks can arrive at the client in a different order than they were rendered on the server. Any ID source that depends on render order (counters, `Math.random()` seeded once, mutable module state) inherits this fragility.
 
@@ -48,7 +48,7 @@ Module-level counters were already fragile before React 18. Any re-render, multi
 | `nanoid` / `uuid` package | No (when called during render) | No (same reason) | For IDs persisted in your data model. Generate them outside render and store the result. |
 | Module-level counter | No (server and client increment in different orders) | Yes (within a session) | Was the pre-React 18 workaround. Replaced by `useId`. |
 
-If an ID appears in rendered output, it must come from `useId`. If an ID belongs to your data (a row's primary key, a user's session ID, and so on), generate it outside render and store it.
+Use `useId` when a component needs to generate an ID for rendered accessibility relationships. An ID supplied through props or stored in application data is also safe to render. If an ID belongs to your data model (a row's primary key, for example), generate it outside render and store it rather than replacing it with `useId`.
 
 ### `useId` in React Server Components
 
@@ -60,7 +60,7 @@ If an ID appears in rendered output, it must come from `useId`. If an ID belongs
 
 ### Uniqueness scope and multiple roots
 
-IDs from `useId` are unique **within a single React root**. If your page mounts more than one root (for example, an island-style architecture, or a widget you embed into a host page that also uses React), two separate roots can both generate `:r0:` and collide.
+IDs from `useId` are unique **within a single React root**. If your page mounts more than one root (for example, an island-style architecture or an embedded widget), separate roots can generate the same opaque ID. Do not depend on the exact generated string: React changed its default prefix in React 19.2.
 
 To prevent that, give each root a distinct `identifierPrefix`:
 
@@ -142,3 +142,4 @@ The same pattern applies to `aria-labelledby` (when the label is a separate elem
 - [React documentation on `useId`](https://react.dev/reference/react/useId)
 - [MDN Web Docs on accessibility](https://developer.mozilla.org/en-US/docs/Web/Accessibility)
 - [React 18 release notes](https://react.dev/blog/2022/03/29/react-v18)
+- [React 19.2 release notes](https://react.dev/blog/2025/10/01/react-19-2)

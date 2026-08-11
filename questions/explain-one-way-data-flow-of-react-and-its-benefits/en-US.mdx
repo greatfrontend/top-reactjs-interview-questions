@@ -4,7 +4,7 @@ title: Explain one-way data flow of React and its benefits
 
 ## TL;DR
 
-In React, one-way data flow means that data moves in a single direction: from parent components down to child components via `props`. Children cannot mutate the props they receive; to change parent state, a child invokes a callback the parent passed in. This contrasts with two-way binding (e.g. Angular or Vue's `v-model`), where view and model stay in sync automatically. The main benefits are predictable state changes, easier debugging, and patterns like controlled components, immutable updates, and time-travel debugging that fall out naturally from the constraint.
+In React, one-way data flow means that data moves from parent components to children through props and context. Children treat those inputs as read-only; to request a parent-state change, a child invokes a callback or dispatch function supplied from above. Controlled inputs may look like two-way binding, but they still update through an explicit event followed by a new value flowing down. The benefits are explicit ownership, predictable updates, and easier tracing and testing.
 
 ---
 
@@ -81,7 +81,7 @@ State only changes through explicit calls to setter functions in the component t
 
 #### Easier debugging
 
-Because data flows downward and updates flow upward through named callbacks, you can trace a value from where it originates to every component that consumes it. This is what makes tools like the React DevTools state inspector and Redux DevTools' time-travel debugging possible — every state transition is a discrete, replayable event rather than a side effect of a binding.
+Because data flows downward and update requests flow upward through named callbacks or dispatches, you can trace a value from its owner to each consumer. React DevTools can inspect props and state along that tree. State libraries can additionally provide replayable histories when their updates are represented as immutable transitions.
 
 #### Encourages immutable updates
 

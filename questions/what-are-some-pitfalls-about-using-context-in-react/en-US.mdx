@@ -4,7 +4,7 @@ title: What are some pitfalls about using context in React?
 
 ## TL;DR
 
-Context in React is convenient but easy to misuse. The biggest pitfalls are passing a fresh object/array as the provider `value` on every render (which forces every consumer to re-render), assuming `React.memo` will stop context-driven re-renders (it won't), and reaching for context as a general-purpose state manager. For frequently-changing or independent slices of state, split context into multiple providers, memoize the value, or use a dedicated state library like Redux, Zustand, or Jotai.
+Context in React is convenient but easy to misuse. The biggest pitfalls are passing a fresh object or array as the provider `value` on every render, assuming `memo` or React Compiler will stop a context subscription update (they won't), and putting frequently changing, unrelated data into one context. Split independent values into focused providers, stabilize object values when appropriate, and consider a selector-based state library when consumers need different slices of rapidly changing state.
 
 ---
 
@@ -28,7 +28,7 @@ function ParentComponent() {
 }
 ```
 
-Fix it by memoizing the value (or letting the React Compiler do it for you):
+Fix it by memoizing the value. React Compiler may generate equivalent memoization when enabled, but Context still propagates every genuine value change:
 
 ```jsx
 function ParentComponent() {
@@ -73,9 +73,9 @@ Context is a transport mechanism for passing values down the tree, not a state m
 
 Because context updates can fan out across the tree, tracking down which provider caused a re-render can be hard, especially with nested providers. The React DevTools "Profiler" tab and "Why did this render?" highlighting help here, but it's still a good reason to keep providers small and focused.
 
-### React 19: `use(Context)` instead of `useContext`
+### React 19: `use(Context)` as an alternative to `useContext`
 
-In React 19 you can read a context with the new `use` API. Unlike `useContext`, `use` can be called inside conditionals and loops:
+In React 19 you can read a context with the `use` API. Despite its name, `use` is not a Hook. Unlike `useContext`, it can be called inside conditionals and loops, but it has the same context subscription behavior:
 
 ```jsx
 import { use } from 'react';

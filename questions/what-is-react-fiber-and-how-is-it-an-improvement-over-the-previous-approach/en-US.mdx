@@ -4,7 +4,7 @@ title: What is React Fiber and how is it an improvement over the previous approa
 
 ## TL;DR
 
-React Fiber is a complete rewrite of React's reconciliation algorithm, introduced in React 16. It improves the rendering process by breaking down rendering work into smaller units, allowing React to pause and resume work, which makes the UI more responsive. This approach enables features like time slicing and suspense, which were not possible with the previous stack-based algorithm.
+Fiber is React's internal reconciliation architecture, introduced in React 16. A Fiber represents a unit of work and links to related Fibers in the component tree. This structure lets React assign priorities, pause or abandon interruptible renders, and commit completed work separately. It is the foundation for concurrent features such as transitions and Suspense, but it does not make every update asynchronous or guarantee that expensive rendering will be fast.
 
 ---
 
@@ -18,11 +18,11 @@ React Fiber is a re-implementation of React's core algorithm for rendering and r
 
 #### Incremental rendering
 
-The previous stack-based algorithm processed updates in a single, synchronous pass, which could lead to performance issues, especially with complex UIs. React Fiber breaks down rendering work into smaller units called "fibers", allowing React to pause and resume work. This makes the UI more responsive and prevents blocking the main thread for long periods.
+The previous stack-based reconciler processed an update in a single synchronous traversal. Fiber represents the traversal as units that React can schedule separately. For interruptible work, React can yield to the browser, resume later, or abandon a stale render. Synchronous work and expensive component calculations can still block the main thread.
 
 #### Time slicing
 
-Time slicing is the chunking mechanism that lets Fiber split rendering work into small units and yield back to the browser between them. Fiber tracks how much time has been spent on a render pass and pauses if it would otherwise block the main thread, then resumes work on the next idle frame. This keeps input, scroll, and paint responsive even during a large render.
+Time slicing is the ability to perform eligible rendering work incrementally and yield so the browser can process higher-priority work. React's scheduler decides when to continue; it is not simply tied to the next idle frame. Applications expose non-urgent work through APIs such as transitions and `useDeferredValue`.
 
 #### Prioritization with lanes and transitions
 
@@ -32,9 +32,9 @@ Separate from time slicing is the question of _which_ work to do first. In React
 
 Fiber maintains two trees: the "current" tree that reflects what's on screen, and a "work-in-progress" tree that React builds in memory. Because the new tree is constructed off-screen, React can pause, throw away, or restart the work-in-progress tree without ever showing a half-rendered UI to the user. The two trees swap atomically once the commit phase completes.
 
-#### Opt-in concurrent rendering
+#### Concurrent rendering APIs
 
-Concurrent rendering features (transitions, `Suspense` for data, automatic batching across async boundaries, and so on) are opt-in via the new root API. Calling `createRoot(container).render(<App />)` enables concurrent features for the tree; the legacy `ReactDOM.render` API has been removed in React 19.
+`createRoot` is the current client root API; the legacy `ReactDOM.render` API was removed in React 19. Concurrent rendering is an internal capability that React applies when a feature such as a transition or Suspense needs it. It is not a mode in which every update is automatically deferred: urgent updates remain synchronous from the user's point of view, and React commits only a completed tree.
 
 #### Error boundaries
 
@@ -46,7 +46,7 @@ React 19.1 added improved "owner stacks" in development, which give clearer comp
 
 #### Improved support for animations
 
-Fiber's incremental rendering and time slicing capabilities make it easier to implement smooth animations and transitions. React can now prioritize animation frames and ensure that they are rendered in a timely manner, leading to a better user experience.
+Fiber can keep urgent input responsive while lower-priority React rendering is in progress. It does not schedule or guarantee smooth CSS/JavaScript animation frames; application code must still avoid expensive synchronous work and use appropriate browser animation APIs.
 
 ### Code example
 

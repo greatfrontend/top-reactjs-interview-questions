@@ -4,7 +4,7 @@ title: What does the dependency array of `useEffect` affect?
 
 ## TL;DR
 
-The dependency array of `useEffect` determines when the effect should re-run. If the array is empty, the effect runs only once after the initial render. If it contains variables, the effect runs whenever any of those variables change. If omitted, the effect runs after every render.
+The dependency array of `useEffect` controls when React re-synchronizes the effect. With no array, React runs setup after every commit. With `[]`, it runs setup after the component mounts (development Strict Mode immediately performs an extra setup/cleanup cycle). With dependencies, it runs after mount and again whenever any dependency changes according to `Object.is`. Cleanup runs before re-synchronization and after unmounting.
 
 ---
 
@@ -28,7 +28,7 @@ useEffect(() => {
 
 1. **Empty dependency array (`[]`)**:
    - The effect runs once after the initial render and its cleanup runs once on unmount.
-   - This is roughly analogous to `componentDidMount` plus `componentWillUnmount`, but with an important caveat: in development with Strict Mode, React intentionally mounts, unmounts, and remounts each component to surface bugs in effect cleanup. Your effect (and its cleanup) will run twice on the initial mount in development. Production runs the effect once.
+   - This is roughly analogous to `componentDidMount` plus `componentWillUnmount`, but with an important caveat: at a Strict Mode root in development, React performs an extra Effect setup-and-cleanup cycle before the real setup. This stress-tests cleanup without representing a second production mount.
 
    ```javascript
    useEffect(() => {
@@ -92,7 +92,7 @@ The official `eslint-plugin-react-hooks` ships an `exhaustive-deps` rule that wa
    }, [count]); // Ensure `count` is included in the dependency array
    ```
 
-   In React 19, `useEffectEvent` (now stable) provides a way to read the latest value of a prop or state from inside an effect without making the effect re-subscribe on every change. It is the recommended escape hatch for the "I want the latest value, but I do not want this effect to re-run" pattern:
+   React 19.2 introduced the stable `useEffectEvent` API for logic that is conceptually an event fired by an Effect. It can read the latest committed props and state without making the surrounding Effect re-synchronize:
 
    ```javascript
    const onTick = useEffectEvent(() => {
@@ -104,6 +104,8 @@ The official `eslint-plugin-react-hooks` ships an `exhaustive-deps` rule that wa
      return () => clearInterval(handle);
    }, []); // effect does not need `count` in its deps
    ```
+
+   Effect Events are not a general way to suppress dependencies: declare them in the same component or custom Hook as their Effect, call them only from Effects or other Effect Events, and do not include them in dependency arrays. `eslint-plugin-react-hooks` v6.1.1 or newer enforces these restrictions.
 
 2. **Functions as dependencies**:
    - Functions are recreated on every render, so including them in the dependency array can cause the effect to run more often than necessary.

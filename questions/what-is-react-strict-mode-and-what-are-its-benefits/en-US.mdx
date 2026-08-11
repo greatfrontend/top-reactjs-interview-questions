@@ -4,7 +4,7 @@ title: What is React strict mode and what are its benefits?
 
 ## TL;DR
 
-React strict mode is a development tool that helps identify potential problems in an application. It activates additional checks and warnings for its descendants. It doesn't render any visible UI and doesn't affect the production build. The benefits include identifying unsafe lifecycle methods, warning about legacy string ref API usage, detecting unexpected side effects, and ensuring that components are resilient to future changes.
+`<StrictMode>` enables development-only checks for a React subtree. React renders components an extra time to expose impure rendering, runs an extra setup-and-cleanup cycle for Effects, re-runs ref callbacks, and checks for deprecated APIs. It renders no UI and adds no production behavior. The extra work is a stress test: fix the missing cleanup or impurity instead of trying to suppress it.
 
 ---
 
@@ -29,21 +29,22 @@ root.render(
 );
 ```
 
-If you're using a framework like Next.js, StrictMode is enabled in development by default, so you usually don't need to wire it up by hand.
+Some frameworks enable Strict Mode for you. Check the framework and router version rather than assuming it is active; otherwise add `<StrictMode>` at the root or around the subtree you want to check.
 
 ### Benefits of React strict mode
 
 #### Detecting unexpected side effects (the headline behavior)
 
-In React 18+, StrictMode intentionally double-invokes the following in development only:
+In development, Strict Mode performs extra checks including:
 
-- Function component bodies (and class `render`/constructor)
-- `useState`, `useMemo`, and `useReducer` initializers and updater functions
-- Effects: each effect mounts, immediately unmounts, then mounts again (`mount → unmount → remount`)
+- Rendering function components (and selected class methods) an extra time
+- Calling functions that should be pure, such as state initializer/updater functions, reducers, and `useMemo` calculations, an extra time
+- Running one extra Effect setup-and-cleanup cycle
+- Running one extra ref-callback setup-and-cleanup cycle
 
-The effect remount behavior is the most asked-about StrictMode behavior in interviews. It surfaces effects that aren't safely re-runnable — for example, an effect that subscribes to something but doesn't return a cleanup function will leak a subscription on every remount. Fixing your effects so the remount cycle is a no-op makes your components compatible with future features like reusable state across unmounts.
+The Effect check is a common interview topic. It surfaces Effects that are not safely re-synchronized—for example, an Effect that subscribes but does not unsubscribe in cleanup. React is stress-testing the Effect's setup/cleanup contract; it is not performing a second production mount.
 
-React 19 keeps this strict effect behavior and continues to use it as the contract function components are expected to satisfy.
+These checks apply only in development. If `<StrictMode>` is not enabled at the root, React does not run the initial extra Effect cycle for a nested boundary because that parent/child sequence could not happen in production.
 
 #### Warning about legacy and deprecated APIs
 

@@ -16,7 +16,7 @@ State is data a component owns and can change over time, usually in response to 
 
 - State is local: a parent cannot read a child's state directly.
 - In function components, state is declared with the `useState` hook (or `useReducer` for more complex transitions).
-- Setters are **asynchronous and batched** — React groups updates triggered in the same event (and, since React 18, also in promises, timeouts, and native event handlers) and re-renders once.
+- Setters **queue state for a subsequent render** and React batches updates where possible. The current handler still sees the state snapshot from the render that created it.
 - The term **updater function** specifically refers to the `setX(prev => next)` form passed to a setter — not the setter itself. Use it whenever the next value depends on the previous one, so batched updates compose correctly.
 
 ```jsx
