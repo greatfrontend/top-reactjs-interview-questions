@@ -10,6 +10,8 @@ Use React Developer Tools to inspect the component tree and profile commits, bro
 
 ## How do you debug React applications?
 
+Effective React debugging combines component-aware tools with ordinary browser runtime, network, and performance inspection.
+
 ### Using React Developer Tools
 
 The React Developer Tools browser extension is the primary tool for inspecting and debugging React apps. The two tabs:
@@ -55,10 +57,14 @@ Plain `console.log` still works, but a few React-specific habits make it more us
 
 Error boundaries are React components that catch JavaScript errors in their child component tree. You can implement error boundaries in two ways:
 
-#### Using React's Built-in Class Component
+#### Using React's built-in class component
 
-```javascript
-class ErrorBoundary extends React.Component {
+React's built-in error-boundary API is implemented with class lifecycle methods:
+
+```jsx
+import { Component } from 'react';
+
+class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false };
@@ -94,12 +100,14 @@ function App() {
 }
 ```
 
-#### Using react-error-boundary Package
+#### Using the `react-error-boundary` package
 
 Alternatively, you can use the `react-error-boundary` package for a more convenient approach:
 
-```javascript
+```jsx
+import { useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { reportError } from './error-reporting';
 
 function ErrorFallback({ error, resetErrorBoundary }) {
   return (
@@ -112,16 +120,14 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 }
 
 function App() {
+  const [retryKey, setRetryKey] = useState(0);
+
   return (
     <ErrorBoundary
       FallbackComponent={ErrorFallback}
-      onReset={() => {
-        // Reset the state of your app
-      }}
-      onError={(error, info) => {
-        // Log the error to an error reporting service
-      }}>
-      <MyComponent />
+      onReset={() => setRetryKey((key) => key + 1)}
+      onError={reportError}>
+      <MyComponent key={retryKey} />
     </ErrorBoundary>
   );
 }
@@ -129,21 +135,22 @@ function App() {
 
 For handling errors in event handlers or async code, you can use the `useErrorBoundary` hook:
 
-```javascript
+```jsx
 import { useErrorBoundary } from 'react-error-boundary';
+import { saveChanges } from './api';
 
 function MyComponent() {
   const { showBoundary } = useErrorBoundary();
 
   const handleAsyncError = async () => {
     try {
-      await someAsyncOperation();
+      await saveChanges();
     } catch (error) {
       showBoundary(error);
     }
   };
 
-  return <button onClick={handleAsyncError}>Perform Action</button>;
+  return <button onClick={handleAsyncError}>Save changes</button>;
 }
 ```
 

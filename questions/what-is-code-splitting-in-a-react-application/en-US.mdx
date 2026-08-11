@@ -24,21 +24,43 @@ function App() {
 
 ## What is code splitting in a React application?
 
+Code splitting creates separately loadable JavaScript chunks so a route or feature does not have to ship in the initial bundle.
+
 ### Introduction
 
-Code splitting is a performance optimization technique that involves breaking down your application's code into smaller, more manageable chunks. This allows the application to load only the necessary code initially and defer the loading of other parts until they are needed. This can significantly reduce the initial load time and improve the overall user experience.
+Code splitting moves route- or feature-specific modules into separately loadable chunks. It can reduce the JavaScript downloaded, parsed, and executed for the initial route when deferred chunks are not immediately needed. Each split also adds a request and a possible loading state, so choose boundaries based on bundle analysis and real navigation behavior.
+
+The build creates the boundary, and the runtime fetches the deferred chunk only when navigation or rendering reaches it:
+
+```mermaid
+---
+title: Build-time splitting and runtime lazy loading
+---
+flowchart LR
+  Graph["Application module graph"] --> Build["Bundler finds a dynamic import"]
+  Build --> Initial["Initial route chunk"]
+  Build --> Lazy["Deferred feature chunk"]
+  Initial --> First["Load and render the initial route"]
+  First --> Need["User navigates to the deferred feature"]
+  Need --> Fallback["Suspense shows pending UI"]
+  Need --> Request["Browser requests the deferred chunk"]
+  Request --> Ready["Chunk loads and component renders"]
+  Ready --> Replace["Replace pending UI with content"]
+```
 
 ### How to implement code splitting
+
+Split points can be introduced directly with dynamic imports or through React and framework conventions built on them.
 
 #### Using dynamic `import()`
 
 Dynamic `import()` is a JavaScript feature that allows you to load modules asynchronously. This can be used to split your code into separate chunks.
 
 ```javascript
-// Dynamic import example
-import('./module').then((module) => {
-  // Use the module
-});
+async function formatReport(data) {
+  const { formatReportRows } = await import('./report-formatters');
+  return formatReportRows(data);
+}
 ```
 
 #### Using `lazy` and `Suspense`
@@ -88,14 +110,20 @@ React frameworks usually provide route-level code splitting and preloading conve
 
 #### Pairing `Suspense` with error boundaries
 
-`Suspense` only handles the loading state. If the dynamic import fails (network error, deploy mismatch), you need an error boundary to render a fallback and let the user retry:
+`Suspense` only handles the loading state. If the dynamic import fails because of a network error or deploy mismatch, an error boundary can render a failure fallback. This example uses the third-party `react-error-boundary` package:
 
 ```jsx
-<ErrorBoundary fallback={<RetryUI />}>
-  <Suspense fallback={<Spinner />}>
-    <LazyComponent />
-  </Suspense>
-</ErrorBoundary>
+import { ErrorBoundary } from 'react-error-boundary';
+
+function Feature() {
+  return (
+    <ErrorBoundary fallback={<p>Could not load this feature.</p>}>
+      <Suspense fallback={<p>Loading...</p>}>
+        <LazyComponent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
 ```
 
 #### `Suspense` for data and `use()`
@@ -104,15 +132,20 @@ In React 19, a component can read a cached promise with the special `use` API an
 
 #### Preloading
 
-You can warm a lazy chunk before it is needed (e.g. on hover or focus) by simply calling the dynamic import — the bundler / browser will fetch and cache it:
+With a bundler that caches the same dynamic import, an application can start loading a lazy chunk before it is needed, such as on hover or keyboard focus:
 
 ```jsx
 const Editor = lazy(() => import('./Editor'));
 
+function preloadEditor() {
+  void import('./Editor');
+}
+
 function OpenButton() {
   return (
     <button
-      onMouseEnter={() => import('./Editor')} // preload on hover
+      onFocus={preloadEditor}
+      onMouseEnter={preloadEditor}
       onClick={openEditor}>
       Open editor
     </button>
@@ -122,13 +155,17 @@ function OpenButton() {
 
 ### Benefits of code splitting
 
+Useful split points reduce initial work without fragmenting the application into excessive requests and loading states.
+
 - **Improved performance**: By loading only the necessary code initially, you can reduce the initial load time of your application.
-- **Better user experience**: Faster load times lead to a smoother and more responsive user experience.
-- **Efficient resource usage**: Code splitting ensures that resources are used more efficiently by loading code only when it is needed.
+- **Less initial JavaScript**: Route or feature chunks can keep unrelated code out of the initial download and execution path.
+- **Tradeoff control**: Choosing useful split points balances initial bundle size against extra requests and loading fallbacks.
 
 ### Tools and libraries
 
-- **Webpack / Rspack / Vite / Turbopack**: Modern bundlers all support code splitting out of the box and split on dynamic `import()` boundaries automatically.
+Chunk creation and loading behavior ultimately depend on the application's bundler or framework:
+
+- **Webpack / Rspack / Vite / Turbopack**: These bundlers can create chunks at dynamic `import()` boundaries; exact chunking and preloading behavior depends on configuration and framework integration.
 - **React Loadable**: A predecessor to `React.lazy` that is now abandoned (unmaintained for years). New code should use `lazy` and `Suspense` instead.
 
 ## Further reading

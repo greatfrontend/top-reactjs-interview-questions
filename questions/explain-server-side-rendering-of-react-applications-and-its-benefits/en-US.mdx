@@ -10,16 +10,40 @@ Server-side rendering (SSR) renders React output to HTML on the server and sends
 
 ## What is server-side rendering of React applications?
 
+SSR combines server-produced HTML with client hydration; understanding both phases is necessary to evaluate its benefits and costs.
+
 ### Definition
 
 Server-side rendering (SSR) is a technique where the server renders the initial HTML of a React application and sends it to the client. This is in contrast to client-side rendering (CSR), where the browser downloads a minimal HTML page and renders the content using JavaScript.
 
 ### How it works
 
+An SSR request moves through server rendering, delivery, and client hydration in this order:
+
 1. **Initial request**: When a user requests a page, the server processes the request.
 2. **Rendering on the server**: The server uses React's server APIs (`renderToPipeableStream` on Node, `renderToReadableStream` on Web/edge runtimes) to render components into HTML.
 3. **Sending HTML to the client**: The server streams the HTML to the client. With streaming SSR, the browser can start parsing and painting before the whole page is ready.
 4. **Hydration**: Once the JavaScript bundle loads, the client calls `hydrateRoot` to attach event handlers to the existing DOM and resume React on the client. With selective hydration, React can hydrate parts of the tree as they become ready and prioritize the part the user is interacting with.
+
+SSR performs server work for an incoming request, then hands the existing DOM to the client rather than rendering a second, unrelated page over it:
+
+```mermaid
+---
+title: Server-side rendering request lifecycle
+---
+sequenceDiagram
+  participant Browser
+  participant Server
+  participant ReactServer as React server renderer
+  participant ReactClient as React client
+  Browser->>Server: Request a route
+  Server->>ReactServer: Render the component tree
+  ReactServer-->>Browser: Stream HTML
+  Browser->>Browser: Parse and paint the HTML
+  Browser->>ReactClient: Load the client JavaScript
+  ReactClient->>Browser: Hydrate matching DOM
+  Browser->>Browser: Page becomes interactive
+```
 
 ### Streaming SSR and React Server Components
 
@@ -40,9 +64,10 @@ Here is a basic example using Next.js's App Router, which uses async server comp
 // app/page.jsx — a Server Component (no 'use client' directive)
 async function fetchDataFromAPI() {
   const res = await fetch('https://api.example.com/data', {
-    // Opt into per-request rendering (SSR). Omit for static generation.
+    // Opt into a request-time fetch for this example.
     cache: 'no-store',
   });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
@@ -68,19 +93,29 @@ Hydration mismatches occur when server HTML differs from the client's initial re
 
 ## Benefits of server-side rendering
 
+SSR is most useful when meaningful response HTML improves delivery or crawlability enough to justify request-time rendering and hydration.
+
 ### Improved initial load time
 
-- **Faster content display**: Since the server sends fully rendered HTML, users see the content faster compared to CSR, where the browser has to download and execute JavaScript before rendering.
+The timing benefit depends on server latency, streaming, caching, bundle size, and the equivalent client-rendered path.
+
+- **Earlier content under the right conditions**: A nearby, efficiently cached or streaming server can deliver meaningful HTML before a client-rendered application finishes downloading and executing its JavaScript. SSR is not automatically faster than static HTML or every CSR application, so measure the actual route.
 
 ### Better SEO
 
-- **Search engine indexing**: Search engines can easily index the fully rendered HTML, improving the SEO of your application. This is particularly important for content-heavy sites.
+SSR affects whether content is present in the initial response, not the full set of signals used for search ranking.
+
+- **Crawlable response content**: Crawlers can read the server-rendered content without waiting to execute application JavaScript. That improves content availability to crawlers but does not by itself guarantee higher search rankings.
 
 ### Performance on slower devices
 
-- **Less client-side rendering work**: SSR (and especially RSC) shifts work to the server, so low-powered devices have less HTML to construct from JavaScript. The JS still has to download and hydrate, but the first paint does not depend on it.
+Server-rendered HTML can move initial document construction away from the browser, but hydration still consumes client resources.
+
+- **HTML construction before JavaScript**: SSR lets a low-powered device display server-produced HTML before hydration. Traditional SSR still sends component JavaScript and performs client rendering during hydration; React Server Components can additionally reduce the JavaScript sent for server-only components.
 
 ## Tradeoffs to be aware of
+
+SSR changes where and when work happens rather than removing that work entirely.
 
 - **Higher TTFB**: Time To First Byte goes up because the server has to render before responding. Streaming SSR mitigates this by flushing the shell early, but the server is still doing work CSR pushes to the client.
 - **Hydration cost**: Interactive readiness is bounded by how fast the JS bundle downloads, parses, and hydrates. Big bundles delay TTI even when pixels appear quickly.

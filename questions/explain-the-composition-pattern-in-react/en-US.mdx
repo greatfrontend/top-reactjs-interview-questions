@@ -10,11 +10,15 @@ The composition pattern in React is the practice of building UIs by combining sm
 
 ## Composition pattern in React
 
+Composition builds larger interfaces by arranging components through props and nesting instead of extending component classes.
+
 ### What is composition?
 
 Composition is a design principle that involves combining smaller, reusable components to build more complex components. In React, this is preferred over inheritance for creating complex UIs.
 
 ### How to use composition in React
+
+React supports several composition shapes depending on whether a component needs one content region, named regions, or component-specific configuration.
 
 #### Passing components as children
 
@@ -127,6 +131,8 @@ This is the API style used by libraries like Radix UI and Headless UI, and by HT
 
 ### Benefits of composition
 
+Composition keeps responsibilities local while allowing callers to control how reusable pieces are assembled.
+
 - **Reusability**: Smaller components can be reused across different parts of the application.
 - **Maintainability**: Easier to manage and update smaller components.
 - **Flexibility**: Components can be combined in many ways to create complex UIs without each combination needing its own component.
@@ -141,6 +147,8 @@ Before hooks, behavior reuse often went through higher-order components (HOCs li
 - Reach for HOCs only when wrapping is genuinely what you need (e.g. integrating with a library that expects them).
 
 ### When to use composition
+
+Composition is a good default when variation can be expressed by arranging existing UI pieces or passing explicit content regions.
 
 - When you need to build complex UIs from smaller, reusable components.
 - When you want a generic component (e.g. `Dialog`, `Card`) to support arbitrary content via `children` or slots.

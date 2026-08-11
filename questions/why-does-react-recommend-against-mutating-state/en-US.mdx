@@ -10,6 +10,8 @@ React treats state as a read-only snapshot. Mutating an object or array in place
 
 ## Why does React recommend against mutating state?
 
+React treats state as an immutable snapshot so queued renders, equality checks, and concurrent work can reason about past and next values independently.
+
 ### A quick terminology note
 
 In modern React, state is updated by the setter returned from `useState` (or by `dispatch` from `useReducer`). The class-based `this.setState` API still exists but is rarely used in new code. Both APIs share the same expectation: you give React a **new** state value rather than mutating the existing one. The rest of this answer focuses on the hooks-based APIs.
@@ -27,7 +29,25 @@ A common misconception is that mutating state breaks the "virtual DOM diff." Tha
 
 When the next state is `Object.is`-equal to the current state, React skips re-rendering the component and its children. React may still call the component before applying that optimization in some cases, so code must not depend on exactly when the bailout occurs. Mutation is a problem because it produces "same value to React, changed data in memory."
 
+Mutation and immutable replacement take opposite paths through the reference-equality check:
+
+```mermaid
+---
+title: Mutation can hide a state change from React
+---
+flowchart TD
+  Update["Update an object in state"] --> Choice{"How is it updated?"}
+  Choice -->|"mutate existing object"| Same["Pass the same reference"]
+  Same --> Equal["Object.is returns true"]
+  Equal --> Stale["React can bail out; UI becomes stale"]
+  Choice -->|"create a new object"| New["Pass a new reference"]
+  New --> Different["Object.is returns false"]
+  Different --> Render["React renders the new snapshot"]
+```
+
 ### Problems with mutating state
+
+Mutation can hide updates from React and change values that earlier renders still conceptually own:
 
 1. **Stale UI updates**: The bailout above means the UI does not refresh when the underlying data changed.
 2. **Broken memoization**: Memoized children, memoized values, and effects all compare by reference and will silently skip updates.

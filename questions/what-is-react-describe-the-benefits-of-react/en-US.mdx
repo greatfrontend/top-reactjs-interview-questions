@@ -8,10 +8,10 @@ React is an open-source library maintained by Meta and the community for buildin
 
 **Key characteristics of React**:
 
-- **Declarative**: You describe the desired state of your UI based on data, and React handles updating the actual DOM efficiently.
+- **Declarative**: You describe the desired UI from data, and the renderer coordinates the required host updates.
 - **Component-based**: Build reusable and modular UI elements (components) that manage their own state and logic.
 - **Reconciliation**: React compares element descriptions and commits the necessary renderer-specific changes. These descriptions are not a copy of the browser DOM.
-- **JSX**: While not mandatory, JSX provides a syntax extension that allows you to write HTML-like structures within your JavaScript code, making UI development more intuitive.
+- **JSX**: While not mandatory, JSX is a syntax extension for expressing element structure alongside JavaScript values and control flow.
 
 ---
 
@@ -23,13 +23,15 @@ Modern React is function-component- and Hooks-oriented. JSX, an HTML-like syntax
 
 ## Benefits of React
 
+React's benefits come from its component model, declarative rendering, renderer ecosystem, and scheduling capabilities.
+
 ### 1. Component-based architecture
 
-React encourages breaking down your UI into independent, reusable components. Each component encapsulates its own state, logic, and rendering, making your code:
+React encourages breaking a UI into reusable components. A component can encapsulate rendering, local state, and related behavior, which supports:
 
-- **Modular and reusable:** Components can be easily reused across different parts of your application or even in other projects.
-- **Maintainable:** Changes within a component are isolated, reducing the risk of unintended side effects.
-- **Easier to test:** Components can be tested independently, ensuring their functionality and reliability.
+- **Modularity and reuse:** A component with an explicit prop contract can be composed in multiple features or applications.
+- **Local reasoning:** Keeping related rendering and behavior together narrows the code involved in many changes.
+- **Focused tests:** Components can be exercised through their visible output and interactions at a defined boundary.
 
 ### 2. Declarative rendering and reconciliation
 
@@ -37,23 +39,23 @@ Components return React elements that describe the desired UI. React reconciles 
 
 ### 3. Large and active community
 
-React boasts a vast and active community of developers worldwide. This translates to:
+React has a mature ecosystem, which affects practical framework and library choices:
 
-- **Extensive documentation and resources:** Find comprehensive documentation, tutorials, and community-driven resources to aid your learning and development process.
-- **Abundant third-party libraries and tools:** Leverage a rich ecosystem of pre-built components, libraries, and tools that extend React's functionality and streamline development.
-- **Strong community support:** Seek help, share knowledge, and engage with fellow developers through forums, online communities, and meetups.
+- **Maintained documentation and learning material:** The official documentation covers both fundamentals and current APIs.
+- **Third-party libraries and tools:** Established options exist for routing, data fetching, testing, forms, and accessible UI primitives.
+- **A large hiring and support base:** Many teams already have React experience, examples, and production knowledge to draw from.
 
 ### 4. One-way data binding
 
-React uses a unidirectional data flow: data is passed from parent components down to children via props, and child components communicate back up through callbacks rather than mutating shared state directly. This makes the flow of data explicit and easy to trace, which leads to more predictable behavior and simpler debugging compared to two-way binding approaches.
+React uses a unidirectional data flow: data is passed from parent components down to children via props, and child components request updates through callbacks rather than mutating parent state directly. This gives each value an explicit owner and update path.
 
 ### 5. Hooks and function components
 
-Modern React is built around function components and hooks. Hooks like `useState`, `useEffect`, `useReducer`, `useContext`, and `useRef` let you manage state, side effects, and shared logic without classes. Custom hooks make it easy to extract and reuse stateful logic across components.
+Modern React is built around function components and Hooks. Hooks such as `useState`, `useEffect`, `useReducer`, `useContext`, and `useRef` provide state, synchronization, and context access without classes. Custom Hooks extract related stateful logic for reuse across components.
 
 ### 6. Learn once, write anywhere
 
-React's versatility extends beyond web development. With React Native, you can apply your React knowledge to build native mobile applications for iOS and Android, sharing components and logic across web and mobile and targeting multiple platforms without learning entirely new technologies.
+React's component and state model also applies to React Native. Web and native applications can often share business logic, data hooks, and design concepts, but their host components and platform-specific interaction code usually differ.
 
 ## Further reading
 

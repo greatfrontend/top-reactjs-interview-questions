@@ -10,6 +10,8 @@ JSX is a syntax extension for JavaScript that lets you describe UI with HTML-lik
 
 ## What is JSX and how does it work?
 
+JSX is syntax that a build tool transforms into calls producing React element descriptions; browsers do not execute JSX directly.
+
 ### What is JSX?
 
 JSX is a syntax extension for JavaScript that lets you describe UI trees with an HTML-like syntax. Although it was popularized by React, JSX itself is a separate spec and is also used by other libraries such as Preact and Solid. TypeScript supports it natively in `.tsx` files.
@@ -42,6 +44,20 @@ const element = _jsx('h1', { children: 'Hello, world!' });
 ```
 
 The older "classic" transform compiled the same JSX to `React.createElement('h1', null, 'Hello, world!')` and required `React` to be in scope. The classic form is still useful as a mental model for what JSX desugars to, but new projects should use the automatic runtime.
+
+Regardless of which transform is configured, JSX becomes ordinary JavaScript before React receives an element description:
+
+```mermaid
+---
+title: JSX transformation and rendering pipeline
+---
+flowchart LR
+  Source["JSX source"] --> Transform["Build-time JSX transform"]
+  Transform --> Calls["jsx or createElement calls"]
+  Calls --> Elements["React element objects"]
+  Elements --> Render["React renders and reconciles"]
+  Render --> Commit["Renderer commits host changes"]
+```
 
 ### Embedding expressions
 

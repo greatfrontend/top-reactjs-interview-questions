@@ -10,33 +10,50 @@ A re-render means React calls a function component again (or calls a class compo
 
 ## What does re-rendering mean in React?
 
+A re-render is React calling a component again to calculate its next output; it is distinct from committing changes to the host environment.
+
 ### Understanding re-rendering
 
-Re-rendering is the process by which React calls a component's function again to compute a new description of the UI. It is important to note that a re-render does not necessarily result in a DOM update — React performs reconciliation against the previous output and may bail out if nothing has changed.
+Re-rendering is the process by which React calls a component's function again to compute a new UI description. It does not necessarily result in a DOM update: reconciliation may determine that no host changes are required.
 
 ### When does re-rendering occur?
 
 Re-rendering occurs in the following scenarios:
 
-- When a component's state changes via a `useState` setter or a `useReducer` `dispatch`
+- When a state update from a `useState` setter or `useReducer` dispatch is not skipped by a same-value bailout
 - When a component subscribed to a context reads a new context value
-- When a component receives new props from its parent
-- When a parent component re-renders, its children re-render by default — even if their props are referentially unchanged
+- When a parent component re-renders, its children render by default—even if their props are referentially unchanged—unless an applicable bailout skips them
 - When a component's `key` changes, React unmounts the old instance and mounts a new one (a remount, not just a re-render)
 
 ### The re-rendering process
 
+React moves from a scheduled update through render and reconciliation before committing any required host changes:
+
 1. **Trigger**: A state update, context value change, or parent re-render schedules the component for re-rendering.
 2. **Render**: React calls the component function again to produce a new React element tree.
 3. **Reconciliation**: React diffs the new tree against the previous one.
-4. **Commit**: React applies the minimal set of changes (if any) to the actual DOM.
+4. **Commit**: React applies the required changes (if any) to the actual DOM.
+
+The render and commit phases are separate, so calling a component again does not imply that React will mutate the DOM:
+
+```mermaid
+---
+title: Re-rendering does not always produce a DOM update
+---
+flowchart LR
+  Trigger["State, context, or parent update"] --> Render["Call component and calculate new output"]
+  Render --> Reconcile["Compare with previous output"]
+  Reconcile --> Changes{"Host changes required?"}
+  Changes -->|"yes"| Commit["Commit DOM changes"]
+  Changes -->|"no"| Done["Finish without changing the DOM"]
+```
 
 ### Example
 
 Here's a simple example to illustrate re-rendering:
 
 ```jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 function Counter() {
   const [count, setCount] = useState(0);
@@ -59,9 +76,9 @@ In this example:
 
 ### Performance considerations
 
-Re-rendering itself is usually cheap, but unnecessary re-renders of expensive subtrees can hurt performance. React provides several techniques to opt out of re-rendering:
+The cost of a re-render depends on the component work and subtree size. Profile a slow interaction before adding memoization. Common ways to narrow measured render work include:
 
-- **`memo`**: Wraps a component so React can skip re-rendering it when each prop compares equal to its previous value with `Object.is` (unless a custom comparator is provided).
+- **`memo`**: Lets React skip a prop-driven render when each prop compares equal to its previous value with `Object.is` (unless a custom comparator is provided). The component still renders for its own state or a context value it reads.
 - **`useMemo` and `useCallback`**: Hooks that preserve the identity of values and functions across renders so memoized children don't see "new" props.
 - **State colocation**: Move state down so fewer components re-render when it changes.
 

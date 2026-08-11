@@ -4,11 +4,13 @@ title: What is the difference between state and props in React?
 
 ## TL;DR
 
-**State** is data a component owns and can update over time; **props** are data a component receives from its parent and is not allowed to mutate. State changes trigger a re-render of the owning component (and its descendants); prop changes happen because the parent re-rendered with new values. Together they implement React's one-way data flow: state lives at the lowest common ancestor that needs it, flows down as props, and changes flow back up via callbacks passed as props.
+**State** is data a component owns and can update over time; **props** are data a component receives from its parent and must treat as read-only. A state update schedules the owning component to render again unless React can apply a same-value bailout; descendants render by default but may also bail out. New props arrive when the parent renders new element descriptions. Together they implement React's one-way data flow: state lives at the lowest common ancestor that needs it, flows down as props, and changes flow back up via callbacks passed as props.
 
 ---
 
 ## What is the difference between state and props in React?
+
+State is component-owned memory, while props are read-only inputs supplied by the component's parent.
 
 ### State
 
@@ -25,8 +27,8 @@ import { useState } from 'react';
 function Counter() {
   const [count, setCount] = useState(0);
 
-  // Wrong: reads a possibly stale `count` if multiple updates batch together
-  // const increment = () => setCount(count + 1);
+  // This works for one click, but repeated queued calls would reuse the same
+  // render snapshot: const increment = () => setCount(count + 1);
 
   // Right: the updater function gets the latest value
   const increment = () => setCount((prev) => prev + 1);
@@ -48,7 +50,9 @@ function Counter() {
 }
 ```
 
-> Class components use `this.setState`, but writing `this.setState({ count: this.state.count + 1 })` is the exact stale-read anti-pattern the React docs warn against — pass a function (`this.setState(prev => ({ count: prev.count + 1 }))`) for the same reason. New code should use `useState` in a function component.
+> [!NOTE] Class components use the same updater principle
+>
+> When a class state update depends on previous state, pass a function such as `this.setState((prev) => ({ count: prev.count + 1 }))`. Reading `this.state.count` in several queued object-form updates reuses the same snapshot. New code should generally prefer `useState` in a function component.
 
 ### Props
 
@@ -91,10 +95,12 @@ function Cart({ items }) {
 
 ### Key differences
 
+The following table compares ownership, updates, and rendering behavior:
+
 |  | State | Props |
 | --- | --- | --- |
 | Owned by | The component itself | The parent |
-| Mutable by | The component (via its setter) | No one (read-only in the child) |
+| Mutable by | The component, through its setter | The child must treat props as read-only; the parent may pass a new value |
 | Triggers re-render of | The owning component | The receiving component, when the parent passes new values |
 | Typical use | Internal, changing data | Configuration, data, and callbacks passed in |
 

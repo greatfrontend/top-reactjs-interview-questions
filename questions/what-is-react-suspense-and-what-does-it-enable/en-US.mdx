@@ -22,13 +22,32 @@ function MyComponent() {
 
 ## What is React Suspense and what does it enable?
 
+Suspense coordinates how a boundary responds when a supported descendant cannot finish the current render yet.
+
 ### Introduction to React Suspense
 
 React Suspense coordinates a fallback for a subtree that cannot finish rendering yet. A component must suspend through a React-supported mechanism—such as `lazy`, `use` with a cached promise, or a framework integration. Starting a request in an Effect or returning a promise from an event handler does not make the nearest boundary show its fallback.
 
+The nearest Suspense boundary owns the pending path, while rejection follows the normal error-boundary path:
+
+```mermaid
+---
+title: Suspense pending, fulfilled, and rejected paths
+---
+flowchart TD
+  Attempt["Render a descendant"] --> Ready{"Can it finish now?"}
+  Ready -->|"yes"| Content["Commit the content"]
+  Ready -->|"no, it suspends"| Pending["Nearest Suspense boundary shows fallback"]
+  Pending --> Settle{"Suspending resource settles"}
+  Settle -->|"fulfilled"| Retry["Retry rendering the descendant"]
+  Retry --> Content
+  Settle -->|"rejected"| Error["Propagate to the nearest error boundary"]
+  Error --> ErrorUI["Render error fallback UI"]
+```
+
 ### Code splitting with React.lazy
 
-One of the primary use cases for React Suspense is code splitting. Code splitting allows you to load parts of your application on demand, which can significantly improve the initial load time of your application.
+One primary Suspense use case is code splitting. Loading a component's chunk only when that component is needed can reduce initial JavaScript, while the boundary provides pending UI for the chunk request.
 
 ```jsx
 import React, { Suspense } from 'react';
@@ -55,9 +74,10 @@ import { Suspense } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 
 function fetchData() {
-  return fetch('https://api.example.com/data').then((response) =>
-    response.json(),
-  );
+  return fetch('https://api.example.com/data').then((response) => {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+  });
 }
 
 function DataComponent() {
@@ -67,7 +87,7 @@ function DataComponent() {
     queryKey: ['data'],
     queryFn: fetchData,
   });
-  return <div>{data}</div>;
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
 }
 
 function MyComponent() {
@@ -79,7 +99,7 @@ function MyComponent() {
 }
 ```
 
-### The `use()` hook (React 19)
+### The `use` API (React 19)
 
 In React 19, you can read a promise directly from a client component with the `use()` hook. While the promise is pending, React suspends the nearest `Suspense` boundary; when it resolves, the component re-renders with the value.
 
@@ -113,18 +133,27 @@ React 19.2 batches the reveal of server-rendered Suspense boundaries for a short
 Suspense handles the _pending_ state of an async operation, but it doesn't handle the _error_ state. To cover both, wrap your suspending tree in an error boundary as well:
 
 ```jsx
-<ErrorBoundary fallback={<p>Something went wrong.</p>}>
-  <Suspense fallback={<p>Loading…</p>}>
-    <DataComponent />
-  </Suspense>
-</ErrorBoundary>
+import { Suspense } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
+
+function DataPanel() {
+  return (
+    <ErrorBoundary fallback={<p>Something went wrong.</p>}>
+      <Suspense fallback={<p>Loading…</p>}>
+        <DataComponent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
 ```
 
 ### Benefits of React Suspense
 
-- **Improved user experience**: By showing fallback content, you can keep the user engaged while waiting for asynchronous operations to complete.
-- **Simplified code**: Suspense lets you handle loading states declaratively at the boundary level, instead of threading `isLoading` flags through every component.
-- **Better performance**: Code splitting with `React.lazy` reduces initial bundle size, and streaming SSR with Suspense lets the browser render content as it becomes available.
+Suspense centralizes pending UI for supported code and data sources and composes with streaming rendering.
+
+- **Coordinated pending UI**: One boundary can keep already revealed content visible or replace a pending subtree with a deliberate fallback.
+- **Boundary-level loading states**: Suspense-aware code and data sources can avoid threading an `isLoading` flag through every component in the subtree.
+- **Progressive delivery**: `lazy` enables bundler-backed code splitting, while streaming SSR can send completed boundaries without waiting for the entire page.
 
 ## Further reading
 

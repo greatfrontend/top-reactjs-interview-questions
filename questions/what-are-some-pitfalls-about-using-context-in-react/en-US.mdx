@@ -10,6 +10,8 @@ Context in React is convenient but easy to misuse. The biggest pitfalls are pass
 
 ## Pitfalls of using context in React
 
+Context is convenient for distribution, but its broadcast update model and implicit dependencies can become costly when a value changes frequently or grows too broad.
+
 ### Unnecessary re-renders from an unstable provider value
 
 When a context value changes by reference, every component that reads that context re-renders — even if it only uses a field that hasn't actually changed. The most common cause is constructing a new object inline as the provider's `value`, which makes a fresh reference on every parent render:
@@ -67,7 +69,7 @@ Unlike Redux's `useSelector`, React context has no built-in way to subscribe to 
 
 ### Using context as a state manager
 
-Context is a transport mechanism for passing values down the tree, not a state manager. It has no caching, no devtools, no middleware, no fine-grained updates. For complex client state, prefer Redux Toolkit, Zustand, or Jotai. For server state (data from APIs), use TanStack Query, SWR, or RTK Query — don't store fetched data in context.
+Context transports a value through a subtree; pairing it with `useState` or `useReducer` can be a reasonable state solution for a small application. Context does not add caching, middleware, devtools, or selector-based subscriptions by itself. Consider Redux Toolkit, Zustand, or Jotai when those capabilities solve a concrete client-state problem. Fetched data can be passed through context, but a framework data layer or a library such as TanStack Query, SWR, or RTK Query is usually a better fit when it needs caching, deduplication, invalidation, or background refetching.
 
 ### Debugging difficulties
 

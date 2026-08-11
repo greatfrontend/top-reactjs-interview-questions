@@ -1,5 +1,5 @@
 ---
-title: What is React strict mode and what are its benefits?
+title: What is React Strict Mode and what are its benefits?
 ---
 
 ## TL;DR
@@ -8,9 +8,11 @@ title: What is React strict mode and what are its benefits?
 
 ---
 
-## What is React strict mode and what are its benefits?
+## What is React Strict Mode and what are its benefits?
 
-### What is React strict mode?
+Strict Mode enables development-only checks that expose rendering impurities, missing Effect cleanup, and deprecated API usage.
+
+### What is React Strict Mode?
 
 React strict mode is a feature in React that helps developers identify potential problems in their applications. It is a wrapper component that you can use to wrap parts of your application to enable additional checks and warnings. It does not render any visible UI and does not affect the production build.
 
@@ -31,7 +33,9 @@ root.render(
 
 Some frameworks enable Strict Mode for you. Check the framework and router version rather than assuming it is active; otherwise add `<StrictMode>` at the root or around the subtree you want to check.
 
-### Benefits of React strict mode
+### Benefits of React Strict Mode
+
+Its extra development executions are diagnostics that make assumptions about purity and cleanup fail earlier.
 
 #### Detecting unexpected side effects (the headline behavior)
 
@@ -45,6 +49,23 @@ In development, Strict Mode performs extra checks including:
 The Effect check is a common interview topic. It surfaces Effects that are not safely re-synchronized—for example, an Effect that subscribes but does not unsubscribe in cleanup. React is stress-testing the Effect's setup/cleanup contract; it is not performing a second production mount.
 
 These checks apply only in development. If `<StrictMode>` is not enabled at the root, React does not run the initial extra Effect cycle for a nested boundary because that parent/child sequence could not happen in production.
+
+At a Strict Mode root, the initial development sequence deliberately repeats pure work and immediately verifies that Effect cleanup reverses setup:
+
+```mermaid
+---
+title: Initial Strict Mode development checks
+---
+flowchart LR
+  Start["Initial development render"] --> Render1["Call render-phase logic"]
+  Render1 --> Render2["Call render-phase logic again for purity checks"]
+  Render2 --> Commit["Commit the result"]
+  Commit --> Setup1["Run Effect setup"]
+  Setup1 --> Cleanup1["Run immediate test cleanup"]
+  Cleanup1 --> Setup2["Run Effect setup again"]
+  Setup2 --> Lifetime["Continue the mounted lifetime"]
+  Lifetime --> Cleanup2["Run final cleanup on unmount"]
+```
 
 #### Warning about legacy and deprecated APIs
 

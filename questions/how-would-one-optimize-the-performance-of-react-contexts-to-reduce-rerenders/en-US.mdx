@@ -7,12 +7,14 @@ title: How would one optimize the performance of React contexts to reduce rerend
 Context consumers re-render whenever the provider receives a different `value` according to `Object.is`. Neither `memo` nor React Compiler prevents that subscription update. Keep provider values stable, split unrelated or differently changing data into separate contexts, and separate state from a stable dispatch function so dispatch-only consumers do not re-render on state changes. Use `memo` to protect expensive descendants below a consumer, and consider selector-based state libraries when consumers need independent slices of frequently changing state.
 
 ```javascript
-const value = useMemo(() => ({ state }), [state]); // dispatch is already stable
+const value = useMemo(() => ({ state, dispatch }), [state, dispatch]);
 ```
 
 ---
 
 ## How to optimize the performance of React contexts to reduce rerenders
+
+Context optimization starts by reducing unnecessary provider identity changes and narrowing which components subscribe to each value.
 
 ### Know what React Compiler can and cannot optimize
 
@@ -22,27 +24,28 @@ Every component that reads a context re-renders when its closest provider receiv
 
 ### Split state and dispatch into two contexts
 
-The single most effective pattern is splitting a context into two: one that exposes the (frequently changing) state and another that exposes the (stable) updater. Components that only need to dispatch don't rerender when state changes, because they only subscribe to the dispatch context whose value never changes.
+A common effective pattern is splitting a context into two: one that exposes the frequently changing state and another that exposes the stable updater. Components that only need to dispatch do not receive a context update when state changes because the dispatch context's value remains stable.
 
-```javascript
-import {
-  createContext,
-  useContext,
-  useReducer,
-  useMemo,
-  type ReactNode,
-} from 'react';
+```jsx
+import { createContext, useContext, useReducer } from 'react';
 
 const StateContext = createContext(null);
 const DispatchContext = createContext(null);
 
 function reducer(state, action) {
-  // ...
+  switch (action.type) {
+    case 'increment':
+      return { count: state.count + 1 };
+    case 'decrement':
+      return { count: state.count - 1 };
+    default:
+      throw new Error(`Unknown action: ${action.type}`);
+  }
 }
 
 const initialState = { count: 0 };
 
-export function CounterProvider({ children }: { children: ReactNode }) {
+export function CounterProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   // No need to memoize `dispatch` — useReducer guarantees it's stable.
@@ -60,46 +63,73 @@ export const useCounterDispatch = () => useContext(DispatchContext);
 
 A button that only dispatches actions can call `useCounterDispatch()` without subscribing to `StateContext`, so a state update alone does not re-render it through context. It can still re-render for other reasons, such as its parent rendering or its own state changing.
 
+Splitting the providers narrows the subscription fan-out when state changes:
+
+```mermaid
+---
+title: Splitting state and dispatch context subscriptions
+---
+flowchart TD
+  Reducer["useReducer returns changing state and stable dispatch"] --> StateProvider["StateContext provider"]
+  Reducer --> DispatchProvider["DispatchContext provider"]
+  StateProvider --> ReaderA["State-reading consumer"]
+  StateProvider --> ReaderB["Another state-reading consumer"]
+  DispatchProvider --> Button["Dispatch-only button"]
+  Change["State changes"] --> StateProvider
+  StateProvider -. "context update" .-> ReaderA
+  StateProvider -. "context update" .-> ReaderB
+  Change -. "dispatch value stays stable" .-> DispatchProvider
+```
+
 ### Memoize the value object you pass to a provider
 
 If you must pass a single object value, memoize it so its reference is stable across renders. Note that hook return values like `dispatch` from `useReducer` and the setter from `useState` are already referentially stable — you don't need to include them in the dependency list.
 
-```javascript
-const value = useMemo(() => ({ state }), [state]);
-// `dispatch` is stable, so it doesn't belong in the deps array.
+```jsx
+import { createContext, useMemo } from 'react';
 
-return (
-  <MyContext.Provider value={value}>
-    {/* Pass dispatch via a separate context as shown above */}
-    {children}
-  </MyContext.Provider>
-);
+const MyContext = createContext(null);
+
+function MyProvider({ state, children }) {
+  const value = useMemo(() => ({ state }), [state]);
+  return <MyContext.Provider value={value}>{children}</MyContext.Provider>;
+}
 ```
 
-### Wrap consumers in `React.memo`
+### Memoize expensive descendants of consumers
 
-When a context value does change, every consumer rerenders. Wrapping a consumer (or its parent) in `React.memo` prevents that rerender from cascading into descendants whose props haven't changed:
+When a context value changes, `memo` cannot stop a component that reads that context from re-rendering. A consumer can instead pass a derived value to a memoized child, allowing that child to skip work when its props are unchanged:
 
-```javascript
-const Item = React.memo(function Item({ id }) {
-  // ...
+```jsx
+import { memo, useContext } from 'react';
+
+const Item = memo(function Item({ id }) {
+  return <ExpensiveItemDetails id={id} />;
 });
+
+function SelectedItem() {
+  const { selectedItem } = useContext(ItemsContext);
+  return <Item id={selectedItem.id} />;
+}
 ```
 
-This composes well with split contexts: the dispatch-only consumer doesn't rerender at all, and the state-consuming consumer rerenders but its memoized children don't.
+This composes well with split contexts: a dispatch-only consumer receives no context update when state changes, while a state consumer can re-render without necessarily re-rendering memoized descendants.
 
 ### Use the `use(Context)` API for conditional reads
 
 React 19 added the `use` API, which can read a context inside conditionals or loops. Despite its name, `use` is not a Hook. It still subscribes the component to that context whenever the read occurs; conditional placement does not make updates cheaper by itself.
 
-```javascript
+```jsx
 import { use } from 'react';
+import { ThemeContext } from './theme-context';
 
-function Avatar() {
-  if (someCondition) {
+function Avatar({ showTheme }) {
+  if (showTheme) {
     const theme = use(ThemeContext);
-    // ...
+    return <img alt="Profile" className={`avatar avatar-${theme}`} />;
   }
+
+  return <img alt="Profile" className="avatar" />;
 }
 ```
 
@@ -107,7 +137,7 @@ function Avatar() {
 
 For very large context values where consumers only care about a slice, `use-context-selector` lets a component subscribe to a derived value and only rerender when that derived value changes. **Important**: `use-context-selector` requires using its own `createContext`, not React's built-in one — selectors don't work with a context created by `react`.
 
-```javascript
+```jsx
 import { createContext, useContextSelector } from 'use-context-selector';
 
 const MyContext = createContext(null);
@@ -120,7 +150,7 @@ function Counter() {
 }
 ```
 
-If your needs grow beyond what selectors give you, this is usually the point at which a dedicated state library (Zustand, Jotai, Redux Toolkit) becomes the better answer — they're built around selector-based subscriptions and avoid context's all-consumers-rerender model entirely.
+For frequently changing shared state with many independent slices, compare a dedicated state library such as Zustand, Jotai, or Redux Toolkit. Their selector-based subscriptions can narrow store-driven updates, at the cost of another abstraction and dependency.
 
 ## Further reading
 

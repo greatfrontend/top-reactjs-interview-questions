@@ -10,6 +10,8 @@ Using array indices as `key`s causes React to reconcile the list incorrectly whe
 
 ## Consequence of using array indices as the value for `key`s in React
 
+An index identifies a list position rather than the logical item occupying it, which breaks identity when the list changes before that position.
+
 ### Incorrect reconciliation, not just "slow renders"
 
 The real problem is correctness, not performance. React's `key` is the identity React uses to match an element across renders. When the key is the array index, the identity tracks the **slot** in the array rather than the **item** in the slot. After a reorder, insert, or delete, React still matches `key={0}` to `key={0}`, so it:
@@ -41,7 +43,22 @@ function TodoList({ todos, onDelete }) {
 }
 ```
 
-If the user checks the box on the second row and then deletes the first row, the second item's data shifts up to index `0`, but React keeps the original `<li key={0}>` mounted with its checked checkbox and previously typed text. The visible label changes; the DOM state does not. Switching to `key={todo.id}` fixes it because React then unmounts the deleted row and keeps the surviving row's DOM intact.
+If the user checks the second row and then deletes the first row, React reuses the old `<li key={0}>` for the item that moved into index `0`. That item therefore inherits the first row's uncontrolled DOM state. The checked DOM from the old `<li key={1}>` either moves to the item now at index `1` or disappears if no row remains there. Switching to `key={todo.id}` fixes the mismatch because React removes only the deleted item's row and preserves each surviving item's DOM with that item.
+
+The two key strategies give React different answers about which row survived the deletion:
+
+```mermaid
+---
+title: Item identity after deleting the first row
+---
+flowchart TD
+  Before["Before: A is key 0; B is key 1 and owns checked state"] --> Delete["Delete item A"]
+  Delete --> Index["Index keys: B becomes key 0"]
+  Index --> Wrong["React reuses A's row identity for B"]
+  Wrong --> Leak["DOM state and focus can attach to the wrong item"]
+  Delete --> Stable["Stable IDs: B keeps key B"]
+  Stable --> Correct["React preserves B's row identity and state"]
+```
 
 ### When index keys are acceptable
 

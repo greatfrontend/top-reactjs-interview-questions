@@ -28,6 +28,8 @@ Render props were popular before hooks. As of modern React, custom hooks have la
 
 ## What are render props in React and what are they for?
 
+The render-prop pattern shares behavior by letting a component call a function supplied by its consumer to produce UI.
+
 ### Definition
 
 Render props is a pattern in React for sharing code between components by passing a function as a prop. The component invokes that function with some piece of state or data and renders whatever it returns. The pattern gets its name from the prop, which is conventionally called `render` — though `children` as a function is just as common, and any prop name works.
@@ -108,6 +110,8 @@ return (
 Defining the render prop inline (which is the usual style) creates a new function on every render of the parent. That new function reference defeats `React.memo` on the render-prop component itself, because the `render` (or `children`) prop is never referentially equal between renders. If the wrapping component is expensive to re-render, you can wrap the function in `useCallback`, hoist it to module scope, or — more commonly — switch to a custom hook, which sidesteps the issue entirely.
 
 ### Benefits
+
+The pattern separates reusable stateful behavior from the markup chosen by each consumer.
 
 - **Reusability**: The logic for tracking the mouse position is encapsulated in `MouseTracker`, making it reusable across different parts of the application.
 - **Separation of concerns**: The `MouseTracker` component is responsible for tracking the mouse position, while the render-prop function is responsible for rendering the UI.

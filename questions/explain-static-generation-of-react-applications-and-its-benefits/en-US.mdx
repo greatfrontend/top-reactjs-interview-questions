@@ -10,29 +10,57 @@ Static generation (SSG) renders HTML ahead of requests, usually during a build, 
 
 ## Static generation of React applications and its benefits
 
+Static generation moves rendering ahead of incoming requests so the same output can be distributed and reused efficiently.
+
 ### What is static generation?
 
 Static generation is a method of pre-rendering where the HTML of a page is generated at build time. This means that the HTML is created once, during the build process, and then reused for each request. In the context of React applications, this is often achieved using frameworks like Next.js.
 
 ### How does static generation work?
 
+A typical static-generation pipeline performs these stages before and during delivery:
+
 1. **Build time rendering**: During the build process, the framework generates the HTML for each page based on the React components and data.
 2. **Static files**: The generated HTML, CSS, and JavaScript files are then stored as static files.
 3. **Serving the files**: These static files can be served directly from a CDN or a web server, without the need for server-side rendering on each request.
 
+The expensive rendering step happens before traffic arrives, so many requests can reuse the same deployed output:
+
+```mermaid
+---
+title: Static generation build and delivery lifecycle
+---
+flowchart LR
+  Source["Components plus build-time data"] --> Build["Framework build"]
+  Build --> Render["Pre-render routes to HTML"]
+  Render --> Assets["Store HTML, CSS, and JavaScript assets"]
+  Assets --> CDN["Deploy to a CDN or static server"]
+  RequestA["Visitor request A"] --> CDN
+  RequestB["Visitor request B"] --> CDN
+  CDN --> Response["Reuse the pre-rendered output"]
+```
+
 ### Benefits of static generation
+
+The strongest benefits come from reusing pre-rendered output rather than executing React for every request.
 
 #### Improved performance
 
-- **Faster load times**: Since the HTML is pre-generated, it can be served immediately without waiting for server-side rendering.
+Pre-rendering removes request-time rendering from the critical path, subject to normal network and client costs.
+
+- **Low and predictable server latency**: Pre-generated HTML can be served from a nearby CDN without request-time React rendering. Actual load time still depends on document size, network conditions, and client assets.
 - **Reduced server load**: Static files can be served from a CDN, reducing the load on the origin server.
 
 #### Better SEO
 
-- **Search engine indexing**: Pre-rendered HTML is trivially indexable — crawlers do not need to execute JavaScript to see the content.
+Static output exposes the page's content directly in the response that crawlers receive.
+
+- **Search engine indexing**: Pre-rendered content is present in the response, so crawlers do not need to execute application JavaScript to discover it. This helps crawlability but does not guarantee search ranking.
 - **Consistent content**: Every request returns the same HTML, so what crawlers see matches what users see.
 
 #### Scalability
+
+Serving immutable artifacts lets cache infrastructure absorb traffic without repeating application rendering.
 
 - **CDN distribution**: Static files can be replicated across CDN edges, so traffic spikes are absorbed at the edge instead of hammering an origin.
 - **Efficient caching**: Static files have stable URLs and content hashes, which makes long-lived browser and CDN caching straightforward.
@@ -52,9 +80,9 @@ async function getPost(slug) {
 }
 
 export async function generateStaticParams() {
-  const posts = await fetch('https://api.example.com/posts').then((r) =>
-    r.json(),
-  );
+  const response = await fetch('https://api.example.com/posts');
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const posts = await response.json();
   return posts.map((post) => ({ slug: post.slug }));
 }
 
@@ -91,10 +119,12 @@ This `revalidate` example applies when Cache Components are disabled. Current Ne
 
 ### When SSG is not a good fit
 
+Prefer request-time or client-side data for content whose identity, freshness, or route space cannot be determined safely ahead of time.
+
 - **Per-user content**: Anything personalized (auth-gated dashboards, "hello \{user}", carts) cannot be pre-rendered for every visitor — use SSR or client-side fetching for the personalized parts.
 - **Highly dynamic data**: Live prices, stock levels, scoreboards, etc. need fresher data than even ISR comfortably provides.
 - **Huge or unbounded route spaces**: If a framework tries to emit millions of pages, build time and storage become a problem. Prerender a subset, generate routes on demand, or use a partial/static shell with request-time content.
-- **Stale-data tradeoffs**: Plain SSG serves whatever was true at build time until the next deploy. ISR shortens that window but always serves the previous version on the request that triggers revalidation, so users may see slightly stale content.
+- **Stale-data tradeoffs**: Plain SSG serves whatever was true at build time until the next deploy. Stale-while-revalidate ISR modes shorten that window but may serve the previous version while regeneration runs; exact behavior depends on the framework and invalidation method.
 
 ## Further reading
 

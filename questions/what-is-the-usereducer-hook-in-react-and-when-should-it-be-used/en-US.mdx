@@ -16,6 +16,8 @@ Use `useReducer` when you have complex state logic that involves multiple sub-va
 
 ## What is the `useReducer` hook in React and when should it be used?
 
+`useReducer` centralizes state transitions in a pure reducer and exposes a stable dispatch function for sending actions.
+
 ### Introduction to `useReducer`
 
 The `useReducer` hook is a React hook that is used for managing state in functional components. It is an alternative to the `useState` hook and is particularly useful for managing more complex state logic. The `useReducer` hook is similar to the `reduce` function in JavaScript arrays, where you have a reducer function that determines how the state should change in response to actions.
@@ -45,12 +47,28 @@ function reducer(state, action) {
 }
 ```
 
+`dispatch` feeds actions into the reducer; React stores the returned state and renders again only when the result is not `Object.is`-equal to the current state:
+
+```mermaid
+---
+title: useReducer update cycle
+---
+flowchart LR
+  Event["User or system event"] --> Dispatch["dispatch action"]
+  Dispatch --> Reducer["reducer currentState, action"]
+  Reducer --> Next["nextState"]
+  Next --> Same{"Object.is currentState and nextState?"}
+  Same -->|"yes"| Bail["Bail out of child rendering"]
+  Same -->|"no"| Render["Render with nextState"]
+  Render --> Event
+```
+
 ### Example usage
 
 Here is a simple example of using `useReducer` to manage a counter state:
 
-```javascript
-import React, { useReducer } from 'react';
+```jsx
+import { useReducer } from 'react';
 
 const initialState = { count: 0 };
 
@@ -82,16 +100,22 @@ export default Counter;
 
 ### Lazy initialization
 
-`useReducer` accepts an optional third argument: an `init` function. When provided, React calls `init(initialArg)` once on mount and uses the result as the initial state. This is useful when computing the initial state is expensive, or when you want to derive it from a prop.
+`useReducer` accepts an optional third argument: an `init` function. React uses `init(initialArg)` to calculate the initial state instead of recalculating it on every render. In development Strict Mode, React calls the initializer twice to expose accidental impurities and ignores one result. This is useful when computing the initial state is expensive or when it must be derived from a prop.
 
-```javascript
+```jsx
+import { useReducer } from 'react';
+
 function init(initialCount) {
   return { count: initialCount };
 }
 
 function Counter({ initialCount }) {
   const [state, dispatch] = useReducer(reducer, initialCount, init);
-  // ...
+  return (
+    <button onClick={() => dispatch({ type: 'increment' })}>
+      Count: {state.count}
+    </button>
+  );
 }
 ```
 
@@ -100,6 +124,8 @@ function Counter({ initialCount }) {
 If the reducer returns a value that is `Object.is`-equal to the current state, React skips re-rendering the component's children. React may still call the component before ignoring the result, so code must not depend on exactly when the optimization occurs. This is one reason reducers must be pure and must not mutate the existing state object: a mutated-but-same-reference return looks unchanged to React even though memory was modified.
 
 ### When to use `useReducer`
+
+Choose a reducer when named transitions make interdependent state updates clearer than separate setter calls:
 
 - **Complex state transitions**: Use `useReducer` when state updates involve multiple sub-values or when the next state depends on the previous one in non-trivial ways. Centralizing the transitions in a reducer is easier to reason about than scattering several `useState` setters.
 - **Explicit, named actions**: Dispatching `{ type: 'increment' }` documents intent at the call site; the reducer is the single place that knows how to apply each action.

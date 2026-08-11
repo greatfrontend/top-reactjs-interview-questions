@@ -14,6 +14,8 @@ const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
 
 ## What is the `useMemo` hook in React and when should it be used?
 
+`useMemo` caches a calculation result as a performance optimization while its reactive dependencies remain equal.
+
 ### What is `useMemo`?
 
 The `useMemo` hook caches the result of a calculation between renders. React returns the cached value while every dependency remains `Object.is`-equal, unless it discards the cache for a documented reason. Its purpose is performance optimization, not correctness.
@@ -27,15 +29,19 @@ const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
 ```
 
 - The first argument is a function that returns the value you want to memoize.
-- The second argument is an array of dependencies. The memoized value will only be recomputed when one of these dependencies changes.
+- The second argument is an array of dependencies. React normally reuses the value until a dependency changes, but it may discard the cache for documented reasons.
 
 ### When should it be used?
 
+Use it when profiling identifies meaningful calculation work or when stable value identity enables another measured optimization.
+
 #### Expensive calculations
 
-If you have a function that performs a computationally expensive calculation, you can use `useMemo` to ensure that this calculation is only performed when necessary. Genuinely expensive work means things like filtering or sorting a large list, parsing a big payload, or running a heavy synchronous algorithm — not trivial arithmetic.
+For a measured expensive calculation, `useMemo` can reuse the previous result while its dependencies remain equal. Candidate work includes filtering or sorting a large list, parsing a large payload, or running a heavy synchronous algorithm—not trivial arithmetic.
 
-```javascript
+```jsx
+import { useMemo } from 'react';
+
 const filterAndSortLargeList = (items, query) => {
   // Genuinely expensive: scans every item and sorts the result.
   return items
@@ -57,23 +63,36 @@ const MyComponent = ({ items, query }) => {
 
 This is the most common practical reason to reach for `useMemo`. Every render produces a new object/array literal, which breaks `React.memo` (or `useEffect` dependency) bailouts on a child. Memoizing the value keeps its reference stable across renders.
 
-```javascript
+```jsx
+import { memo, useMemo } from 'react';
+
 const Parent = ({ items }) => {
   // Without useMemo, `sortedItems` would be a new array on every render,
   // and `MemoChild` would re-render even when `items` is unchanged.
-  const sortedItems = useMemo(() => [...items].sort((a, b) => a - b), [items]);
+  const sortedItems = useMemo(
+    () => items.toSorted((a, b) => a.name.localeCompare(b.name)),
+    [items],
+  );
 
   return <MemoChild sortedItems={sortedItems} />;
 };
 
-const MemoChild = React.memo(function MemoChild({ sortedItems }) {
-  return <ul>{/* ... */}</ul>;
+const MemoChild = memo(function MemoChild({ sortedItems }) {
+  return (
+    <ul>
+      {sortedItems.map((item) => (
+        <li key={item.id}>{item.name}</li>
+      ))}
+    </ul>
+  );
 });
 ```
 
-Note that `useMemo` on a value alone does not prevent the child from re-rendering — the child must also be wrapped in `React.memo` (or otherwise short-circuit). Also, `[...items].sort(...)` (or `items.toSorted(...)`) is used here because `Array.prototype.sort` mutates in place; mutating a prop is a bug waiting to happen.
+Note that `useMemo` on a value alone does not prevent the child from re-rendering — the child must also be wrapped in `memo` (or otherwise short-circuit). `items.toSorted(...)` is used here because `Array.prototype.sort` mutates in place; mutating a prop would violate React's read-only props contract.
 
 ### Caveats
+
+Because the cached value is disposable, application correctness cannot depend on the cache being retained:
 
 - **Overuse**: Overusing `useMemo` can lead to more complex code without significant performance benefits. It should be used judiciously.
 - **Dependencies**: Make sure to correctly specify all dependencies. Missing dependencies can lead to stale values, while extra dependencies can lead to unnecessary recalculations.

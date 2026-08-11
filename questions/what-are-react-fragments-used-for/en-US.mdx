@@ -19,6 +19,8 @@ return (
 
 ## What are React Fragments used for?
 
+Fragments group sibling elements in React's returned tree without adding a host wrapper element to the DOM.
+
 ### Grouping multiple elements
 
 React Fragments allow you to group multiple elements without adding extra nodes to the DOM. This is particularly useful when you want to return multiple elements from a component's render method but don't want to introduce unnecessary wrapper elements.
@@ -27,7 +29,9 @@ React Fragments allow you to group multiple elements without adding extra nodes 
 
 Using React Fragments helps avoid unnecessary wrapper elements in the DOM.
 
-> **Common misconception:** Fragments are often described as a performance optimization, on the assumption that one extra `<div>` per component is a meaningful cost. In practice, the cost is negligible. Browsers can render thousands of additional DOM nodes without measurable impact. The actual reasons to reach for a fragment are structural, not performance-related.
+> [!IMPORTANT] Fragments are primarily structural
+>
+> One wrapper element is often inexpensive, but large DOMs can still increase memory, style, and layout work. Use a Fragment when the wrapper would make the HTML invalid or change layout and semantics; profile before claiming a performance improvement.
 
 - **Valid HTML structure**: Some elements have strict children rules. A `<table>` cannot contain a `<div>` between it and its `<tr>` rows; a `<tr>` cannot contain a `<div>` between it and its `<td>` cells; a `<select>` only accepts `<option>` and `<optgroup>` children. Fragments let a component return multiple `<tr>`, `<td>`, or `<option>` siblings without breaking the parent's HTML contract.
 - **CSS layout integrity**: When the parent uses Flexbox or CSS Grid, an extra wrapper `<div>` becomes a flex/grid item itself and disrupts the layout (the wrapper takes the grid slot, not its children). Fragments keep the children as direct descendants of the layout container.
@@ -49,20 +53,22 @@ There are two ways to use React Fragments:
    );
    ```
 
-2. **Full syntax**: This uses `React.Fragment` and is required whenever you need to pass a `key` prop. `key` is the only prop `React.Fragment` accepts.
+2. **Full syntax**: This uses `React.Fragment` and is required whenever you need to pass a `key` prop. In stable React 19.2, `key` is the only accepted prop; Canary builds also support an experimental `ref` prop.
 
    ```jsx
+   import { Fragment } from 'react';
+
    return (
-     <React.Fragment>
+     <Fragment>
        <ChildComponent1 />
        <ChildComponent2 />
-     </React.Fragment>
+     </Fragment>
    );
    ```
 
 ### When to use `<Fragment>` instead of `<>`
 
-The shorthand `<>...</>` is concise but does not accept any props, including `key`. The single case that requires the explicit `React.Fragment` form is when a `key` is needed, which happens whenever a `map` produces items that each render more than one sibling element.
+The shorthand `<>...</>` is concise but does not accept props. In stable React, use the explicit `React.Fragment` form when a `key` is needed, which happens whenever a `map` produces items that each render more than one sibling element. Canary builds additionally require the explicit form for the experimental Fragment `ref` API.
 
 The shorthand version below is incorrect because React cannot attach a key to a `<>...</>` fragment. React will emit a warning about a missing `key`:
 
@@ -93,9 +99,11 @@ import { Fragment } from 'react';
 }
 ```
 
-`key` is the only prop `Fragment` accepts. There is no `className`, `style`, or event handler. If any of those are needed, use a real wrapper element instead.
+In stable React 19.2, `key` is the only prop `Fragment` accepts. There is no `className`, `style`, or event handler. If any of those are needed, use a real wrapper element instead. Experimental Fragment refs are available only in Canary builds and should be labeled as such.
 
 ### Use cases
+
+Fragments are useful whenever grouping is required for React structure but an extra host element would be unwanted:
 
 - **Returning multiple elements from a component**: When a component needs to return multiple sibling elements, using a fragment can help avoid unnecessary wrapper elements.
 - **Rendering lists**: When rendering a list of elements, fragments can be used to group the list items without adding extra nodes to the DOM.

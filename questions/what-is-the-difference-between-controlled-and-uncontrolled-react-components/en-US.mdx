@@ -1,5 +1,5 @@
 ---
-title: What is the difference between controlled and uncontrolled React Components?
+title: What is the difference between controlled and uncontrolled React components?
 ---
 
 ## TL;DR
@@ -9,6 +9,8 @@ A **controlled** component drives a form input from React state — you pass `va
 ---
 
 ## What is the difference between controlled and uncontrolled React components?
+
+The distinction is which system owns the current form value: React state for a controlled input or the DOM for an uncontrolled input.
 
 ### Controlled components
 
@@ -68,7 +70,7 @@ function UncontrolledForm() {
 }
 ```
 
-`defaultValue` is only consulted on the initial render — changing it later does not update the DOM. Pairing `value` with no `onChange` (or vice versa) makes the input read-only or warns in development; pick one mode per field.
+`defaultValue` is only consulted on the initial render — changing it later does not update the DOM. Passing `value` without an `onChange` handler makes the input read-only and warns in development unless `readOnly` is intentional. The reverse is valid: an input with `onChange` but no `value` remains uncontrolled. Pick one mode per field and do not switch modes during the input's lifetime.
 
 ### `<input type="file">` is always uncontrolled
 
@@ -106,9 +108,13 @@ function SubmitButton() {
   return <button disabled={pending}>{pending ? 'Saving...' : 'Save'}</button>;
 }
 
-async function saveName(prevState, formData) {
-  const name = formData.get('name');
-  // ...persist...
+async function saveName(_previousState, formData) {
+  const name = String(formData.get('name') ?? '');
+  const response = await fetch('/api/profile', {
+    method: 'POST',
+    body: formData,
+  });
+  if (!response.ok) return { ok: false, error: 'Could not save name.' };
   return { ok: true, name };
 }
 
@@ -118,6 +124,7 @@ function NameForm() {
     <form action={formAction}>
       <input name="name" defaultValue={state?.name ?? ''} />
       <SubmitButton />
+      {state?.error && <p role="alert">{state.error}</p>}
     </form>
   );
 }
@@ -127,17 +134,45 @@ This pattern uses uncontrolled inputs (`defaultValue` plus `name`) and reads the
 
 ### Key differences
 
+The ownership choice changes how values update and which use cases each style fits.
+
 #### State management
+
+Controlled and uncontrolled inputs store their current value in different places:
 
 - Controlled: React state owns the value; the DOM mirrors it.
 - Uncontrolled: The DOM owns the value; React reads it on demand.
 
 #### Data flow
 
+Both styles can report changes, but only the controlled style feeds every rendered value back through React state:
+
 - Controlled: `state -> value -> input`, and `onChange -> setState`.
 - Uncontrolled: `defaultValue -> input`, then `ref.current.value` (or `FormData`) when read.
 
+The controlled loop continuously routes the value through React, while the uncontrolled path leaves ongoing ownership in the DOM:
+
+```mermaid
+---
+title: Controlled and uncontrolled input data flow
+---
+flowchart LR
+  subgraph Controlled["Controlled input"]
+    User1["User types"] --> Change["onChange"]
+    Change --> State["React state"]
+    State --> Value["value prop"]
+    Value --> Input1["DOM input"]
+  end
+  subgraph Uncontrolled["Uncontrolled input"]
+    Default["defaultValue seeds the input"] --> Input2["DOM-owned value"]
+    User2["User types"] --> Input2
+    Input2 --> Read["Read with ref or FormData"]
+  end
+```
+
 #### When to use which
+
+Choose according to whether application logic must observe or transform each value change:
 
 - Controlled: validation as the user types, conditional disabling, formatting, deriving other state, or anything that needs to react to every keystroke.
 - Uncontrolled: simple submit-once forms, integration with non-React code, file inputs, and forms built around React 19 actions.

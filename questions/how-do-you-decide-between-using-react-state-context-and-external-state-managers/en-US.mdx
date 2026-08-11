@@ -10,6 +10,8 @@ Match the tool to the kind of state. Use `useState`/`useReducer` for local compo
 
 ## Deciding between React state, context, and external state managers
 
+Choose the smallest state mechanism that matches the value's ownership, update frequency, subscriber shape, and persistence needs.
+
 ### React state (`useState` and `useReducer`)
 
 React's built-in hooks cover the majority of real-world state needs. Start here and only escalate when you have a concrete problem to solve.
@@ -19,11 +21,15 @@ React's built-in hooks cover the majority of real-world state needs. Start here 
 
 #### When to use React state
 
+Keep state local when its consumers and update logic remain within one cohesive part of the tree.
+
 - The state is only relevant to one component or a small subtree
 - The state can be lifted to the closest common ancestor without prop-drilling getting painful
 - You don't need cross-tree access, persistence, or devtools
 
 #### Example
+
+This counter needs no sharing mechanism because the state belongs to one component:
 
 ```jsx
 import { useState, useReducer } from 'react';
@@ -45,12 +51,26 @@ function reducer(state, action) {
 }
 
 function Cart() {
-  const [state, dispatch] = useReducer(reducer, { items: [] });
-  // ...
+  const [state, dispatch] = useReducer(reducer, {
+    items: [{ id: 'book', name: 'Book' }],
+  });
+
+  return (
+    <ul>
+      {state.items.map((item) => (
+        <li key={item.id}>
+          {item.name}{' '}
+          <button onClick={() => dispatch({ type: 'remove', id: item.id })}>
+            Remove
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
 }
 ```
 
-### React Context
+### React context
 
 Context is a value-transport mechanism rather than a complete state-management solution. It lets descendants read a value without prop-drilling, but it does not supply storage or update logic. Consumers subscribed to a context re-render when the closest provider receives a different `value` according to `Object.is`; components that do not read that context are not updated for that reason. Putting unrelated, frequently changing values into one context can therefore cause unnecessary consumer renders.
 
@@ -59,14 +79,15 @@ Context works well for values such as theme, locale, current user, and feature f
 In React 19, you can call `Provider` directly on the context (`<ThemeContext>` instead of `<ThemeContext.Provider>`) and read a context conditionally with the new `use(Context)` API:
 
 ```jsx
-import { createContext, use, useState } from 'react';
+import { createContext, use, useMemo, useState } from 'react';
 
 const ThemeContext = createContext(null);
 
 function ThemeProvider({ children }) {
   const [theme, setTheme] = useState('light');
+  const value = useMemo(() => ({ theme, setTheme }), [theme]);
   // React 19: <Context> works as a Provider directly
-  return <ThemeContext value={{ theme, setTheme }}>{children}</ThemeContext>;
+  return <ThemeContext value={value}>{children}</ThemeContext>;
 }
 
 function ThemedButton({ enabled }) {
@@ -83,32 +104,40 @@ function ThemedButton({ enabled }) {
 
 #### When to use Context
 
+Context fits values that many descendants need and that can tolerate its broadcast-style subscription behavior.
+
 - Passing rarely-changing values (theme, locale, current user, router) deep into the tree
 - Avoiding prop-drilling for a value the whole subtree needs
 - Combined with `useReducer` for app-scoped settings
 
-#### When NOT to use Context
+#### When not to use Context
+
+Avoid one broad context when updates are frequent or consumers need independent subscriptions.
 
 - High-frequency updates (form input on every keystroke, animation state)
 - Independent slices that should not re-render each other — split into multiple contexts or use a store with selectors
 
 ### External client-state libraries
 
-When many unrelated components need to read and write the same frequently-changing client state, an external store gives you fine-grained subscriptions (only consumers of a changed slice re-render), middleware, devtools, and persistence.
+When many unrelated components need to read and write the same frequently-changing client state, an external store can notify only subscribers whose selected slice changed. External stores can also provide middleware, devtools, and persistence.
 
 - **Zustand** — a small hook-based store with selector subscriptions and no required provider.
-- **Jotai** — atomic, bottom-up model where each piece of state is an atom; consumers only re-render when an atom they read changes.
+- **Jotai** — an atomic, bottom-up model where each piece of state is an atom; an atom update notifies consumers that read the changed atom.
 - **Redux Toolkit (RTK)** — the modern, batteries-included Redux. The legacy `createStore` from `redux` is deprecated; use `configureStore` + `createSlice`. RTK includes Redux DevTools (which support time-travel debugging) and pairs with **RTK Query** for server state.
 - **MobX** — observable/reactive model, popular in some enterprise codebases.
-- _Recoil_ is no longer actively maintained by Meta — new projects should pick Jotai or Zustand instead.
+- _Recoil_ is no longer a current choice because its repository was archived in 2025.
 
 #### When to use an external store
+
+An external store becomes useful when subscription control or capabilities outside the component tree outweigh the added dependency.
 
 - Many unrelated components share the same updates and Context causes too many re-renders
 - You need devtools, middleware (logging, persistence, undo/redo), or strict action-based update flows
 - State needs to live outside the React tree (e.g. accessed from a non-React module)
 
 #### Example with Redux Toolkit
+
+Redux Toolkit centralizes named transitions and exposes selector-based reads through React Redux:
 
 ```jsx
 // counterSlice.js
@@ -160,6 +189,8 @@ function App() {
 
 #### Example with Zustand
 
+Zustand exposes a store Hook whose selector determines the slice a component subscribes to:
+
 ```jsx
 import { create } from 'zustand';
 
@@ -193,7 +224,11 @@ import { useQuery } from '@tanstack/react-query';
 function Profile({ id }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['user', id],
-    queryFn: () => fetch(`/api/users/${id}`).then((r) => r.json()),
+    queryFn: async () => {
+      const response = await fetch(`/api/users/${id}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return response.json();
+    },
   });
   if (isLoading) return <Spinner />;
   if (error) return <Error error={error} />;
@@ -202,6 +237,24 @@ function Profile({ id }) {
 ```
 
 ### Quick decision guide
+
+The following table summarizes common starting points rather than hard requirements:
+
+```mermaid
+---
+title: Choosing an owner for application state
+---
+flowchart TD
+  Start["Classify the value"] --> Server{"Is it remote server data?"}
+  Server -->|"yes"| Cache["Use a framework loader or server-state cache"]
+  Server -->|"no"| URL{"Should the URL own it?"}
+  URL -->|"yes"| Router["Use router path or search parameters"]
+  URL -->|"no"| Local{"Does one nearby subtree own it?"}
+  Local -->|"yes"| ReactState["Use useState or useReducer"]
+  Local -->|"no"| ContextFit{"Is it a shared value with manageable update frequency?"}
+  ContextFit -->|"yes"| Context["Use Context, optionally with useReducer"]
+  ContextFit -->|"no"| Store["Use an external client-state store with selectors"]
+```
 
 | Situation | Use |
 | --- | --- |

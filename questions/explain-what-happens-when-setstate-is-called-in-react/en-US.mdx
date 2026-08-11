@@ -10,44 +10,83 @@ Calling a `useState` setter queues either a replacement value or an updater func
 
 ## What happens when the `useState` setter is called
 
+The setter participates in React's queued rendering model; it does not mutate the state snapshot held by the currently running code.
+
 ### State update scheduling
 
 When you call the setter function provided by `useState` (for example, `setCount`), React queues an update for that state variable. The update affects what `useState` returns on a subsequent render; it does not mutate the state snapshot already available to the running handler or function.
 
-```javascript
-const [count, setCount] = useState(0);
-// ...
-setCount(count + 1); // Schedules an update to set 'count' to 1
+```jsx
+import { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  function increment() {
+    setCount(count + 1);
+    console.log(count); // Still the snapshot for this render
+  }
+
+  return <button onClick={increment}>Count: {count}</button>;
+}
 ```
 
 ### Replacing object state
 
 The `useState` setter function **replaces** the old state value entirely with the new value you provide. If your state is an object and you only want to update one property, you need to manually spread the old state and override the specific property.
 
-```javascript
-const [user, setUser] = useState({ name: 'Anon', age: 99 });
+```jsx
+import { useState } from 'react';
 
-// To update only name, you must spread the old state:
-setUser((prevState) => ({ ...prevState, name: 'John' }));
-// If you just did setUser({ name: 'John' }), the 'age' property would be lost.
+function Profile() {
+  const [user, setUser] = useState({ name: 'Anon', age: 99 });
+
+  function rename() {
+    setUser((previousUser) => ({ ...previousUser, name: 'John' }));
+    // setUser({ name: 'John' }) would discard the `age` property.
+  }
+
+  return <button onClick={rename}>{user.name}</button>;
+}
 ```
 
 ### Skipping work with `Object.is`
 
 If the final state is identical to the current state according to `Object.is`, React skips re-rendering the component and its children. This is an optimization; React may still call the component before deciding it can skip the children. Mutating an existing object or array and passing the same reference back is therefore a bug: the data changed, but React sees the same state value.
 
-```javascript
-const [count, setCount] = useState(0);
-setCount(0); // Same value, React bails out — no re-render
+```jsx
+import { useState } from 'react';
 
-const [items, setItems] = useState([1, 2, 3]);
-items.push(4);
-setItems(items); // Same reference, bail-out! Use setItems([...items, 4]) instead.
+function Example() {
+  const [count, setCount] = useState(0);
+  const [items, setItems] = useState([1, 2, 3]);
+
+  function keepSameCount() {
+    setCount(0); // Same value; React can skip the update.
+  }
+
+  function addItemIncorrectly() {
+    items.push(4);
+    setItems(items); // Same reference; React can skip the update.
+  }
+
+  function addItemCorrectly() {
+    setItems((previousItems) => [...previousItems, 4]);
+  }
+
+  return (
+    <>
+      <button onClick={keepSameCount}>Keep count at {count}</button>
+      <button onClick={addItemIncorrectly}>Mutate items incorrectly</button>
+      <button onClick={addItemCorrectly}>Add item correctly</button>
+    </>
+  );
+}
 ```
 
 ### Re-rendering
 
-After scheduling the state update(s), React will eventually trigger a re-render of the component. The functional component body is executed again with the new state value(s). React updates its virtual DOM, compares it with the previous version, and efficiently updates the actual DOM only where necessary.
+After scheduling the state update(s), React will eventually render the component again with the new state value(s). It reconciles the new component output with the previous output, then commits any required changes to the DOM.
 
 ### State snapshots and automatic batching
 
@@ -55,30 +94,78 @@ It is more precise to say that setters **queue an update for a future render** t
 
 Because updates are batched, you shouldn't rely on the state variable having its new value immediately after calling the setter. If the new state depends on the previous state, use the functional updater form — the updater receives the latest **queued** state, not the value captured by closure.
 
-```javascript
-// Assume count is 0
-setCount(count + 1); // Queues update to 1
-setCount(count + 1); // Still sees count as 0, queues update to 1 again!
-// Result might be 1, not 2
+```jsx
+import { useState } from 'react';
 
-// Correct way using functional update:
-setCount((prevCount) => prevCount + 1); // prevCount is the latest queued value (0 -> 1)
-setCount((prevCount) => prevCount + 1); // prevCount is now 1 -> 2
-// Result will be 2
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  function addTwoIncorrectly() {
+    setCount(count + 1);
+    setCount(count + 1); // Reads the same render snapshot again.
+  }
+
+  function addTwoCorrectly() {
+    setCount((previousCount) => previousCount + 1);
+    setCount((previousCount) => previousCount + 1);
+  }
+
+  return (
+    <>
+      <p>Count: {count}</p>
+      <button onClick={addTwoIncorrectly}>Add one effectively</button>
+      <button onClick={addTwoCorrectly}>Add two</button>
+    </>
+  );
+}
 ```
 
 If you need to opt out of batching for a specific update (rare), you can wrap it in `flushSync` from `react-dom`.
+
+From the setter call to the screen, React processes the queued values before deciding whether any render and commit work is required:
+
+```mermaid
+---
+title: React state update pipeline
+---
+flowchart LR
+  Handler["Event handler or callback"] --> Setter["Call a useState setter"]
+  Setter --> Queue["Queue replacement values or updater functions"]
+  Queue --> Batch["Batch compatible updates"]
+  Batch --> Process["Process the queue in order"]
+  Process --> Same{"Final state is Object.is-equal?"}
+  Same -->|"yes"| Bail["Skip child rendering when possible"]
+  Same -->|"no"| Render["Render component output"]
+  Render --> Reconcile["Reconcile with previous output"]
+  Reconcile --> Commit["Commit required DOM changes"]
+```
 
 ### Updates inside transitions
 
 When a setter is called inside `startTransition` (or via `useTransition`), React marks the resulting re-render as a **non-blocking transition**. Transition updates can be interrupted by more urgent updates such as typing and can keep the previous UI visible while the next render is prepared. Updates outside a transition generally receive higher priority, but they may still be batched and scheduled by React.
 
-```javascript
-import { startTransition } from 'react';
+```jsx
+import { startTransition, useState } from 'react';
 
-startTransition(() => {
-  setSearchQuery(input); // Marked as a non-urgent transition update
-});
+function SearchPage() {
+  const [input, setInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  function handleChange(event) {
+    const nextQuery = event.target.value;
+    setInput(nextQuery);
+    startTransition(() => {
+      setSearchQuery(nextQuery);
+    });
+  }
+
+  return (
+    <>
+      <input value={input} onChange={handleChange} />
+      <SearchResults query={searchQuery} />
+    </>
+  );
+}
 ```
 
 ## Further reading

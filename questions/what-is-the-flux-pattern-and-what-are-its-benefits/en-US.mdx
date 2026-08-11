@@ -4,7 +4,7 @@ title: What is the Flux pattern and what are its benefits?
 
 ## TL;DR
 
-The Flux pattern is an architectural design Facebook introduced for managing state in React applications. It enforces a unidirectional data flow, making it easier to manage and debug application state. Today Flux is largely historical — it has been superseded by libraries it inspired, such as Redux, Zustand, and the built-in `useReducer` + Context combination — but its single-source-of-truth and unidirectional-flow ideas are still the foundation of those tools.
+Flux is a historical application architecture Facebook introduced for managing state around React. An action goes through a central dispatcher to registered stores; stores update their own domain state, emit changes, and views render the new state. This unidirectional flow makes the source of an update easier to trace and separates event creation, state transitions, and rendering. The original Flux library is archived, and modern applications usually choose reducers, external stores, or server-state caches according to their needs rather than implementing classic Flux.
 
 - **Core components**:
   - **Dispatcher**: Single hub that manages actions and dispatches them to all registered stores.
@@ -13,7 +13,7 @@ The Flux pattern is an architectural design Facebook introduced for managing sta
   - **View**: React components that subscribe to stores and re-render when stores emit changes.
 - **Benefits**:
   - Predictable state management due to unidirectional data flow.
-  - Single source of truth for application state.
+  - Explicit ownership of each domain's state.
   - Improved debugging and testing.
   - Clear separation of concerns.
 
@@ -28,6 +28,8 @@ Example flow:
 
 ## What is the Flux pattern?
 
+Classic Flux coordinates application updates through actions, one dispatcher, multiple domain stores, and subscribed views.
+
 ### Overview
 
 Flux is a design pattern introduced by Facebook around 2014 to manage the flow of data in React applications. It enforces a unidirectional data flow, where data flows in one direction through specific components:
@@ -41,14 +43,14 @@ This structure simplifies state management, especially for complex applications,
 
 ### Historical context
 
-In 2026, you will rarely build a new app on top of the original Flux library. The pattern has been superseded by:
+The original Flux library is archived, so it is primarily relevant when maintaining older code or discussing the history of React state management. Modern tools relate to Flux in different ways:
 
-- **Redux** — the most popular successor, which collapses Flux's many stores into a single store with pure reducer functions.
-- **Zustand**, **Jotai**, **Recoil** — lighter-weight stores that drop the dispatcher entirely.
-- **`useReducer` + Context** — a built-in React combination that captures the same action/reducer idea without an external library.
-- **Server-state libraries** like TanStack Query and SWR for data fetched from APIs.
+- **Redux** preserves unidirectional action-driven updates but deliberately replaces Flux's multiple mutable stores with one store and pure reducers.
+- **Zustand** and **Jotai** are external state tools with different subscription models; they do not implement Flux's central dispatcher architecture.
+- **`useReducer` + Context** provides action/reducer-style updates with React APIs, but it is not the classic dispatcher-and-stores pattern.
+- **TanStack Query** and **SWR** manage cached server data. They solve a different problem from Flux's client application state.
 
-Understanding Flux is still useful because every one of these tools borrows its core ideas: a single source of truth, immutable state transitions, and unidirectional data flow.
+Recoil is also no longer a current recommendation because its repository was archived in 2025. Understanding Flux remains useful for recognizing explicit actions and unidirectional updates, but those ideas do not make every modern state tool a Flux implementation.
 
 ### Unidirectional data flow
 
@@ -58,7 +60,25 @@ Unlike traditional MVC patterns, where data can flow in multiple directions, Flu
 2. **Actions** are sent to the **dispatcher**, which forwards them to **stores**.
 3. **Stores** update their state and notify the **view** to re-render.
 
+The view can create another action, but state updates still travel through the dispatcher and stores in one direction:
+
+```mermaid
+---
+title: Classic Flux unidirectional update cycle
+---
+flowchart LR
+  Interaction["User interaction"] --> Action["Action"]
+  Action --> Dispatcher["Central dispatcher"]
+  Dispatcher --> StoreA["Domain store A"]
+  Dispatcher --> StoreB["Domain store B"]
+  StoreA --> View["React views"]
+  StoreB --> View
+  View --> Interaction
+```
+
 ### Code example
+
+This minimal store registers with the dispatcher before an action is sent:
 
 ```javascript
 import { Dispatcher } from 'flux';
@@ -92,21 +112,29 @@ dispatcher.dispatch(action);
 
 ## Benefits of the Flux pattern
 
+Flux's benefits come from making the direction and participants of each state change explicit.
+
 ### Predictable state management
 
 The unidirectional data flow ensures that the application's state transitions are clear and predictable, making it easier to understand and debug.
 
 ### Improved debugging and testing
 
+Named actions and isolated store transitions make update paths easier to observe and exercise:
+
 - Each action represents a discrete event, making it easier to trace changes in the application.
-- Stores contain pure logic, which can be unit tested independently of the view.
+- Store callbacks centralize state transitions so they can be tested independently of the view. Classic Flux stores may mutate their internal state; purity is a Redux reducer convention, not a requirement of Flux.
 
 ### Scalability
+
+Domain stores and a shared dispatch protocol can impose consistent structure as an older Flux application grows:
 
 - As the application grows, the Flux pattern helps maintain a clear structure.
 - Decoupled components allow for modular development.
 
 ### Clear separation of concerns
+
+Each Flux participant has a distinct responsibility in the update cycle:
 
 - Actions encapsulate events and payloads.
 - Stores handle state and business logic.

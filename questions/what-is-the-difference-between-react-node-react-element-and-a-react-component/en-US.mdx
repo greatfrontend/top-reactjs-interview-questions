@@ -79,6 +79,21 @@ A **React Component** is a function or class that React can use as an element ty
 
 The mental model: a **component** is a recipe, an **element** is a single dish made from that recipe, and a **node** is anything React is willing to plate up — including "nothing."
 
+The relationships are easiest to see by following one component invocation from JSX to renderable output:
+
+```mermaid
+---
+title: Components, elements, and nodes
+---
+flowchart LR
+  JSX["JSX: Welcome name='Ada'"] --> Element["React element: type Welcome plus props"]
+  Element --> Invoke["React invokes Welcome with props"]
+  Invoke --> Output["Component returns a React node"]
+  Other["Text, numbers, fragments, portals, and empty values"] --> Node["React node"]
+  Output --> Node
+  Element -. "is also renderable as" .-> Node
+```
+
 ## Further reading
 
 - [React documentation: Render and commit](https://react.dev/learn/render-and-commit)

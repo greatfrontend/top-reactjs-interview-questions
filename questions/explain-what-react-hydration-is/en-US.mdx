@@ -10,9 +10,11 @@ Hydration is the process in which React renders the client tree, matches it to H
 
 ## What is React hydration?
 
+Hydration is the client phase that connects a React tree to matching HTML previously rendered on the server.
+
 ### Server-side rendering (SSR)
 
-Server-side rendering (SSR) is a technique where the HTML of a web page is generated on the server and sent to the client. This allows for faster initial page loads and better SEO since the content is already available when the page is loaded.
+Server-side rendering (SSR) generates a page's initial HTML on the server and sends it to the browser. It makes content available before application JavaScript runs and exposes that content directly to crawlers, although its performance and search impact depend on the rest of the delivery architecture.
 
 ### Hydration process
 
@@ -21,6 +23,28 @@ Hydration is the process that happens after the server-side rendered HTML is sen
 1. **Matching and reusing existing HTML**: React renders the component tree on the client but reuses matching server-created DOM nodes instead of replacing them all.
 2. **Attaching event listeners**: React attaches the necessary event listeners to the existing HTML elements.
 3. **Initializing state**: React initializes the component state and props to make the page dynamic.
+
+Hydration adopts the server-created DOM only when the first client render describes matching output:
+
+```mermaid
+---
+title: Server rendering and client hydration
+---
+sequenceDiagram
+  participant Server
+  participant Browser
+  participant React as React client
+  Server->>Browser: Send server-rendered HTML
+  Browser->>Browser: Parse and paint existing HTML
+  Browser->>React: Load the JavaScript bundle
+  React->>Browser: hydrateRoot renders the client tree
+  alt Initial output matches
+    React->>Browser: Reuse DOM and attach event handling
+    Browser->>Browser: Page becomes interactive
+  else Initial output differs
+    React->>Browser: Report a hydration mismatch and recover
+  end
+```
 
 ### Example
 
@@ -98,15 +122,15 @@ If an element's text or attribute is unavoidably different between server and cl
 <time suppressHydrationWarning>{new Date().toISOString()}</time>
 ```
 
-### Benefits of hydration
+### What hydration enables
 
-1. **Faster initial load**: Since the HTML is already available, the initial page load is faster.
-2. **SEO benefits**: Search engines can crawl the server-rendered HTML, improving SEO.
-3. **Improved user experience**: Users can see the content immediately, even before React has fully taken over.
+Hydration preserves matching server-created DOM while React connects it to the client component tree. This makes server-rendered controls interactive without discarding and rebuilding the whole document. The earlier visible content and crawlable response are benefits of prerendering; hydration is the client work needed to activate that HTML.
 
 ### Challenges of hydration
 
-1. **Mismatch issues**: If the server-rendered HTML does not match the client-side React components, React logs an error. React 19 improved hydration error messages by showing a precise diff of the mismatching attributes/text instead of the previous vague "text content did not match" warning, making them much easier to debug.
+Hydration requires deterministic initial output and adds client work proportional to the interactive tree.
+
+1. **Mismatch issues**: If the server-rendered HTML does not match the client-side React components, React logs an error. React 19 improved hydration diagnostics by consolidating mismatch information and showing a diff of relevant attributes or text, which gives a more precise starting point for debugging.
 2. **Performance overhead**: Hydration can be resource-intensive on large pages. Selective hydration and breaking the tree into `Suspense` boundaries help spread the cost.
 
 ## Further reading

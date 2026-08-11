@@ -10,6 +10,8 @@ Common data-fetching pitfalls include missing loading and error states, ignoring
 
 ## Common pitfalls when doing data fetching in React
 
+Reliable data loading must coordinate request lifetime, response ordering, HTTP semantics, rendering state, and cache ownership.
+
 ### Not handling loading and error states
 
 When fetching data, it's crucial to manage the different states of the request: loading, success, and error. Failing to do so can lead to a poor user experience.
@@ -23,7 +25,9 @@ function MyComponent() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch('https://api.example.com/data')
+    const controller = new AbortController();
+
+    fetch('https://api.example.com/data', { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
@@ -33,9 +37,12 @@ function MyComponent() {
         setLoading(false);
       })
       .catch((error) => {
+        if (error.name === 'AbortError') return;
         setError(error);
         setLoading(false);
       });
+
+    return () => controller.abort();
   }, []);
 
   if (loading) return <div>Loading...</div>;
@@ -57,29 +64,57 @@ function MyComponent() {
 
   useEffect(() => {
     const controller = new AbortController();
+    let ignore = false;
 
     fetch('https://api.example.com/data', { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       })
-      .then((data) => setData(data))
+      .then((data) => {
+        if (!ignore) setData(data);
+      })
       .catch((error) => {
-        if (error.name !== 'AbortError') setError(error);
+        if (!ignore && error.name !== 'AbortError') setError(error);
       });
 
-    return () => controller.abort();
+    return () => {
+      ignore = true;
+      controller.abort();
+    };
   }, []);
 
-  // ...
+  if (error) return <p role="alert">{error.message}</p>;
+  if (data === null) return <p>Loading...</p>;
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
 }
 ```
 
-The older `let isMounted = true` flag pattern still works, but it doesn't cancel the network request and doesn't help with race conditions — prefer `AbortController`.
+An Effect-local `ignore` flag can prevent a stale response from committing state and therefore can handle races, including for asynchronous APIs that cannot be canceled. It does not stop the underlying network request. For `fetch`, prefer `AbortController` so cleanup both prevents the stale commit and cancels the request.
 
 ### Race conditions when props or query params change
 
-If a fetch depends on a prop (such as a user ID) and the prop changes before the previous request resolves, responses can arrive out of order and the stale one can overwrite the fresh one. Aborting the previous request on cleanup handles this for free:
+If a fetch depends on a prop (such as a user ID) and the prop changes before the previous request resolves, responses can arrive out of order and the stale one can overwrite the fresh one. Cleanup can abort the superseded fetch, while an ignore flag prevents its handlers from committing stale state:
+
+```mermaid
+---
+title: Preventing an out-of-order response from winning a race
+---
+sequenceDiagram
+  participant UI as React component
+  participant A as Request A for user 1
+  participant B as Request B for user 2
+  UI->>A: Start request for user 1
+  UI->>B: Prop changes, start request for user 2
+  B-->>UI: User 2 response arrives first
+  UI->>UI: Commit current user 2 data
+  A-->>UI: Stale user 1 response arrives later
+  alt No cleanup guard
+    UI->>UI: Incorrectly overwrite with user 1 data
+  else AbortController or ignore flag
+    UI->>UI: Discard the stale result
+  end
+```
 
 ```jsx
 import { useEffect, useState } from 'react';
@@ -89,21 +124,27 @@ function UserProfile({ userId }) {
 
   useEffect(() => {
     const controller = new AbortController();
+    let ignore = false;
 
     fetch(`/api/users/${userId}`, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.json();
       })
-      .then((data) => setUser(data))
+      .then((data) => {
+        if (!ignore) setUser(data);
+      })
       .catch((error) => {
-        if (error.name !== 'AbortError') console.error(error);
+        if (!ignore && error.name !== 'AbortError') console.error(error);
       });
 
-    return () => controller.abort();
+    return () => {
+      ignore = true;
+      controller.abort();
+    };
   }, [userId]);
 
-  // ...
+  return user === null ? <p>Loading...</p> : <h1>{user.name}</h1>;
 }
 ```
 
@@ -129,15 +170,21 @@ function MyComponent() {
   return <div>{JSON.stringify(data)}</div>;
 }
 
-// Correct — run the side effect inside useEffect
+// Correct — run the side effect inside useEffect and clean it up
 function MyComponent() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
     fetch('https://api.example.com/data', { signal: controller.signal })
-      .then((response) => response.json())
-      .then((data) => setData(data));
+      .then((response) => {
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      })
+      .then((data) => setData(data))
+      .catch((error) => {
+        if (error.name !== 'AbortError') console.error(error);
+      });
     return () => controller.abort();
   }, []);
 
@@ -147,9 +194,9 @@ function MyComponent() {
 
 ### Missing or incorrect dependencies in `useEffect`
 
-The dependency array tells React when to re-run an effect. Omitting a value the effect actually reads (such as `userId`) leaves you with stale data. Including a value that changes on every render (such as a freshly created object or function) will re-fire the effect on every render, which usually means a fetch loop.
+The dependency array tells React when to re-run an effect. Omitting a value the effect actually reads (such as `userId`) leaves you with stale data. Including a value that changes on every render (such as a freshly created object or function) will re-fire the effect on every render, which can create a fetch loop. This abbreviated comparison isolates the dependency mistake; a complete request still needs the HTTP checks, error state, and cleanup shown above.
 
-```jsx
+```js
 // Incorrect — uses `userId` but doesn't list it; data goes stale.
 useEffect(() => {
   fetch(`/api/users/${userId}`)
@@ -157,7 +204,7 @@ useEffect(() => {
     .then(setUser);
 }, []);
 
-// Correct
+// Correct dependency list (request handling abbreviated)
 useEffect(() => {
   fetch(`/api/users/${userId}`)
     .then((r) => r.json())

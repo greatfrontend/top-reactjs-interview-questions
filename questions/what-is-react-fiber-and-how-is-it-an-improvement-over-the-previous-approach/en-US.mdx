@@ -10,11 +10,15 @@ Fiber is React's internal reconciliation architecture, introduced in React 16. A
 
 ## What is React Fiber and how is it an improvement over the previous approach?
 
+Fiber is React's internal work representation, designed so eligible rendering can be scheduled, paused, resumed, or abandoned before commit.
+
 ### Introduction to React Fiber
 
-React Fiber is a re-implementation of React's core algorithm for rendering and reconciliation. It was introduced in React 16 to address limitations in the previous stack-based algorithm. The primary goal of Fiber is to enable incremental rendering of the virtual DOM, which allows React to split rendering work into chunks and spread it out over multiple frames.
+React Fiber is a re-implementation of React's core rendering and reconciliation algorithm. It was introduced in React 16 to replace the previous stack-based traversal with units of work that React can prioritize and, for eligible concurrent renders, pause or abandon before commit.
 
 ### Key improvements over the previous approach
+
+The architecture separates units of render work and assigns them scheduling information, enabling several capabilities:
 
 #### Incremental rendering
 
@@ -32,6 +36,23 @@ Separate from time slicing is the question of _which_ work to do first. In React
 
 Fiber maintains two trees: the "current" tree that reflects what's on screen, and a "work-in-progress" tree that React builds in memory. Because the new tree is constructed off-screen, React can pause, throw away, or restart the work-in-progress tree without ever showing a half-rendered UI to the user. The two trees swap atomically once the commit phase completes.
 
+Double buffering lets React keep the visible tree stable while it schedules work on a separate candidate tree:
+
+```mermaid
+---
+title: Fiber current and work-in-progress trees
+---
+flowchart LR
+  Current["Current Fiber tree reflected on screen"] --> Clone["Create or reuse work-in-progress Fibers"]
+  Update["Scheduled update with a lane priority"] --> Work["Process units of render work"]
+  Clone --> Work
+  Urgent["Higher-priority update"] -. "can interrupt or restart eligible work" .-> Work
+  Work --> Complete{"Work-in-progress tree complete?"}
+  Complete -->|"no"| Work
+  Complete -->|"yes"| Commit["Commit atomically"]
+  Commit --> Next["Completed tree becomes current"]
+```
+
 #### Concurrent rendering APIs
 
 `createRoot` is the current client root API; the legacy `ReactDOM.render` API was removed in React 19. Concurrent rendering is an internal capability that React applies when a feature such as a transition or Suspense needs it. It is not a mode in which every update is automatically deferred: urgent updates remain synchronous from the user's point of view, and React commits only a completed tree.
@@ -42,7 +63,7 @@ Error boundaries let components catch render-time errors in their subtree and sh
 
 #### Owner stacks (React 19.1)
 
-React 19.1 added improved "owner stacks" in development, which give clearer component-level stack traces for errors and warnings by walking the Fiber tree's owner relationships rather than relying purely on JavaScript call stacks. This makes it much easier to track down where a bad prop or thrown error originated.
+React 19.1 added owner stacks in development. They trace the components that created an element by following Fiber owner relationships rather than relying only on JavaScript call stacks, which identifies the component creation path for an error or warning.
 
 #### Improved support for animations
 
@@ -77,7 +98,7 @@ function BigList() {
 }
 ```
 
-A purely synchronous render of 10,000 items will still block the main thread in Fiber — Fiber doesn't magically time-slice every render. It's the concurrent-rendering APIs (`startTransition`, `useDeferredValue`, `Suspense`) that let Fiber treat the work as interruptible. By marking the state update as a transition, React can render the list on a low-priority lane and yield to user input in between, keeping the UI responsive.
+A synchronous render of 10,000 items can still block the main thread; Fiber does not time-slice every update. Concurrent features such as `startTransition`, `useDeferredValue`, and `Suspense` let React treat eligible rendering as interruptible. Marking this update as a Transition lets React yield during render for urgent updates, although creating the array and committing thousands of DOM nodes still have synchronous costs.
 
 ## Further reading
 

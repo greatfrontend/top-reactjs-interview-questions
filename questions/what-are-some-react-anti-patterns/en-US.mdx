@@ -20,15 +20,17 @@ React anti-patterns are practices that lead to inefficient, buggy, or hard-to-ma
 
 ## Common React anti-patterns
 
+Most React anti-patterns violate one of three ideas: renders should be pure, state should have one owner, and identity should remain stable for the same logical item.
+
 ### Mutating state directly
 
-Directly mutating state doesn't tell React anything has changed, so it won't re-render. Always produce a new value (object, array) and pass it to the setter.
+Directly mutating state breaks React's snapshot model. Passing the same object back also makes the update eligible for an `Object.is` bailout, so React may not re-render for the mutation. Always produce a new value and pass it to the setter.
 
-```jsx
+```js
 // Anti-pattern
 const [user, setUser] = useState({ name: 'Ada', age: 36 });
 user.age = 37; // mutation — React doesn't see this
-setUser(user); // same reference, no re-render guaranteed
+setUser(user); // same reference; React can ignore this update
 
 // Correct
 setUser((prev) => ({ ...prev, age: 37 }));
@@ -106,7 +108,7 @@ items.map((item) => <li key={item.id}>{item.name}</li>);
 
 When an effect captures a value but doesn't list it in the dependency array, it keeps reading the old value forever. This shows up as "the timer keeps logging 0," "the WebSocket sends old form values," etc.
 
-```jsx
+```js
 // Anti-pattern — effect closes over `count` but doesn't depend on it
 useEffect(() => {
   const id = setInterval(() => {
@@ -115,7 +117,7 @@ useEffect(() => {
   return () => clearInterval(id);
 }, []);
 
-// Correct — depend on `count`, or use a functional updater
+// Correct — re-synchronize the interval when `count` changes
 useEffect(() => {
   const id = setInterval(() => {
     console.log(count);
@@ -130,7 +132,7 @@ Let `eslint-plugin-react-hooks`'s `exhaustive-deps` rule catch these.
 
 Subscriptions, timers, intervals, and event listeners need to be torn down in the Effect's cleanup function. Otherwise they leak—and at a Strict Mode root, the extra development setup/cleanup cycle makes missing cleanup easier to notice.
 
-```jsx
+```js
 // Anti-pattern
 useEffect(() => {
   window.addEventListener('resize', onResize);
@@ -145,7 +147,7 @@ useEffect(() => {
 
 ### Mutating refs during render
 
-Reading or writing `ref.current` during render is unsafe — render must be pure, and React 19's strictness flags this. Read/write refs in event handlers and effects instead.
+Reading or writing `ref.current` during render, except for predictable one-time initialization, breaks render purity and can make component behavior unpredictable. The current `eslint-plugin-react-hooks` refs rule reports many such cases. Read or write refs in event handlers and Effects instead.
 
 ```jsx
 // Anti-pattern
@@ -157,11 +159,14 @@ function Component() {
 
 // Correct
 function Component() {
-  const ref = useRef(0);
-  useEffect(() => {
-    ref.current += 1;
-  });
-  return <div>{ref.current}</div>;
+  const clickCount = useRef(0);
+
+  function handleClick() {
+    clickCount.current += 1;
+    alert(`Recorded clicks: ${clickCount.current}`);
+  }
+
+  return <button onClick={handleClick}>Record click</button>;
 }
 ```
 
@@ -186,7 +191,7 @@ React Compiler 1.0 is an optional build-time optimizer that memoizes compatible 
 
 Deeply nested state is awkward to update immutably and easy to get wrong. Prefer a flatter shape, but **don't** lose information that the structure encoded. The fix below loses the "users have profiles" grouping; a better fix keeps the relationship while flattening the tree:
 
-```jsx
+```js
 // Anti-pattern — deeply nested
 const [state, setState] = useState({
   user: {

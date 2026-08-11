@@ -10,18 +10,20 @@ A common stack is Jest or Vitest as the test runner with React Testing Library, 
 
 ## How do you test React applications?
 
+A balanced React test suite checks user-visible behavior at component boundaries and reserves browser tests for critical integrated flows.
+
 ### Unit testing
 
 Unit testing covers individual components in isolation. Jest and Vitest are the two dominant runners — Vitest is the natural choice for Vite-based projects and has largely caught up with Jest in features. Both pair with React Testing Library, which renders components and queries the DOM the way a user would.
 
 Add `@testing-library/jest-dom` once in your setup file (e.g. `setupTests.ts`) so its matchers are registered globally — the older `@testing-library/jest-dom/extend-expect` import path is no longer needed:
 
-```javascript
+```ts
 // setupTests.ts
 import '@testing-library/jest-dom';
 ```
 
-```javascript
+```tsx
 // MyComponent.test.tsx
 import { render, screen } from '@testing-library/react';
 import MyComponent from './MyComponent';
@@ -36,7 +38,7 @@ test('renders the component with the correct text', () => {
 
 Integration tests exercise multiple components together. Prefer `@testing-library/user-event` over `fireEvent` — it simulates real user interactions (focus, hover, typing) much more faithfully and returns a promise, so you `await` the action.
 
-```javascript
+```jsx
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ParentComponent from './ParentComponent';
@@ -57,7 +59,7 @@ Note `findByText` (async) instead of `getByText` for assertions on UI that appea
 
 Use `renderHook` from `@testing-library/react` to test hooks in isolation:
 
-```javascript
+```js
 import { renderHook, act } from '@testing-library/react';
 import { useCounter } from './useCounter';
 
@@ -72,7 +74,7 @@ test('increments the counter', () => {
 
 Mock Service Worker (MSW) intercepts requests at the network layer rather than stubbing `fetch`, so the same handlers can be reused in unit tests, Storybook, and the dev server. It is a widely used option for API mocking in React tests.
 
-```javascript
+```js
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 
@@ -91,7 +93,7 @@ For client UI that updates after a request, timer, or transition, trigger the be
 
 React Server Components rely on a framework or bundler to produce and consume their serialized payload. Calling a Server Component as an ordinary async function does not test that pipeline. Prefer the framework's integration or end-to-end testing setup, and unit-test pure data helpers separately. Keep network calls controlled at an appropriate boundary, for example with MSW or a stubbed data module.
 
-```javascript
+```jsx
 test('renders user data once loaded', async () => {
   render(<UserProfile id="42" />);
   expect(await screen.findByText('Ada')).toBeInTheDocument();
@@ -102,7 +104,7 @@ test('renders user data once loaded', async () => {
 
 End-to-end tests drive the whole application in a real browser. Playwright is a common choice for new projects and includes parallel execution, multi-browser support, auto-waiting, and a trace viewer. Cypress is also widely used and is a fine option, especially in an existing codebase.
 
-```javascript
+```js
 // Playwright
 import { test, expect } from '@playwright/test';
 
@@ -119,7 +121,7 @@ test('user can log in', async ({ page }) => {
 
 Snapshot testing captures the rendered output of a component and compares it to a saved snapshot on subsequent runs. With React 19, `react-test-renderer` is deprecated — render with React Testing Library instead and snapshot the resulting markup:
 
-```javascript
+```jsx
 import { render } from '@testing-library/react';
 import MyComponent from './MyComponent';
 

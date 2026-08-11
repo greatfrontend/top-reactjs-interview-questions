@@ -10,24 +10,27 @@ React hooks have a few essential rules to ensure they work correctly. Call hooks
 
 ## What are the rules of React hooks?
 
+The Rules of Hooks preserve a consistent call order so React can associate each Hook call with the correct component state across renders.
+
 ### Always call hooks at the top level
 
 Hooks must be called in the same order on every render. That means you cannot call them inside loops, conditions, nested functions, or after an early `return`. React identifies which `useState`/`useEffect`/etc. call corresponds to which piece of state purely by call order — break the order and React's internal bookkeeping desyncs.
 
 ```jsx
-// Correct
-function MyComponent({ enabled }) {
+import { useState } from 'react';
+
+function Counter({ enabled }) {
   const [count, setCount] = useState(0);
 
-  if (!enabled) {
-    // Use the value conditionally — fine.
-  }
+  if (!enabled) return null;
 
-  return <div>{count}</div>;
+  return (
+    <button onClick={() => setCount((value) => value + 1)}>{count}</button>
+  );
 }
 
 // Incorrect — hook inside an `if`
-function MyComponent({ enabled }) {
+function ConditionalCounter({ enabled }) {
   if (enabled) {
     const [count, setCount] = useState(0); // hook order changes between renders
     return <div>{count}</div>;
@@ -36,7 +39,7 @@ function MyComponent({ enabled }) {
 }
 
 // Incorrect — hook after an early return
-function MyComponent({ items }) {
+function SelectableList({ items }) {
   if (items.length === 0) return null;
   const [selected, setSelected] = useState(null); // skipped on the early-return path
   return <List items={items} selected={selected} onSelect={setSelected} />;
@@ -46,11 +49,26 @@ function MyComponent({ items }) {
 To fix the early-return case, move the hook above the conditional:
 
 ```jsx
-function MyComponent({ items }) {
+import { useState } from 'react';
+
+function SelectableList({ items }) {
   const [selected, setSelected] = useState(null);
   if (items.length === 0) return null;
   return <List items={items} selected={selected} onSelect={setSelected} />;
 }
+```
+
+Stable call order lets React match each Hook to the same internal slot on every render; conditionally skipping one shifts every later match:
+
+```mermaid
+---
+title: Why Hook call order must stay stable
+---
+flowchart LR
+  R1A["Render 1, slot 1: useState"] -. "same slot" .-> R2A["Render 2, slot 1: useState"]
+  R1B["Render 1, slot 2: useEffect"] -. "same slot" .-> R2B["Render 2, slot 2: useEffect"]
+  Conditional["A conditional Hook is skipped"] --> Shift["Every later Hook moves to a different slot"]
+  Shift --> Broken["React associates state with the wrong call"]
 ```
 
 ### The special case: `use`
@@ -58,6 +76,8 @@ function MyComponent({ items }) {
 Despite its name, React's `use(resource)` API is not a Hook. You may call it inside conditions and loops because it does not store state by call order:
 
 ```jsx
+import { use } from 'react';
+
 function Comments({ shouldLoad, commentsPromise }) {
   if (shouldLoad) {
     const comments = use(commentsPromise);
@@ -79,6 +99,8 @@ Hooks can only be called from:
 Calling a hook from a regular utility function, a class component, or an event handler is not allowed.
 
 ```jsx
+import { useState } from 'react';
+
 // Correct — function component
 function MyComponent() {
   const [count, setCount] = useState(0);
@@ -98,42 +120,34 @@ function regularFunction() {
 }
 ```
 
-The `use` prefix isn't cosmetic — it's how the linter identifies a custom hook and enforces the rules of hooks inside it. Naming a function `getCounter` instead of `useCounter` will silently disable those checks.
+The `use` prefix isn't cosmetic — it identifies a function as a custom Hook and lets the linter enforce call-order rules at its call sites. If a function that calls Hooks is instead named `getCounter`, the linter reports that Hooks are being called from a function that is neither a component nor a custom Hook.
 
 ### Use `eslint-plugin-react-hooks`
 
-The `eslint-plugin-react-hooks` package automates enforcement of these rules. It ships two main rules: `react-hooks/rules-of-hooks` (call order, where hooks may be called) and `react-hooks/exhaustive-deps` (correct dependency arrays for `useEffect`, `useMemo`, `useCallback`).
+The `eslint-plugin-react-hooks` package automates enforcement of these rules. Its two foundational rules are `react-hooks/rules-of-hooks` (call order and valid call sites) and `react-hooks/exhaustive-deps` (reactive dependencies for Effects and memoization Hooks). The recommended preset also enables additional Rules of React and React Compiler diagnostics.
 
 ```bash
 npm install eslint-plugin-react-hooks --save-dev
 ```
 
-For an ESLint legacy `.eslintrc` config:
+For a legacy `.eslintrc` config:
 
 ```json
 {
-  "plugins": ["react-hooks"],
-  "rules": {
-    "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn"
-  }
+  "extends": ["plugin:react-hooks/recommended"]
 }
 ```
 
-For ESLint 9's flat config (`eslint.config.js`), import the plugin and spread its recommended config:
+For ESLint's flat config (`eslint.config.js`), use the plugin's flat recommended preset:
 
 ```js
+import { defineConfig } from 'eslint/config';
 import reactHooks from 'eslint-plugin-react-hooks';
 
-export default [
-  {
-    plugins: { 'react-hooks': reactHooks },
-    rules: reactHooks.configs.recommended.rules,
-  },
-];
+export default defineConfig([reactHooks.configs.flat.recommended]);
 ```
 
-As of `eslint-plugin-react-hooks` v6, the `recommended` preset uses flat config by default. The package also provides Compiler-powered lint rules; keep it current when using newer APIs such as `useEffectEvent` so dependency suggestions follow their special semantics.
+The package also provides Compiler-powered lint rules. Keep it current when using newer APIs such as `useEffectEvent` so dependency suggestions follow their special semantics.
 
 ### A note on the React Compiler
 

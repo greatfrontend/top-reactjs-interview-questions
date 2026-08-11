@@ -4,11 +4,13 @@ title: How do you handle asynchronous data loading in React applications?
 
 ## TL;DR
 
-Prefer a framework's data-loading APIs or a client cache such as TanStack Query, SWR, or RTK Query because they handle caching, deduplication, race conditions, and request waterfalls. Fetching in an Effect remains valid for simple client-only cases, but it needs explicit loading/error handling, cleanup, and stale-response protection. React 19's `use` API can read a cached promise and suspend; the promise should come from a Suspense-enabled framework/cache, a route loader, or a Server Component rather than being recreated during render.
+Prefer a framework's data-loading APIs when they can coordinate route requests before rendering, or a client cache such as TanStack Query, SWR, or RTK Query when browser-owned data needs caching and synchronization. Exact deduplication, retries, and refetch behavior depend on the tool and configuration. Fetching in an Effect remains valid for simple client-only cases, but it needs explicit loading/error handling, cleanup, and stale-response protection. React 19's `use` API can read a cached promise and suspend; the promise should come from a Suspense-enabled framework/cache, a route loader, or a Server Component rather than being recreated during render.
 
 ---
 
 ## Handling asynchronous data loading in React
+
+The right loading layer depends on where the data is needed, who owns its cache, and whether it participates in server rendering or client interactions.
 
 ### Prefer a framework or data-fetching library for production applications
 
@@ -37,18 +39,17 @@ function Profile({ userId }) {
 
 **SWR** is a lightweight alternative with a similar mental model. **RTK Query** is the right pick if you already use Redux Toolkit.
 
-These libraries give you for free:
+Depending on the library and its configuration, these tools can provide:
 
-- An in-memory cache keyed by query parameters
-- Automatic deduplication of in-flight requests
-- Refetching on window focus, network reconnect, and on a stale interval
-- Cancellation via `AbortSignal`
-- Retries with backoff
-- Pagination, infinite scroll, and optimistic updates
+- A cache keyed by query parameters.
+- Deduplication of matching in-flight requests.
+- Configurable refetching on focus, reconnect, or an interval.
+- `AbortSignal` integration and configurable retries.
+- Primitives for pagination, infinite queries, and optimistic updates.
 
 ### Server Components and framework loaders
 
-If you're using a framework, fetch on the server whenever possible — it's faster (no client waterfall) and ships less JS.
+When data is needed for the initial route and does not depend on browser-only state, a framework's server loader can avoid a client request waterfall and keep fetching code out of the client bundle. Client caches remain appropriate for highly interactive, frequently refreshed, or browser-specific data.
 
 - **Next.js App Router (React Server Components)** — `async` Server Components can `await` data directly and stream the result.
 - **React Router / Remix loaders** — co-locate a `loader` with the route; data is fetched in parallel with code.
@@ -56,9 +57,10 @@ If you're using a framework, fetch on the server whenever possible — it's fast
 ```jsx
 // Next.js Server Component (no useEffect needed)
 async function UserPage({ params }) {
-  const user = await fetch(`https://api.example.com/users/${params.id}`).then(
-    (r) => r.json(),
-  );
+  const { id } = await params;
+  const response = await fetch(`https://api.example.com/users/${id}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const user = await response.json();
   return <h1>{user.name}</h1>;
 }
 ```
@@ -90,9 +92,9 @@ function Page({ userPromise }) {
 
 ### Keeping the UI responsive: `useTransition` and `useDeferredValue`
 
-When a user interaction triggers a re-fetch (filtering a list, switching tabs), wrap the state update that causes the new fetch in `startTransition` so the previous UI stays interactive while the new data loads. `useDeferredValue` gives you a lagging copy of a value — useful for letting an input stay snappy while a derived list re-renders against slower data.
+When an interaction changes a Suspense-enabled result, marking the state update as a Transition can keep already revealed content visible and interactive while the next result loads. `useDeferredValue` provides a lagging value that can let urgent input updates render before slower derived content. Neither API fetches or caches data by itself.
 
-```jsx
+```js
 const [isPending, startTransition] = useTransition();
 
 function onTabChange(next) {
@@ -102,7 +104,7 @@ function onTabChange(next) {
 
 ### Low-level: `useEffect` + `fetch` (when and how)
 
-Plain `useEffect` + `fetch` is a fine fallback for one-off fetches in a small app, or as an escape hatch. But you must handle two things the naive example always gets wrong: **race conditions** (an older request resolving after a newer one) and **HTTP errors** (`fetch` only rejects on network failure — a 500 still resolves).
+Plain `useEffect` + `fetch` is a valid fallback for a one-off client request. A complete implementation must handle two details that short examples commonly omit: **race conditions** (an older request resolving after a newer one) and **HTTP errors** (`fetch` only rejects on network failure — a 500 still resolves).
 
 ```jsx
 import { useEffect, useState } from 'react';
@@ -143,13 +145,15 @@ function User({ id }) {
 }
 ```
 
-Even with these fixes, `useEffect` does not give you caching across components, deduplication, or refetch-on-focus — which is why a real app outgrows it quickly.
+Even with these fixes, `useEffect` alone does not provide cross-component caching, request deduplication, or refetch-on-focus. Add those capabilities only when the application needs them, usually through a framework loader or data library.
 
 ### Summary of options
 
+Use this table as a starting point, then account for the framework and freshness requirements of the specific data:
+
 | Option | Use when |
 | --- | --- |
-| TanStack Query / SWR / RTK Query | Default for client-side fetching |
+| TanStack Query / SWR / RTK Query | Shared client-side data that benefits from caching and synchronization |
 | Server Components / route loaders | You control the framework (Next.js, Remix) |
 | `use(promise)` + `<Suspense>` | Streaming a promise from a parent in React 19+ |
 | `useEffect` + `fetch` | Simple client-only fetches where you handle cleanup and races |

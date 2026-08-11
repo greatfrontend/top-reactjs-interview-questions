@@ -4,7 +4,7 @@ title: What is the `useCallback` hook in React and when should it be used?
 
 ## TL;DR
 
-`useCallback` returns a memoized function whose identity only changes when one of its dependencies changes. The point is **referential stability** — so a `React.memo`-wrapped child does not re-render, or a `useEffect` whose deps include the function does not re-fire. Re-creating a plain function literal each render is essentially free; the actual cost being avoided is the **downstream work** triggered by a new reference.
+`useCallback` caches a function definition while its dependencies remain `Object.is`-equal. The point is **referential stability** — so a `memo`-wrapped child can skip a render, or an Effect that depends on the function does not re-synchronize unnecessarily. Creating a function literal is usually not the cost worth optimizing; use `useCallback` when the changing identity causes measured or semantically required downstream work.
 
 ```javascript
 const memoizedCallback = useCallback(() => {
@@ -12,17 +12,23 @@ const memoizedCallback = useCallback(() => {
 }, [a, b]);
 ```
 
-> React Compiler 1.0 is a separate, optional build-time optimizer. When enabled, it memoizes compatible components and values and can reduce the need for manual `useCallback`, `useMemo`, and `memo`. Check profiling and compiled output before adding manual memoization to Compiler-enabled code.
-
 ---
 
 ## What is the `useCallback` hook in React and when should it be used?
+
+`useCallback` is an identity cache for a function definition, useful only when stable identity prevents specific downstream work or satisfies a dependency relationship.
 
 ### What is `useCallback`?
 
 `useCallback` caches a function definition between renders until one of its dependencies changes according to `Object.is`. It does not avoid evaluating the function expression you pass; React returns the previously cached function identity when the dependencies match. That stable identity is useful only when it avoids downstream work or is required by another Hook's dependency relationship.
 
+> [!NOTE] React Compiler may provide memoization
+>
+> React Compiler 1.0 is a separate, optional build-time optimizer. When enabled, it memoizes compatible components and values and can reduce the need for manual `useCallback`, `useMemo`, and `memo`. Check profiling and compiled output before adding manual memoization to Compiler-enabled code.
+
 ### Syntax
+
+Pass the function and every reactive value it reads:
 
 ```javascript
 const memoizedCallback = useCallback(() => {
@@ -32,27 +38,28 @@ const memoizedCallback = useCallback(() => {
 
 ### When should `useCallback` be used?
 
+The main cases involve memoized consumers or Effects that depend on the function's identity.
+
 #### Preventing unnecessary re-renders of memoized children
 
 When you pass a function as a prop to a `React.memo`-wrapped child, a new function reference on each parent render breaks the memoization and the child re-renders anyway. `useCallback` keeps the reference stable so `React.memo` can do its job.
 
-A common bug is depending on a state value you also update inside the callback — the dependency changes after every click, so the memoization is useless:
+This callback is correct, but its identity changes whenever `count` changes because it reads that render's state snapshot:
 
 ```javascript
-// BAD: `count` is in the deps, so `handleClick` gets a new identity every click,
-// defeating React.memo on the child.
 const handleClick = useCallback(() => {
   setCount(count + 1);
 }, [count]);
 ```
 
-The fix is to use the **functional updater** form of `setState`, which lets you drop the value from the deps:
+If the callback only reads `count` to calculate its next value, the **functional updater** form removes that dependency and keeps the callback stable across count updates:
 
-```javascript
+```jsx
+import { memo, useCallback, useState } from 'react';
+
 const ParentComponent = () => {
   const [count, setCount] = useState(0);
 
-  // GOOD: empty deps, stable identity for the lifetime of the component.
   const handleClick = useCallback(() => {
     setCount((c) => c + 1);
   }, []);
@@ -60,25 +67,25 @@ const ParentComponent = () => {
   return <ChildComponent onClick={handleClick} />;
 };
 
-const ChildComponent = React.memo(({ onClick }) => {
+const ChildComponent = memo(({ onClick }) => {
   console.log('ChildComponent rendered');
   return <button onClick={onClick}>Click me</button>;
 });
 ```
 
-#### Stabilising functions used in `useEffect` deps
+#### Stabilizing functions used in `useEffect` deps
 
 If a function is referenced inside an effect's dependency array, a fresh reference each render will cause the effect to re-run every render. Wrapping the function in `useCallback` (or moving it inside the effect) prevents that:
 
-```javascript
-const fetchData = useCallback(async () => {
-  const res = await fetch(`/api/items?query=${query}`);
-  setItems(await res.json());
-}, [query]);
+```js
+const handleMessage = useCallback((event) => {
+  setMessages((messages) => [...messages, event.data]);
+}, []);
 
 useEffect(() => {
-  fetchData();
-}, [fetchData]);
+  socket.addEventListener('message', handleMessage);
+  return () => socket.removeEventListener('message', handleMessage);
+}, [socket, handleMessage]);
 ```
 
 #### Relationship to `useMemo`
@@ -87,8 +94,10 @@ useEffect(() => {
 
 ### Caveats
 
-- **It is not free**: `useCallback` itself adds bookkeeping. For a function that is not passed to a memoized child or used in a dependency array, wrapping it usually makes the code slower, not faster.
-- **The cost being avoided is downstream re-renders**, not the function literal itself. Allocating an arrow function on each render is essentially free.
+Memoizing a function adds its own dependency comparison and maintenance cost:
+
+- **It has a cost**: `useCallback` adds a dependency comparison and more code. If no consumer relies on stable identity, leave the function inline.
+- **The target is downstream work**, not function allocation by itself. Profile the child render, Effect, or other identity-sensitive consumer that memoization is intended to protect.
 - **Dependencies must be correct**: missing dependencies cause stale closures; over-specified ones defeat the memoization.
 - **It is a performance cache**: React may discard the cached function for documented reasons such as suspending during the initial mount or editing the component in development. Do not rely on it for correctness.
 - **React Compiler may replace it**: in a Compiler-enabled codebase, start with plain inline functions and add manual memoization only when the Compiler does not optimize a measured hot path or a specific stable identity is required.

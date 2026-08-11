@@ -10,6 +10,8 @@ Reconciliation is React's render-phase process for matching a newly returned ele
 
 ## What is reconciliation in React?
 
+Reconciliation is React's process for matching a new element tree to the previous tree and determining what can be preserved before commit.
+
 ### Introduction
 
 Reconciliation is how React matches a new tree of element descriptions with the previous tree. It determines which component identities and state to preserve and which host changes may be needed. The later commit phase applies those changes to the DOM.
@@ -25,6 +27,26 @@ The process of comparing the new tree with the previous one is called "diffing."
 1. **Element type comparison**: If the elements at the same position are of different types (for example a `<div>` becomes a `<span>`, or `<ComponentA />` becomes `<ComponentB />`), React unmounts the old subtree and mounts a fresh one — state is thrown away.
 2. **Same type, different props**: If the element type is the same, React keeps the same DOM node (or component instance) and updates only the props that changed. Component state is preserved across the update because state is owned by the component instance, not derived by diffing.
 3. **List children and keys**: When rendering arrays of children, React uses the `key` prop to match items between renders. Stable keys let React move, insert, and delete list items efficiently; without them (or with index keys on a reordering list), React may unmount and remount items unnecessarily, losing their state.
+
+Type and key determine whether reconciliation preserves an existing identity or replaces it:
+
+```mermaid
+---
+title: Reconciliation identity decisions
+---
+flowchart TD
+  Compare["Match a next child to the previous children"] --> Keyed{"Does the next child have a key?"}
+  Keyed -->|"no"| Position["Use the same sibling position"]
+  Position --> PositionType{"Same element type?"}
+  PositionType -->|"yes"| Preserve["Preserve identity and update changed props"]
+  PositionType -->|"no"| Replace["Unmount the old subtree and mount a new one"]
+  Keyed -->|"yes"| FindKey{"Previous sibling with the same key?"}
+  FindKey -->|"no"| Insert["Mount a new child"]
+  FindKey -->|"yes"| KeyType{"Same element type?"}
+  KeyType -->|"yes"| Move["Preserve identity; move or update as needed"]
+  KeyType -->|"no"| Replace
+  Replace --> Reset["Reset component state below that identity"]
+```
 
 ### Fiber, lanes, and bailouts
 

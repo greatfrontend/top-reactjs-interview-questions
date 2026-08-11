@@ -10,6 +10,8 @@ The dependency array of `useEffect` controls when React re-synchronizes the effe
 
 ## What does the dependency array of `useEffect` affect?
 
+The dependency list controls when React re-synchronizes an Effect with the reactive values used by its setup function.
+
 ### Introduction to `useEffect`
 
 The `useEffect` hook in React is used to perform side effects in functional components. These side effects can include data fetching, subscriptions, or manually changing the DOM. The `useEffect` hook takes two arguments: a function that contains the side effect logic and an optional dependency array.
@@ -25,6 +27,8 @@ useEffect(() => {
 ```
 
 ### How the dependency array affects `useEffect`
+
+The three common dependency-list forms produce different setup and cleanup schedules:
 
 1. **Empty dependency array (`[]`)**:
    - The effect runs once after the initial render and its cleanup runs once on unmount.
@@ -59,6 +63,24 @@ useEffect(() => {
    });
    ```
 
+The dependency-list form selects the schedule, while a changed dependency also determines when cleanup must precede the next setup:
+
+```mermaid
+---
+title: How the dependency array schedules an Effect
+---
+flowchart TD
+  Render["Component commits a render"] --> Form{"Dependency-list form"}
+  Form -->|"omitted"| Every["Run setup after every commit"]
+  Form -->|"empty list"| Mount{"First commit?"}
+  Mount -->|"yes"| Once["Run setup"]
+  Mount -->|"no"| SkipEmpty["Skip the Effect"]
+  Form -->|"listed values"| Changed{"Any value changed by Object.is?"}
+  Changed -->|"no"| SkipDeps["Skip the Effect"]
+  Changed -->|"yes"| Cleanup["Run previous cleanup"]
+  Cleanup --> Setup["Run setup with new values"]
+```
+
 ### Cleanup behavior on dependency change
 
 When dependencies change, React first runs the previous effect's cleanup function (if any) before running the effect again with the new values. The same is true on unmount. This means dependency changes effectively perform a tear-down/set-up cycle, which matters for subscriptions, intervals, and event listeners.
@@ -75,6 +97,8 @@ useEffect(() => {
 The official `eslint-plugin-react-hooks` ships an `exhaustive-deps` rule that warns when reactive values used inside an effect are missing from the dependency array. Treat its warnings as bugs — silencing the rule is almost always the wrong fix and a common source of stale closures.
 
 ### Common pitfalls
+
+Incorrect dependencies either leave an Effect synchronized with stale values or cause unnecessary repeated setup:
 
 1. **Stale closures**:
    - If you use state or props inside the effect without including them in the dependency array, you might end up with stale values.

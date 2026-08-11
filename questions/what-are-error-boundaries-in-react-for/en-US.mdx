@@ -10,9 +10,11 @@ Error boundaries catch errors thrown while rendering their descendant tree and d
 
 ## What are error boundaries in React for?
 
+Error boundaries contain render-time failures in a subtree and replace that subtree with fallback UI instead of losing the entire interface.
+
 ### Introduction
 
-Error boundaries are a feature in React that help manage and handle errors in a more graceful way. They allow developers to catch JavaScript errors anywhere in their child component tree, log those errors, and display a fallback UI instead of crashing the entire application.
+Error boundaries catch render-time errors in their descendant component tree. They can report the error and replace only the failed subtree with fallback UI instead of allowing the error to unmount the entire root.
 
 Specifically, an error boundary catches errors thrown during:
 
@@ -73,6 +75,22 @@ To use the error boundary, wrap it around any component that you want to monitor
 </ErrorBoundary>
 ```
 
+The boundary contains only its descendant subtree; siblings outside that boundary can remain mounted and interactive:
+
+```mermaid
+---
+title: Error containment at the nearest boundary
+---
+flowchart TD
+  Root["Application root"] --> Header["Header remains interactive"]
+  Root --> Boundary["Error boundary"]
+  Boundary --> Panel["Independent panel"]
+  Panel --> Failure["Descendant throws while rendering"]
+  Failure -. "propagates to nearest boundary" .-> Boundary
+  Boundary --> Fallback["Render fallback for this subtree"]
+  Root --> Sidebar["Sidebar remains interactive"]
+```
+
 ### Limitations
 
 Error boundaries have some limitations:
@@ -86,7 +104,7 @@ Error boundaries have some limitations:
 
 React 19 added reporting options on `createRoot` and `hydrateRoot`, useful for centralized logging and analytics. `onCaughtError` reports errors handled by a boundary, while `onUncaughtError` reports errors that reached the root without one:
 
-```jsx
+```js
 import { createRoot } from 'react-dom/client';
 
 const root = createRoot(document.getElementById('root'), {
@@ -113,9 +131,11 @@ If you do not want to maintain a class wrapper, the [`react-error-boundary`](htt
 
 ### Best practices
 
-- Use error boundaries to wrap high-level components such as route handlers or major sections of your application.
+Place boundaries according to the failures users should be able to recover from independently:
+
+- Place error boundaries around route content or independent sections that can fail and recover separately.
 - Log errors to an error reporting service to keep track of issues in production.
-- Provide a user-friendly fallback UI to improve the user experience when an error occurs.
+- Give the fallback an actionable recovery path, such as retrying, navigating away, or reloading the affected data.
 
 ## Further reading
 

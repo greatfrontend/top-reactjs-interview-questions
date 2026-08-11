@@ -6,7 +6,7 @@ title: How do you localize React applications?
 
 To localize a React application, you typically use a library like `react-i18next` or `react-intl`. First, you set up your translation files for different languages. Then, you configure the localization library in your React app. Finally, you use the provided hooks or components to display localized text in your components.
 
-```javascript
+```jsx
 // Example using react-i18next
 import { useTranslation } from 'react-i18next';
 
@@ -20,9 +20,11 @@ const MyComponent = () => {
 
 ## Setting up localization in React
 
+Localization combines message lookup with locale selection, plural rules, formatting, layout direction, and server/client consistency.
+
 ### Choosing a localization library
 
-There are several libraries available for localizing React applications, with `react-i18next` and `react-intl` being among the most popular. For this guide, we'll focus on `react-i18next`.
+There are several libraries available for localizing React applications, including `react-i18next` and `react-intl`. The examples below use `react-i18next`.
 
 ### Installing the library
 
@@ -82,7 +84,7 @@ export default i18n;
 
 Because `initReactI18next` already registers the i18n instance with React, you no longer need to wrap your tree in `I18nextProvider` (only use it when you want to scope a different instance to a subtree). Just import the config once at your entry and render with `createRoot`:
 
-```javascript
+```jsx
 // index.js
 import { createRoot } from 'react-dom/client';
 import App from './App';
@@ -96,9 +98,8 @@ root.render(<App />);
 
 Use the `useTranslation` hook to access the `t` function for translating text:
 
-```javascript
+```jsx
 // MyComponent.js
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const MyComponent = () => {
@@ -113,9 +114,8 @@ export default MyComponent;
 
 To switch languages, use the `i18n.changeLanguage` method:
 
-```javascript
+```jsx
 // LanguageSwitcher.js
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 const LanguageSwitcher = () => {
@@ -148,14 +148,14 @@ Most translations need to inject runtime values. Pass an options object as the s
 }
 ```
 
-```javascript
+```jsx
 const { t } = useTranslation();
 return <p>{t('greeting', { name: user.name })}</p>;
 ```
 
 For rich text with embedded React elements (e.g. links inside a sentence), use the `Trans` component so translators can reorder children without breaking JSX:
 
-```javascript
+```jsx
 import { Trans } from 'react-i18next';
 
 <Trans i18nKey="terms">
@@ -206,13 +206,14 @@ i18n
   .init({
     fallbackLng: 'en',
     backend: { loadPath: '/locales/{{lng}}/{{ns}}.json' },
+    react: { useSuspense: true },
   });
 ```
 
-Pair this with React `Suspense` so components render their fallback while a translation file loads:
+With Suspense mode enabled in the same initialization call, components can render a fallback while a translation file loads:
 
-```javascript
-i18n.init({ react: { useSuspense: true } });
+```jsx
+import { Suspense } from 'react';
 
 <Suspense fallback={<Spinner />}>
   <App />
@@ -234,13 +235,17 @@ useEffect(() => {
 
 Don't hand-format numbers or dates. Use the built-in `Intl` APIs, which respect the locale's conventions for separators, ordering, and currency symbols:
 
-```javascript
+```js
 new Intl.NumberFormat('de-DE', {
   style: 'currency',
   currency: 'EUR',
 }).format(1234.5); // "1.234,50 €"
 
-new Intl.DateTimeFormat('ja-JP', { dateStyle: 'long' }).format(new Date());
+const date = new Date('2026-04-23T00:00:00Z');
+new Intl.DateTimeFormat('ja-JP', {
+  dateStyle: 'long',
+  timeZone: 'UTC',
+}).format(date);
 // "2026年4月23日"
 
 new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(-1, 'day');
@@ -251,9 +256,11 @@ i18next can call these via its built-in formatter: `t('updated', { date, formatP
 
 ### SSR and Next.js considerations
 
+Server rendering adds request isolation and serialization constraints to the localization setup:
+
 - For Next.js App Router, use `next-intl` or `i18next` with the `i18next/react-i18next` SSR setup. Initialize i18next per request so the server doesn't leak one user's language to another.
 - Send the active language in the initial HTML (`<html lang="...">`) and serialize the loaded resources so the client can hydrate without a flash of untranslated content.
-- Server Components can call `t` directly once i18n is initialized; pass the `t` function or translated strings down to Client Components rather than re-initializing i18n on the client when possible.
+- Server Components can translate after the request-specific i18n instance is initialized. Pass translated strings or other serializable data to Client Components; a `t` function cannot cross the Server-to-Client Component boundary because functions are not serializable.
 
 ## Further reading
 
@@ -266,3 +273,4 @@ i18next can call these via its built-in formatter: `t('updated', { date, formatP
 - [MDN: Intl.NumberFormat](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat)
 - [MDN: Intl.DateTimeFormat](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat)
 - [next-intl for Next.js App Router](https://next-intl.dev/)
+- [React `'use client'` serialization requirements](https://react.dev/reference/rsc/use-client#serializable-types)

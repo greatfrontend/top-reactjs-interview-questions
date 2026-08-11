@@ -6,7 +6,7 @@ title: What is the `useId` hook in React and when should it be used?
 
 `useId` (added in React 18) generates a stable, unique string ID per component instance, **per React root**. Its main reason for existing is to produce IDs that match between the server-rendered HTML and the client hydration — a plain incrementing counter would produce mismatches. Within a single root the IDs are unique, but two separate roots on the same page can collide unless you set `identifierPrefix` on `createRoot` / `hydrateRoot`. Use it for things like linking `<label htmlFor>` to `<input id>`, never as a list `key`.
 
-```javascript
+```jsx
 import { useId } from 'react';
 
 function NameField() {
@@ -23,6 +23,8 @@ function NameField() {
 ---
 
 ## What is the `useId` hook in React and when should it be used?
+
+`useId` creates component-scoped identifiers for rendered relationships that must remain stable across server rendering, hydration, and later renders.
 
 ### Introduction to `useId`
 
@@ -46,7 +48,7 @@ Module-level counters were already fragile before React 18. Any re-render, multi
 | `Math.random()` | No (server and client diverge, causing hydration mismatch) | No (changes every render) | Never for render output. Only suitable for non-rendered scratch values. |
 | `crypto.randomUUID()` | No (same reason) | No | When a globally unique ID needs to be stored in your data, not generated during render. |
 | `nanoid` / `uuid` package | No (when called during render) | No (same reason) | For IDs persisted in your data model. Generate them outside render and store the result. |
-| Module-level counter | No (server and client increment in different orders) | Yes (within a session) | Was the pre-React 18 workaround. Replaced by `useId`. |
+| Module-level counter incremented during render | No (server and client may increment in different orders) | No (each render increments it again) | Do not use it for IDs in rendered output. |
 
 Use `useId` when a component needs to generate an ID for rendered accessibility relationships. An ID supplied through props or stored in application data is also safe to render. If an ID belongs to your data model (a row's primary key, for example), generate it outside render and store it rather than replacing it with `useId`.
 
@@ -64,7 +66,7 @@ IDs from `useId` are unique **within a single React root**. If your page mounts 
 
 To prevent that, give each root a distinct `identifierPrefix`:
 
-```javascript
+```jsx
 import { createRoot } from 'react-dom/client';
 
 createRoot(document.getElementById('widget-a'), {
@@ -82,7 +84,7 @@ The same option exists on `hydrateRoot`.
 
 The most common use is associating a `<label>` with its form control for accessibility:
 
-```javascript
+```jsx
 import { useId } from 'react';
 
 function NameField() {
@@ -102,7 +104,7 @@ It is also useful for ARIA attributes such as `aria-describedby`, `aria-labelled
 
 A common `useId` pattern for accessibility is connecting an input to a hint, an error message, or an external label via `aria-describedby` or `aria-labelledby`. Call `useId` once per component and append suffixes for each related element. This keeps related IDs grouped, saves hook calls, and makes the relationships clear in the markup:
 
-```javascript
+```jsx
 function PasswordField() {
   const id = useId();
   return (
@@ -123,7 +125,11 @@ The same pattern applies to `aria-labelledby` (when the label is a separate elem
 
 ### What `useId` is not for
 
-> **Important distinction:** `useId` is not a replacement for list keys. `key` identifies a piece of _data_ across renders so React can reconcile additions, removals, and reorders. `useId` identifies a _component position_ in the tree, so it stays the same when the list is reordered, which is the wrong behavior for a key. Always use a stable ID from your data (a database id, a slug, and so on) for list keys.
+The generated identifier represents a component position, not the identity of application data.
+
+> [!IMPORTANT] `useId` is not a list key
+>
+> `key` identifies a piece of _data_ across renders so React can reconcile additions, removals, and reorders. `useId` identifies a component position in the tree, which is the wrong identity for a list item. Always use a stable ID from the data, such as a database ID or slug.
 
 - **Do not use it as a list `key`.** Using `useId` as a key produces output that renders correctly at first but breaks when the list is reordered or items are inserted. See the callout above for the reason.
 - **Avoid it in CSS selectors and `document.querySelector`.** The generated format (e.g. `:r0:`) contains colons, which are valid in HTML `id` attributes but require escaping in CSS selectors. Pair `<label htmlFor>` with `<input id>` instead of selecting by id.
@@ -131,6 +137,8 @@ The same pattern applies to `aria-labelledby` (when the label is a separate elem
 - **Do not generate IDs for data with `useId`.** If the ID must outlive the component (saved to a database, sent in an API request, used as a stable record identifier), `useId` is not the right tool. Use `crypto.randomUUID()` or a UUID library and store the result.
 
 ### Practical guidance
+
+Use the opaque value only to connect rendered elements, and store data identities separately:
 
 - Always pair the generated id with the element via `htmlFor` / `id` (or the relevant `aria-*` attribute) — never use it as decoration.
 - Concatenate suffixes for related controls instead of calling `useId` repeatedly.

@@ -1,12 +1,12 @@
 ---
-title: What are higher order components in React?
+title: What are higher-order components in React?
 ---
 
 ## TL;DR
 
-Higher order components (HOCs) in React are functions that take a component and return a new component with additional props or behavior. They are used to reuse component logic. For example, if you have a component `MyComponent`, you can create an HOC like this:
+Higher-order components (HOCs) in React are functions that take a component and return a new component with additional props or behavior. They are used to reuse component logic. For example, if you have a component `MyComponent`, you can create an HOC like this:
 
-```javascript
+```jsx
 const withExtraProps = (WrappedComponent) => {
   return (props) => <WrappedComponent {...props} extraProp="value" />;
 };
@@ -18,11 +18,13 @@ HOCs were especially common before Hooks and remain valid in existing code and l
 
 ---
 
-## What are higher order components in React?
+## What are higher-order components in React?
+
+HOCs are component-transforming functions: they accept one component type and return another that adds or coordinates behavior.
 
 ### Definition
 
-Higher order components (HOCs) are functions in React that take a component as an argument and return a new component. The new component typically wraps the original component and adds additional props, state, or behavior. HOCs are a pattern for reusing component logic.
+Higher-order components (HOCs) are functions in React that take a component as an argument and return a new component. The new component typically wraps the original component and adds additional props, state, or behavior. HOCs are a pattern for reusing component logic.
 
 The current React learning material emphasizes custom Hooks for sharing stateful logic. HOCs are still a valid composition pattern, but they are most common in older codebases and library APIs that need to enhance or wrap a component.
 
@@ -38,9 +40,7 @@ HOCs are used to:
 
 Here is a simple example of an HOC that adds an `extraProp` to a wrapped component:
 
-```javascript
-import React from 'react';
-
+```jsx
 // Define the HOC
 const withExtraProps = (WrappedComponent) => {
   const ComponentWithExtraProps = (props) => {
@@ -75,12 +75,16 @@ In this example, `withExtraProps` is an HOC that adds an `extraProp` to `MyCompo
 
 ### Common use cases
 
+HOCs remain most relevant where an API needs to wrap rendering or enhance a component type:
+
 - **Authentication**: Wrapping components to check if a user is authenticated before rendering.
 - **Logging**: Adding logging functionality to components.
 - **Theming**: Injecting theme-related props into components.
 - **Data fetching**: Fetching data and passing it as props to components.
 
 ### Best practices
+
+An HOC should preserve the wrapped component's identity contract and make its injected behavior explicit:
 
 - **Do not mutate the original component**: Always return a new component.
 - **Do not create HOCs inside the render method**: Calling `withExtraProps(MyComponent)` inside another component's render produces a brand-new component type on every render, so React unmounts and remounts the subtree, losing all state and DOM. Apply HOCs at the module level.
@@ -90,6 +94,8 @@ In this example, `withExtraProps` is an HOC that adds an `extraProp` to `MyCompo
 - **Use HOCs sparingly**: Overusing HOCs can make the code harder to understand and creates deeply nested wrapper trees ("wrapper hell"). Custom hooks usually compose more cleanly.
 
 ### Alternatives
+
+Modern React offers other reuse patterns that avoid adding a wrapper component when wrapping is unnecessary:
 
 - **Custom hooks**: Custom hooks share stateful logic between function components without adding wrapper components to the tree and are usually the simpler option for new code.
 - **Render props**: A pattern where a component uses a function as a prop to determine what to render.

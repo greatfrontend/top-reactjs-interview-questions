@@ -10,27 +10,49 @@ In React, one-way data flow means that data moves from parent components to chil
 
 ## One-way data flow of React and its benefits
 
+React makes state ownership explicit by separating values flowing down from update requests flowing back to their owner.
+
 ### What is one-way data flow?
 
 In React, one-way data flow refers to the concept where data moves in a single direction, from parent components to child components. This is achieved through the use of `props`. Parents pass data to children via `props`, and children may only read those `props` — they cannot mutate them. When a child needs to influence parent state, the parent passes down a callback (also via `props`) that the child invokes. The parent owns the state; the child requests changes.
 
 This is sometimes called "unidirectional data flow" and contrasts with two-way data binding found in frameworks like Angular and Vue, where directives such as `v-model` keep an input element and a piece of state automatically in sync in both directions. React deliberately avoids this: the input is told what to display via a prop, and any change is reported back through an event handler.
 
+Values and update requests take distinct paths, while the parent remains the owner that changes state:
+
+```mermaid
+---
+title: React one-way data flow
+---
+flowchart TD
+  Parent["Parent owns state"] -->|"passes props"| Child["Child renders read-only data"]
+  Child -->|"invokes callback after an event"| Parent
+  Parent --> Update["Parent updates state"]
+  Update -->|"new props flow down"| Child
+```
+
 ### Example
 
 Here is a simple example to illustrate one-way data flow:
 
 ```jsx
-// ParentComponent.jsx
-import React, { useState } from 'react';
-import ChildComponent from './ChildComponent';
+import { useState } from 'react';
 
-const ParentComponent = () => {
+function ChildComponent({ data, onChange }) {
+  return (
+    <div>
+      <p>{data}</p>
+      <button onClick={() => onChange('Hello from Child')}>Change data</button>
+    </div>
+  );
+}
+
+export default function ParentComponent() {
   const [data, setData] = useState('Hello from Parent');
 
-  const handleChange = (newData) => {
+  function handleChange(newData) {
     setData(newData);
-  };
+  }
 
   return (
     <div>
@@ -38,23 +60,7 @@ const ParentComponent = () => {
       <ChildComponent data={data} onChange={handleChange} />
     </div>
   );
-};
-
-export default ParentComponent;
-
-// ChildComponent.jsx
-import React from 'react';
-
-const ChildComponent = ({ data, onChange }) => {
-  return (
-    <div>
-      <p>{data}</p>
-      <button onClick={() => onChange('Hello from Child')}>Change Data</button>
-    </div>
-  );
-};
-
-export default ChildComponent;
+}
 ```
 
 In this example, `ParentComponent` passes `data` and a `handleChange` callback to `ChildComponent` via `props`. The child reads `data` and calls `onChange` to ask the parent to update its state. The child never writes to `data` directly. This is also a controlled component pattern: the parent is the single source of truth for the displayed value.
@@ -74,6 +80,8 @@ In two-way bound frameworks, an expression like Vue's `<input v-model="name">` o
 This is more verbose, but every state change goes through a function you control, which makes the data flow easy to follow and intercept.
 
 ### Benefits of one-way data flow
+
+The pattern improves maintainability because each value has an identifiable owner and update path.
 
 #### Predictable state changes
 

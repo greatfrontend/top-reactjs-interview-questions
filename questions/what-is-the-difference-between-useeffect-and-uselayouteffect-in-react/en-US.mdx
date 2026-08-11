@@ -44,6 +44,8 @@ function Example() {
 
 ### Code example
 
+This Effect synchronizes with an external system after the component commits:
+
 ```jsx
 import { useEffect } from 'react';
 
@@ -57,9 +59,11 @@ function Example() {
 }
 ```
 
-With `[]` deps, the cleanup runs only when the component unmounts. With non-empty deps like `[userId]`, the cleanup runs before the next effect fires (when `userId` changes) and again on unmount.
+In production, cleanup for an Effect with `[]` dependencies runs when the component unmounts. In development Strict Mode, React also performs the extra setup-and-cleanup stress test described above. With non-empty dependencies such as `[userId]`, cleanup runs before the next setup when `userId` changes and again on unmount.
 
 ### Common use cases
+
+Use `useEffect` for synchronization that does not need to block the browser's next paint:
 
 - Fetching data from an API
 - Setting up subscriptions (e.g., WebSocket connections)
@@ -72,9 +76,11 @@ With `[]` deps, the cleanup runs only when the component unmounts. With non-empt
 
 - Use it when you need to read layout (e.g. `getBoundingClientRect`, `offsetWidth`) and then synchronously set state or style so the user never sees the "wrong" frame.
 - Keep the body cheap — expensive work here stalls paint.
-- During **server rendering** it does nothing (there is no layout to measure) and React logs a warning if you schedule one. Either gate it behind a client check or reach for `useEffect` instead. For libraries that need to pick one based on environment, `useInsertionEffect` (see below) or a `useIsomorphicLayoutEffect` pattern is common.
+- Effects do not run during **server rendering**, and `useLayoutEffect` cannot contribute to server HTML because there is no layout to measure. Prefer `useEffect` when the first painted frame can be corrected later. If the content fundamentally depends on layout, render that content only after hydration. Libraries sometimes expose a `useIsomorphicLayoutEffect` alias that selects `useEffect` on the server and `useLayoutEffect` in the browser.
 
 ### Code example
+
+This layout Effect measures committed DOM and updates state before the browser paints the result:
 
 ```jsx
 import { useLayoutEffect, useRef, useState } from 'react';
@@ -98,6 +104,8 @@ function Tooltip({ children }) {
 
 ### Common use cases
 
+Reserve `useLayoutEffect` for layout reads or writes that must complete in the same frame:
+
 - Measuring a DOM node and writing back state/style in the same frame
 - Positioning tooltips, popovers, or floating elements based on layout
 - Fixing flicker caused by a measure-then-correct pattern
@@ -112,22 +120,46 @@ Both hooks take a dependency array with the same rules. React compares each entr
 
 ## Key differences between `useEffect` and `useLayoutEffect`
 
+The APIs share the same dependency model but run at different points relative to browser paint.
+
 ### Timing
+
+The timing distinction determines whether an Effect can delay visible output:
 
 - `useEffect`: Runs after commit and generally after paint for non-interaction effects, but may run before paint when caused by an interaction.
 - `useLayoutEffect`: Fires synchronously during commit, **before** the browser paints.
 
+The usual non-interaction timeline puts layout work directly in the commit path and ordinary Effect work after the browser has painted:
+
+```mermaid
+---
+title: Effect timing relative to browser paint
+---
+flowchart LR
+  Render["React render phase"] --> Mutate["Commit DOM mutations"]
+  Mutate --> Layout["Run useLayoutEffect"]
+  Layout --> Paint["Browser paints"]
+  Paint --> Effect["Run useEffect for typical non-interaction work"]
+  Mutate -. "an interaction-triggered useEffect may run here" .-> Paint
+```
+
 ### Blocking behavior
 
-- `useEffect`: Non-blocking. Users see the new frame immediately.
+Layout Effects run synchronously in the commit path, while ordinary Effects generally allow paint first:
+
+- `useEffect`: Generally does not block paint for non-interaction Effects. Interaction-triggered Effects can run before paint when React needs the result to be observable to the event system.
 - `useLayoutEffect`: Blocks paint. The browser cannot repaint until the effect (and any resulting state update) has settled.
 
 ### SSR behavior
 
+Neither Effect runs during server rendering, but only the layout variant needs special care because its purpose depends on layout before paint:
+
 - `useEffect`: Skipped on the server (client runs it after hydration).
-- `useLayoutEffect`: No-ops on the server and warns; avoid it in isomorphic code or gate it on `typeof window !== 'undefined'`.
+- `useLayoutEffect`: Does not run on the server; use `useEffect` when possible or render layout-dependent content only after hydration so the server and initial client output still match.
 
 ### Use case examples
+
+Choose the least blocking API that still satisfies the synchronization requirement:
 
 - `useEffect`: fetching data, subscriptions, logging, most event listeners.
 - `useLayoutEffect`: measuring and adjusting the DOM in the same frame to prevent flicker.

@@ -10,30 +10,40 @@ Hooks let function components use state, context, refs, effects, and other React
 
 ## Benefits of using hooks in React
 
+Hooks let function components compose stateful behavior while keeping related setup, updates, and cleanup together.
+
 ### Why hooks were introduced
 
-Before hooks (React 16.8, Feb 2019), the main ways to share stateful logic between components were higher-order components (HOCs) and render props. Both produced deeply nested component trees — the so-called "wrapper hell" you'd see in React DevTools — and made it hard to follow data flow. Class components also forced you to bind `this` for handlers, split related logic across `componentDidMount`/`componentDidUpdate`/`componentWillUnmount`, and made it nearly impossible to extract a piece of stateful behavior without restructuring the component tree.
+Before hooks (React 16.8, Feb 2019), the main ways to share stateful logic between components were higher-order components (HOCs) and render props. Repeated use of either pattern could produce deeply nested wrapper trees and obscure data flow in React DevTools. Class components also required `this` handling and often split one synchronization concern across `componentDidMount`, `componentDidUpdate`, and `componentWillUnmount`.
 
-Hooks solve all of these by moving stateful logic into plain functions you can compose, with no `this`, no extra wrappers, and no lifecycle-method scatter.
+Hooks let components compose stateful logic through functions without adding wrapper components or relying on class lifecycle methods.
 
 ### Reusable logic via custom hooks
 
-Custom hooks let you extract any combination of state, effects, and other hooks into a function that any component can call. This is composition rather than inheritance, and it scales much better than HOCs — you can use as many custom hooks in a component as you want without nesting.
+Custom hooks let you extract a related combination of state, Effects, and other hooks into a function that components can call. Unlike an HOC, each custom Hook adds no wrapper component to the rendered tree.
 
 ```jsx
+import { useSyncExternalStore } from 'react';
+
+function subscribe(callback) {
+  window.addEventListener('online', callback);
+  window.addEventListener('offline', callback);
+  return () => {
+    window.removeEventListener('online', callback);
+    window.removeEventListener('offline', callback);
+  };
+}
+
+function getSnapshot() {
+  return navigator.onLine;
+}
+
+function getServerSnapshot() {
+  return true;
+}
+
 function useOnlineStatus() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  useEffect(() => {
-    const on = () => setIsOnline(true);
-    const off = () => setIsOnline(false);
-    window.addEventListener('online', on);
-    window.addEventListener('offline', off);
-    return () => {
-      window.removeEventListener('online', on);
-      window.removeEventListener('offline', off);
-    };
-  }, []);
-  return isOnline;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 function StatusBar() {
@@ -42,14 +52,21 @@ function StatusBar() {
 }
 ```
 
-Because custom hooks are just function calls, you also break complex components into smaller, named pieces of logic — making them easier to read.
+This version uses `useSyncExternalStore` because online status is a browser value that changes outside React. The server snapshot also avoids reading `navigator` during server rendering and gives hydration a deterministic initial value.
 
 ### Simplified state management
 
 `useState` adds local state to any function component without converting it to a class:
 
 ```jsx
-const [count, setCount] = useState(0);
+import { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  return (
+    <button onClick={() => setCount((value) => value + 1)}>{count}</button>
+  );
+}
 ```
 
 For more complex state transitions, `useReducer` gives you a Redux-style reducer locally to a component or feature.
@@ -59,12 +76,18 @@ For more complex state transitions, `useReducer` gives you a Redux-style reducer
 `useEffect` replaces `componentDidMount`, `componentDidUpdate`, and `componentWillUnmount` with a single API where setup and cleanup live next to each other instead of being scattered across three methods:
 
 ```jsx
-useEffect(() => {
-  // setup (mount + when dependencies change)
-  return () => {
-    // cleanup (unmount + before next run)
-  };
-}, [dependencies]);
+import { useEffect } from 'react';
+import { createConnection } from './chat-api';
+
+function ChatRoom({ roomId }) {
+  useEffect(() => {
+    const connection = createConnection(roomId);
+    connection.connect();
+    return () => connection.disconnect();
+  }, [roomId]);
+
+  return <h1>Room: {roomId}</h1>;
+}
 ```
 
 ### No more `this`
