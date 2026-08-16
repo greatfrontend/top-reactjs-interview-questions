@@ -87,9 +87,13 @@ For GitHub Actions, consider using [`voidzero-dev/setup-vp`](https://github.com/
 - [ ] Run `vp check` and `vp test` to validate changes.
 <!--VITE PLUS END-->
 
-## Authoring React question content (`questions/**`)
+## Content maintenance
 
-These guidelines apply when creating a new React question or substantially editing an existing question. Match the current repository structure and optimize for the question experience on GitHub, in the generated README, and in the GreatFrontEnd quiz renderer.
+Do not author question or generated README changes in this repository.
+
+## React content contract (reference only)
+
+These guidelines document the existing question content contract.
 
 Treat these rules as normative for new questions and substantial rewrites. Preserve good legacy content that is outside the scope of the requested change; do not rewrite an answer solely for stylistic uniformity.
 
@@ -106,10 +110,9 @@ questions/<slug>/
 ```
 
 - Treat `en-US.mdx` as the source locale.
-- Use the translation workflow for localized content. Do not manually edit `*.langnostic.json` files.
+- Localized files are generated through GFE's translation workflow. Do not manually edit `*.langnostic.json` files here.
 - Keep the directory name, `metadata.json` slug, internal links, and asset paths consistent.
-- Keep the frontmatter title aligned with the canonical question title in `data/react-questions.csv`.
-- Keep `ranking` and `section` aligned with `data/react-questions.csv`.
+- Treat each question's frontmatter title and its `metadata.json` `ranking` and `section` values as authoritative; there is no separate local catalog.
 - Follow the live metadata schema. Use `access`, not the legacy `premium` field, and include the current `frameworks` and `section` fields.
 - Do not treat `published: true` as permission to leave incomplete or placeholder content.
 
@@ -210,6 +213,10 @@ Example:
 - Verify internal links, code behavior, API status, and version-sensitive claims before finishing.
 - Preserve good existing structure whenever possible.
 
+### Quiz exercises
+
+Exercises are not part of this repository. Never add or restore `questions/*/exercises` here.
+
 ### Literal braces in MDX
 
 MDX parses `{...}` as a JSX expression, so any literal curly braces in prose or example strings will try to evaluate an identifier and fail at build time (e.g. `"hello {user}"` throws because `user` is not defined).
@@ -234,5 +241,4 @@ git diff --check
 ```
 
 - Review the generated `README.md` diff after `vp run gen`, especially the extracted TL;DR and question ordering.
-- Run the translation workflow only when localized content is intentionally in scope.
-- When editing this repository inside a GreatFrontEnd submodule checkout, also follow the parent repository's question-generation checks so the MDX is compiled through the consuming web app.
+- Translation validation belongs in GFE when localized content is intentionally in scope.

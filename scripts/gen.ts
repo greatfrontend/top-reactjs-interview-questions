@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import GitHubSlugger from 'github-slugger';
 import fs from 'fs';
 import path from 'path';
@@ -111,15 +113,11 @@ function formatTableOfContents(qnList: QuestionItem[]) {
 function formatQuestion(qn: QuestionItem, index: number) {
   return `${index}. ### ${qn.title}
 
-    <!-- Update here: /questions/${qn.metadata.slug}/${qn.locale}.mdx -->
-
 ${qn.content
   .split('\n')
   // Add indentation.
   .map((line) => '    ' + line)
   .join('\n')}
-
-    <!-- Update here: /questions/${qn.metadata.slug}/${qn.locale}.mdx -->
 
     <br>
 

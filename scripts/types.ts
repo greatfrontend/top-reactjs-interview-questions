@@ -18,11 +18,3 @@ export type QuestionItem = Readonly<{
   locale: string;
   content: string;
 }>;
-
-// From parsed CSV.
-export type QuestionRaw = Readonly<{
-  slug: string;
-  title: string;
-  ranking: number;
-  section: string;
-}>;
