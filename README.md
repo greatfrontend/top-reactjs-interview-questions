@@ -53,7 +53,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 | 29 | [What is React Strict Mode and what are its benefits?](#what-is-react-strict-mode-and-what-are-its-benefits) |
 | 30 | [How do you localize React applications?](#how-do-you-localize-react-applications) |
 | 31 | [What is code splitting in a React application?](#what-is-code-splitting-in-a-react-application) |
-| 32 | [How would one optimize the performance of React contexts to reduce rerenders?](#how-would-one-optimize-the-performance-of-react-contexts-to-reduce-rerenders) |
+| 32 | [How would you optimize the performance of React contexts to reduce rerenders?](#how-would-you-optimize-the-performance-of-react-contexts-to-reduce-rerenders) |
 | 33 | [What are higher-order components in React?](#what-are-higher-order-components-in-react) |
 | 34 | [What is the Flux pattern and what are its benefits?](#what-is-the-flux-pattern-and-what-are-its-benefits) |
 | 35 | [Explain one-way data flow of React and its benefits](#explain-one-way-data-flow-of-react-and-its-benefits) |
@@ -604,7 +604,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
     <br>
     <br>
 
-32. ### How would one optimize the performance of React contexts to reduce rerenders?
+32. ### How would you optimize the performance of React contexts to reduce rerenders?
 
     Context consumers re-render whenever the provider receives a different `value` according to `Object.is`. Neither `memo` nor React Compiler prevents that subscription update. Keep provider values stable, split unrelated or differently changing data into separate contexts, and separate state from a stable dispatch function so dispatch-only consumers do not re-render on state changes. Use `memo` to protect expensive descendants below a consumer, and consider selector-based state libraries when consumers need independent slices of frequently changing state.
     

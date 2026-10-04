@@ -150,7 +150,7 @@ flowchart LR
 
 ### Accessibility
 
-Portals are commonly used for modals and dialogs, which come with accessibility expectations: focus should move into the dialog when it opens and be trapped inside it (Tab/Shift+Tab cycles within the dialog), Escape should close it, and focus should return to the triggering element on close. The dialog itself needs an appropriate role (`role="dialog"` or the native `<dialog>` element) and an accessible label. Implementing focus traps correctly is non-trivial, so most teams rely on libraries like Radix UI, React Aria, or Headless UI rather than rolling their own.
+Portals are commonly used for modals and dialogs, which come with accessibility expectations: focus should move into the dialog when it opens and be trapped inside it (Tab/Shift+Tab cycles within the dialog), Escape should close it, and focus should return to the triggering element on close. The dialog itself needs an appropriate role (`role="dialog"` or the native `<dialog>` element) and an accessible label. Implementing focus traps correctly is non-trivial, so most teams rely on dialog primitives from libraries like Base UI, Ariakit, or React Aria rather than rolling their own.
 
 ### Benefits
 

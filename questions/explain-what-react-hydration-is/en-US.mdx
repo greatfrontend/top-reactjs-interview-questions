@@ -131,7 +131,8 @@ Hydration preserves matching server-created DOM while React connects it to the c
 Hydration requires deterministic initial output and adds client work proportional to the interactive tree.
 
 1. **Mismatch issues**: If the server-rendered HTML does not match the client-side React components, React logs an error. React 19 improved hydration diagnostics by consolidating mismatch information and showing a diff of relevant attributes or text, which gives a more precise starting point for debugging.
-2. **Performance overhead**: Hydration can be resource-intensive on large pages. Selective hydration and breaking the tree into `Suspense` boundaries help spread the cost.
+2. **Visible before interactive**: Server-rendered content can appear before the JavaScript loads and hydration connects React event handlers. During this gap, a button may look ready but its React click handler cannot run yet. Earlier visible content does not guarantee earlier interactivity; the delay depends on JavaScript loading and hydration work.
+3. **Performance overhead**: Hydration can be resource-intensive on large pages. Selective hydration and breaking the tree into `Suspense` boundaries help spread the cost.
 
 ## Further reading
 
