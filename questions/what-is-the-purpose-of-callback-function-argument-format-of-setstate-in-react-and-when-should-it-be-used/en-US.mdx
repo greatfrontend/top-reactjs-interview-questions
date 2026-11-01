@@ -4,7 +4,7 @@ title: What is the purpose of callback function argument format of `setState()` 
 
 ## TL;DR
 
-The callback (or **updater function**) form of `setState` — both `this.setState(prev => ...)` in classes and `setX(prev => ...)` with `useState` — guarantees that each update is computed from the latest queued state rather than the value captured in your closure. Use it whenever the next state depends on the previous state, especially when you call the setter more than once in the same event handler or when the update may run after an `await`/timeout/promise.
+The callback (or **updater function**) form of `setState` (both `this.setState(prev => ...)` in classes and `setX(prev => ...)` with `useState`) guarantees that each update is computed from the latest queued state rather than the value captured in your closure. Use it whenever the next state depends on the previous state, especially when you call the setter more than once in the same event handler or when the update may run after an `await`/timeout/promise.
 
 ```jsx
 import { useState } from 'react';
@@ -28,9 +28,9 @@ The updater form calculates next state from React's latest queued state rather t
 
 ### What it is
 
-React's state setters — `this.setState` in class components and the `setX` returned by `useState` in function components — accept either a new value or an **updater function**. The updater receives the latest queued state (and, for class components, the latest props) and returns the next state.
+React's state setters (`this.setState` in class components and the `setX` returned by `useState` in function components) accept either a new value or an **updater function**. The updater receives the latest queued state (and, for class components, the latest props) and returns the next state.
 
-The community calls this the **updater function** form (sometimes "functional updater"). Recognizing that name is helpful in interviews.
+This is called the **updater function** form, or functional updater.
 
 ### Why it exists: state is a snapshot and updates are queued
 
@@ -38,7 +38,7 @@ State setters do not change the state snapshot in the currently running code. Re
 
 That means by the time the queued update actually runs, the variable you captured from the previous render may be stale.
 
-### The motivating bug — reading state directly between successive calls
+### The motivating bug: reading state directly between successive calls
 
 The classic mistake is calling the setter more than once based on the current state value:
 
@@ -53,7 +53,7 @@ function Counter() {
     setCount(count + 1);
     setCount(count + 1);
     setCount(count + 1);
-    // After re-render, count is 1 — not 3.
+    // After re-render, count is 1: not 3.
   };
 
   return <button onClick={handleClick}>{count}</button>;
@@ -62,9 +62,9 @@ function Counter() {
 
 `count` is captured by the closure when the component rendered. All three calls compute `0 + 1`, so React queues `1`, `1`, `1` and the final state is `1`.
 
-The same bug exists in classes — reading `this.state.counter` between `setState` calls returns the value from the last render, not the in-flight queued value.
+The same bug exists in classes: reading `this.state.counter` between `setState` calls returns the value from the last render, not the in-flight queued value.
 
-### The fix — pass an updater function
+### The fix: pass an updater function
 
 Passing a pure updater lets React apply each queued transformation in order:
 
@@ -78,7 +78,7 @@ function Counter() {
     setCount((c) => c + 1);
     setCount((c) => c + 1);
     setCount((c) => c + 1);
-    // Final count is 3 — each updater receives the result of the previous one.
+    // Final count is 3: each updater receives the result of the previous one.
   };
 
   return <button onClick={handleClick}>{count}</button>;
@@ -93,12 +93,12 @@ Use an updater whenever the next value is calculated from the previous value in 
 
 - **The next state depends on the previous state** (counters, toggles, append-to-array, increment-a-map-entry).
 - **You call the setter more than once in the same handler.**
-- **The update happens after an `await`, `setTimeout`, promise resolution, or subscription callback** — an intervening update may have made the closed-over value stale.
-- **Inside `useEffect` or `useCallback` when the state is read only to calculate its own next value** — using the updater can remove that state value from the dependency list.
+- **The update happens after an `await`, `setTimeout`, promise resolution, or subscription callback**: an intervening update may have made the closed-over value stale.
+- **Inside `useEffect` or `useCallback` when the state is read only to calculate its own next value**: using the updater can remove that state value from the dependency list.
 
 ### When you do not need it
 
-If the new value does not depend on the previous state — `setName('Alice')`, `setUser(response.data)` — passing the value directly is fine and slightly more readable.
+If the new value does not depend on the previous state (`setName('Alice')`, `setUser(response.data)`) passing the value directly is fine and slightly more readable.
 
 ### Class component equivalent
 

@@ -14,10 +14,10 @@ Context is convenient for distribution, but its broadcast update model and impli
 
 ### Unnecessary re-renders from an unstable provider value
 
-When a context value changes by reference, every component that reads that context re-renders — even if it only uses a field that hasn't actually changed. The most common cause is constructing a new object inline as the provider's `value`, which makes a fresh reference on every parent render:
+When a context value changes by reference, every component that reads that context re-renders, even if it only uses a field that hasn't actually changed. The most common cause is constructing a new object inline as the provider's `value`, which makes a fresh reference on every parent render:
 
 ```jsx
-// Pitfall — `value` is a new object every render, so every consumer re-renders
+// Pitfall: `value` is a new object every render, so every consumer re-renders
 function ParentComponent() {
   const [user, setUser] = useState(null);
   const [theme, setTheme] = useState('light');
@@ -50,7 +50,7 @@ function ParentComponent() {
 }
 ```
 
-Note: only **consumers** of the context re-render when the value changes — not "all components in the subtree." Components that don't call `useContext`/`use(MyContext)` are unaffected.
+Note: only **consumers** of the context re-render when the value changes, not "all components in the subtree." Components that don't call `useContext`/`use(MyContext)` are unaffected.
 
 ### `React.memo` doesn't stop context-driven re-renders
 
@@ -58,7 +58,7 @@ A common surprise: wrapping a consumer in `React.memo` does **not** prevent re-r
 
 ### Putting too much unrelated state in one context
 
-If you cram an entire app's state into a single context, every change to any slice re-renders every consumer. Split it into smaller, focused providers — for example, separate `AuthContext`, `ThemeContext`, and `CartContext` — so that a cart update doesn't re-render every theme consumer. You can also split read and write APIs into separate contexts so components that only need to dispatch don't re-render when state changes.
+If you cram an entire app's state into a single context, every change to any slice re-renders every consumer. Split it into smaller, focused providers (for example, separate `AuthContext`, `ThemeContext`, and `CartContext`) so that a cart update doesn't re-render every theme consumer. You can also split read and write APIs into separate contexts so components that only need to dispatch don't re-render when state changes.
 
 ### No built-in selectors
 
@@ -88,7 +88,7 @@ function Profile() {
 }
 ```
 
-`useContext` still works and is not going away — `use(Context)` is just more flexible.
+`useContext` still works and is not going away, `use(Context)` is just more flexible.
 
 ## Further reading
 

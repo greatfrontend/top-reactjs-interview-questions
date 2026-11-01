@@ -18,7 +18,7 @@ A **React Node** is anything that can appear in a JSX child position. The set in
 - Fragments (`<>...</>` or `<React.Fragment>`)
 - Portals (created with `createPortal`)
 - Promises of React Nodes in rendering environments that support suspending on them
-- `null`, `undefined`, `false`, and `true` — these are valid nodes that **render nothing** (they are skipped, not converted to text)
+- `null`, `undefined`, `false`, and `true`: these are valid nodes that **render nothing** (they are skipped, not converted to text)
 
 ```jsx
 const stringNode = 'Hello, world!';
@@ -30,7 +30,7 @@ const fragmentNode = (
     <span>two</span>
   </>
 );
-const nothingNode = null; // also: undefined, false, true — render nothing
+const nothingNode = null; // also: undefined, false, true, render nothing
 const elementNode = <div>Hello, world!</div>;
 ```
 
@@ -77,7 +77,7 @@ A **React Component** is a function or class that React can use as an element ty
   }
   ```
 
-The mental model: a **component** is a recipe, an **element** is a single dish made from that recipe, and a **node** is anything React is willing to plate up — including "nothing."
+A **component** defines rendering behavior, an **element** describes one use of a component or host type, and a **node** is any supported renderable value, including empty values.
 
 The relationships are easiest to see by following one component invocation from JSX to renderable output:
 

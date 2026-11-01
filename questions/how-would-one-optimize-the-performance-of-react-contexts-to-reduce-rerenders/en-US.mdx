@@ -48,7 +48,7 @@ const initialState = { count: 0 };
 export function CounterProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // No need to memoize `dispatch` — useReducer guarantees it's stable.
+  // No need to memoize `dispatch`: useReducer guarantees it's stable.
   // Memoize state only if you wrap it in an object.
   return (
     <DispatchContext.Provider value={dispatch}>
@@ -83,7 +83,7 @@ flowchart TD
 
 ### Memoize the value object you pass to a provider
 
-If you must pass a single object value, memoize it so its reference is stable across renders. Note that hook return values like `dispatch` from `useReducer` and the setter from `useState` are already referentially stable — you don't need to include them in the dependency list.
+If you must pass a single object value, memoize it so its reference is stable across renders. Note that hook return values like `dispatch` from `useReducer` and the setter from `useState` are already referentially stable; you don't need to include them in the dependency list.
 
 ```jsx
 import { createContext, useMemo } from 'react';
@@ -135,7 +135,7 @@ function Avatar({ showTheme }) {
 
 ### Selectors with `use-context-selector`
 
-For very large context values where consumers only care about a slice, `use-context-selector` lets a component subscribe to a derived value and only rerender when that derived value changes. **Important**: `use-context-selector` requires using its own `createContext`, not React's built-in one — selectors don't work with a context created by `react`.
+For very large context values where consumers only care about a slice, `use-context-selector` lets a component subscribe to a derived value and only rerender when that derived value changes. **Important**: `use-context-selector` requires using its own `createContext`, not React's built-in one, selectors don't work with a context created by `react`.
 
 ```jsx
 import { createContext, useContextSelector } from 'use-context-selector';

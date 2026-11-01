@@ -22,11 +22,9 @@ function App() {
 
 ---
 
-## What is code splitting in a React application?
-
 Code splitting creates separately loadable JavaScript chunks so a route or feature does not have to ship in the initial bundle.
 
-### Introduction
+## Introduction
 
 Code splitting moves route- or feature-specific modules into separately loadable chunks. It can reduce the JavaScript downloaded, parsed, and executed for the initial route when deferred chunks are not immediately needed. Each split also adds a request and a possible loading state, so choose boundaries based on bundle analysis and real navigation behavior.
 
@@ -48,11 +46,11 @@ flowchart LR
   Ready --> Replace["Replace pending UI with content"]
 ```
 
-### How to implement code splitting
+## How to implement code splitting
 
 Split points can be introduced directly with dynamic imports or through React and framework conventions built on them.
 
-#### Using dynamic `import()`
+### Using dynamic `import()`
 
 Dynamic `import()` is a JavaScript feature that allows you to load modules asynchronously. This can be used to split your code into separate chunks.
 
@@ -63,7 +61,7 @@ async function formatReport(data) {
 }
 ```
 
-#### Using `lazy` and `Suspense`
+### Using `lazy` and `Suspense`
 
 React provides built-in support for code splitting through `lazy` and `Suspense`. `lazy` lets you render a dynamic import as a regular component, and `Suspense` lets you specify a loading fallback while the chunk is being fetched.
 
@@ -81,9 +79,9 @@ function App() {
 }
 ```
 
-#### Route-based splitting
+### Route-based splitting
 
-The dominant real-world use case is splitting at route boundaries — each route loads its own chunk so users only download the code for the page they visit. With React Router this is typically:
+Route boundaries are common split points: each route can load its own chunk so users download the code for the page they visit. With React Router this is typically:
 
 ```jsx
 import { lazy, Suspense } from 'react';
@@ -104,11 +102,11 @@ function App() {
 }
 ```
 
-#### Framework-level splitting
+### Framework-level splitting
 
 React frameworks usually provide route-level code splitting and preloading conventions. For example, the Next.js App Router automatically splits application code by route segments, while React Router framework mode creates route chunks according to its build configuration. Follow the framework's current guidance before adding `lazy` around routes yourself; `lazy` remains useful for optional client-only features such as editors, charts, and rarely opened dialogs.
 
-#### Pairing `Suspense` with error boundaries
+### Pairing `Suspense` with error boundaries
 
 `Suspense` only handles the loading state. If the dynamic import fails because of a network error or deploy mismatch, an error boundary can render a failure fallback. This example uses the third-party `react-error-boundary` package:
 
@@ -126,11 +124,11 @@ function Feature() {
 }
 ```
 
-#### `Suspense` for data and `use()`
+### `Suspense` for data and `use()`
 
 In React 19, a component can read a cached promise with the special `use` API and suspend at the same boundary used by `lazy`. The promise should come from a Suspense-enabled framework or cache rather than being recreated during render. A single `<Suspense>` boundary can then coordinate supported code and data dependencies.
 
-#### Preloading
+### Preloading
 
 With a bundler that caches the same dynamic import, an application can start loading a lazy chunk before it is needed, such as on hover or keyboard focus:
 
@@ -153,7 +151,7 @@ function OpenButton() {
 }
 ```
 
-### Benefits of code splitting
+## Benefits of code splitting
 
 Useful split points reduce initial work without fragmenting the application into excessive requests and loading states.
 
@@ -161,7 +159,7 @@ Useful split points reduce initial work without fragmenting the application into
 - **Less initial JavaScript**: Route or feature chunks can keep unrelated code out of the initial download and execution path.
 - **Tradeoff control**: Choosing useful split points balances initial bundle size against extra requests and loading fallbacks.
 
-### Tools and libraries
+## Tools and libraries
 
 Chunk creation and loading behavior ultimately depend on the application's bundler or framework:
 

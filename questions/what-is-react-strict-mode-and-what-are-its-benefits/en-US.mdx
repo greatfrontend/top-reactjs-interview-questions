@@ -8,11 +8,9 @@ title: What is React Strict Mode and what are its benefits?
 
 ---
 
-## What is React Strict Mode and what are its benefits?
-
 Strict Mode enables development-only checks that expose rendering impurities, missing Effect cleanup, and deprecated API usage.
 
-### What is React Strict Mode?
+## What is React Strict Mode?
 
 React strict mode is a feature in React that helps developers identify potential problems in their applications. It is a wrapper component that you can use to wrap parts of your application to enable additional checks and warnings. It does not render any visible UI and does not affect the production build.
 
@@ -33,11 +31,11 @@ root.render(
 
 Some frameworks enable Strict Mode for you. Check the framework and router version rather than assuming it is active; otherwise add `<StrictMode>` at the root or around the subtree you want to check.
 
-### Benefits of React Strict Mode
+## Benefits of React Strict Mode
 
 Its extra development executions are diagnostics that make assumptions about purity and cleanup fail earlier.
 
-#### Detecting unexpected side effects (the headline behavior)
+### Detecting unexpected side effects
 
 In development, Strict Mode performs extra checks including:
 
@@ -46,7 +44,7 @@ In development, Strict Mode performs extra checks including:
 - Running one extra Effect setup-and-cleanup cycle
 - Running one extra ref-callback setup-and-cleanup cycle
 
-The Effect check is a common interview topic. It surfaces Effects that are not safely re-synchronized—for example, an Effect that subscribes but does not unsubscribe in cleanup. React is stress-testing the Effect's setup/cleanup contract; it is not performing a second production mount.
+The extra Effect setup-and-cleanup cycle exposes Effects whose cleanup does not reverse setup, such as a subscription without an unsubscribe step. This check runs in development; it is not a second production mount.
 
 These checks apply only in development. If `<StrictMode>` is not enabled at the root, React does not run the initial extra Effect cycle for a nested boundary because that parent/child sequence could not happen in production.
 
@@ -67,19 +65,19 @@ flowchart LR
   Lifetime --> Cleanup2["Run final cleanup on unmount"]
 ```
 
-#### Warning about legacy and deprecated APIs
+### Warning about legacy and deprecated APIs
 
 StrictMode warns about APIs that are no longer recommended, including:
 
-- The legacy string ref API (use `useRef` instead — that's the modern default in function components)
+- The legacy string ref API (use `useRef` instead: that's the modern default in function components)
 - Use of `findDOMNode`
 - Deprecated context APIs
 
-#### Surfacing unsafe class lifecycle methods
+### Surfacing unsafe class lifecycle methods
 
 In legacy class components, StrictMode flags `componentWillMount`, `componentWillReceiveProps`, and `componentWillUpdate` as unsafe. This matters less today since most new code uses function components, but it's still relevant if you're maintaining a class-based codebase.
 
-#### Ensuring components are resilient to future changes
+### Ensuring components are resilient to future changes
 
 The additional checks make it easier to spot components that quietly depend on a single mount or hidden side effects, so your codebase stays compatible as React adds features that may mount, unmount, and remount components more aggressively.
 

@@ -72,10 +72,10 @@ Use `useEffect` for synchronization that does not need to block the browser's ne
 
 ## What is `useLayoutEffect`?
 
-`useLayoutEffect` runs **synchronously during the commit phase**, after React has written to the DOM but **before the browser paints**. Because it blocks paint, anything you do inside it delays the first visible frame — but in return you can measure the just-committed DOM and make adjustments atomically, with no flicker.
+`useLayoutEffect` runs **synchronously during the commit phase**, after React has written to the DOM but **before the browser paints**. Because it blocks paint, anything you do inside it delays the first visible frame, but in return you can measure the just-committed DOM and make adjustments atomically, with no flicker.
 
 - Use it when you need to read layout (e.g. `getBoundingClientRect`, `offsetWidth`) and then synchronously set state or style so the user never sees the "wrong" frame.
-- Keep the body cheap — expensive work here stalls paint.
+- Keep the body cheap: expensive work here stalls paint.
 - Effects do not run during **server rendering**, and `useLayoutEffect` cannot contribute to server HTML because there is no layout to measure. Prefer `useEffect` when the first painted frame can be corrected later. If the content fundamentally depends on layout, render that content only after hydration. Libraries sometimes expose a `useIsomorphicLayoutEffect` alias that selects `useEffect` on the server and `useLayoutEffect` in the browser.
 
 ### Code example
@@ -116,7 +116,7 @@ Reserve `useLayoutEffect` for layout reads or writes that must complete in the s
 
 ## Dependency arrays and the exhaustive-deps lint rule
 
-Both hooks take a dependency array with the same rules. React compares each entry to the previous render with `Object.is` and re-runs the effect (after running the previous cleanup) when any of them changed. The `react-hooks/exhaustive-deps` ESLint rule flags missing dependencies and is considered required in most React codebases — silencing it usually hides a stale-closure bug. If a value would make the effect re-run too often, the fix is usually to move it inside the effect, memoize it, or convert it to a ref, not to omit it.
+Both hooks take a dependency array with the same rules. React compares each entry to the previous render with `Object.is` and re-runs the effect (after running the previous cleanup) when any of them changed. The `react-hooks/exhaustive-deps` ESLint rule flags missing dependencies and is considered required in most React codebases, silencing it usually hides a stale-closure bug. If a value would make the effect re-run too often, the fix is usually to move it inside the effect, memoize it, or convert it to a ref, not to omit it.
 
 ## Key differences between `useEffect` and `useLayoutEffect`
 

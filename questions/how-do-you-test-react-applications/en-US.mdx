@@ -8,15 +8,13 @@ A common stack is Jest or Vitest as the test runner with React Testing Library, 
 
 ---
 
-## How do you test React applications?
-
 A balanced React test suite checks user-visible behavior at component boundaries and reserves browser tests for critical integrated flows.
 
-### Unit testing
+## Unit testing
 
-Unit testing covers individual components in isolation. Jest and Vitest are the two dominant runners — Vitest is the natural choice for Vite-based projects and has largely caught up with Jest in features. Both pair with React Testing Library, which renders components and queries the DOM the way a user would.
+Unit testing covers individual components in isolation. Jest and Vitest both pair with React Testing Library, which renders components and queries the resulting DOM. Vitest integrates with Vite-based projects.
 
-Add `@testing-library/jest-dom` once in your setup file (e.g. `setupTests.ts`) so its matchers are registered globally — the older `@testing-library/jest-dom/extend-expect` import path is no longer needed:
+Add `@testing-library/jest-dom` once in your setup file (e.g. `setupTests.ts`) so its matchers are registered globally; the older `@testing-library/jest-dom/extend-expect` import path is no longer needed:
 
 ```ts
 // setupTests.ts
@@ -34,9 +32,9 @@ test('renders the component with the correct text', () => {
 });
 ```
 
-### Integration testing
+## Integration testing
 
-Integration tests exercise multiple components together. Prefer `@testing-library/user-event` over `fireEvent` — it simulates real user interactions (focus, hover, typing) much more faithfully and returns a promise, so you `await` the action.
+Integration tests exercise multiple components together. Prefer `@testing-library/user-event` over `fireEvent`; it simulates real user interactions (focus, hover, typing) much more faithfully and returns a promise, so you `await` the action.
 
 ```jsx
 import { render, screen } from '@testing-library/react';
@@ -53,9 +51,9 @@ test('updates child component when parent state changes', async () => {
 });
 ```
 
-Note `findByText` (async) instead of `getByText` for assertions on UI that appears after an update — `findBy*` retries until the element appears or times out, and is the standard tool for anything asynchronous. For more complex polling, use `waitFor`.
+Note `findByText` (async) instead of `getByText` for assertions on UI that appears after an update, `findBy*` retries until the element appears or times out, and is the standard tool for anything asynchronous. For more complex polling, use `waitFor`.
 
-### Testing custom hooks
+## Testing custom hooks
 
 Use `renderHook` from `@testing-library/react` to test hooks in isolation:
 
@@ -70,7 +68,7 @@ test('increments the counter', () => {
 });
 ```
 
-### Mocking network requests with MSW
+## Mocking network requests with MSW
 
 Mock Service Worker (MSW) intercepts requests at the network layer rather than stubbing `fetch`, so the same handlers can be reused in unit tests, Storybook, and the dev server. It is a widely used option for API mocking in React tests.
 
@@ -87,7 +85,7 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 ```
 
-### Testing asynchronous UI and Server Components
+## Testing asynchronous UI and Server Components
 
 For client UI that updates after a request, timer, or transition, trigger the behavior and await the visible result with `findBy*` or `waitFor`. Do not make the Client Component itself an `async` function; client-side suspension should use a supported Suspense-enabled data source.
 
@@ -100,7 +98,7 @@ test('renders user data once loaded', async () => {
 });
 ```
 
-### End-to-end testing
+## End-to-end testing
 
 End-to-end tests drive the whole application in a real browser. Playwright is a common choice for new projects and includes parallel execution, multi-browser support, auto-waiting, and a trace viewer. Cypress is also widely used and is a fine option, especially in an existing codebase.
 
@@ -117,9 +115,9 @@ test('user can log in', async ({ page }) => {
 });
 ```
 
-### Snapshot testing
+## Snapshot testing
 
-Snapshot testing captures the rendered output of a component and compares it to a saved snapshot on subsequent runs. With React 19, `react-test-renderer` is deprecated — render with React Testing Library instead and snapshot the resulting markup:
+Snapshot testing captures the rendered output of a component and compares it to a saved snapshot on subsequent runs. With React 19, `react-test-renderer` is deprecated, render with React Testing Library instead and snapshot the resulting markup:
 
 ```jsx
 import { render } from '@testing-library/react';
@@ -131,7 +129,7 @@ test('matches the snapshot', () => {
 });
 ```
 
-Use snapshot tests sparingly — they're easy to update reflexively, which can let regressions slip through. Reserve them for stable presentational output.
+Use snapshot tests sparingly: they're easy to update reflexively, which can let regressions slip through. Reserve them for stable presentational output.
 
 ## Further reading
 

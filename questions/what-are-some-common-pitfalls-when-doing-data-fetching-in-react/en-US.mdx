@@ -14,7 +14,7 @@ Reliable data loading must coordinate request lifetime, response ordering, HTTP 
 
 ### Not handling loading and error states
 
-When fetching data, it's crucial to manage the different states of the request: loading, success, and error. Failing to do so can lead to a poor user experience.
+Represent loading, success, and failure explicitly so users can distinguish a pending request from a failed one.
 
 ```jsx
 import { useEffect, useState } from 'react';
@@ -53,7 +53,7 @@ function MyComponent() {
 
 ### Not aborting in-flight requests on unmount
 
-If a component unmounts (or its effect re-runs) before a fetch resolves, calling `setState` afterwards is wasted work and previously triggered React's "state update on unmounted component" warning. Since React 18, the recommended fix is `AbortController` — it both stops the network request and prevents the resolve handler from running.
+If a component unmounts (or its effect re-runs) before a fetch resolves, calling `setState` afterwards is wasted work and previously triggered React's "state update on unmounted component" warning. Since React 18, the recommended fix is `AbortController`; it both stops the network request and prevents the resolve handler from running.
 
 ```jsx
 import { useEffect, useState } from 'react';
@@ -157,7 +157,7 @@ In development with `<StrictMode>`, React performs an extra Effect setup-and-cle
 Calling `fetch` directly in a Client Component's render body creates a new promise on every attempt. If its handler sets state, it also creates a render loop. Suspense does support reading promises during render through `use`, but the promise must be cached so the same instance is reused.
 
 ```jsx
-// Incorrect — fetch runs every render
+// Incorrect: fetch runs every render
 function MyComponent() {
   const [data, setData] = useState(null);
 
@@ -170,7 +170,7 @@ function MyComponent() {
   return <div>{JSON.stringify(data)}</div>;
 }
 
-// Correct — run the side effect inside useEffect and clean it up
+// Correct: run the side effect inside useEffect and clean it up
 function MyComponent() {
   const [data, setData] = useState(null);
 
@@ -197,7 +197,7 @@ function MyComponent() {
 The dependency array tells React when to re-run an effect. Omitting a value the effect actually reads (such as `userId`) leaves you with stale data. Including a value that changes on every render (such as a freshly created object or function) will re-fire the effect on every render, which can create a fetch loop. This abbreviated comparison isolates the dependency mistake; a complete request still needs the HTTP checks, error state, and cleanup shown above.
 
 ```js
-// Incorrect — uses `userId` but doesn't list it; data goes stale.
+// Incorrect: uses `userId` but doesn't list it; data goes stale.
 useEffect(() => {
   fetch(`/api/users/${userId}`)
     .then((r) => r.json())
@@ -222,9 +222,9 @@ Fetching one resource, waiting for it, then fetching the next from a child compo
 
 Hand-rolled `useEffect + fetch` has no cache, no deduping, no retries, no background refetching, no stale-while-revalidate. For anything beyond a one-off request, reach for a dedicated library:
 
-- **TanStack Query** (`@tanstack/react-query`) — caching, dedup, retries, background refresh.
-- **SWR** — small, focused on stale-while-revalidate.
-- **RTK Query** — built on Redux Toolkit, good fit if you already use Redux.
+- **TanStack Query** (`@tanstack/react-query`), caching, dedup, retries, background refresh.
+- **SWR**: small, focused on stale-while-revalidate.
+- **RTK Query**: built on Redux Toolkit, good fit if you already use Redux.
 
 ### Misusing React 19's `use()` and Suspense
 

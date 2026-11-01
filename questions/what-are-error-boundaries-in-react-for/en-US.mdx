@@ -8,11 +8,9 @@ Error boundaries catch errors thrown while rendering their descendant tree and d
 
 ---
 
-## What are error boundaries in React for?
-
 Error boundaries contain render-time failures in a subtree and replace that subtree with fallback UI instead of losing the entire interface.
 
-### Introduction
+## Introduction
 
 Error boundaries catch render-time errors in their descendant component tree. They can report the error and replace only the failed subtree with fallback UI instead of allowing the error to unmount the entire root.
 
@@ -24,9 +22,9 @@ Specifically, an error boundary catches errors thrown during:
 
 Since React 16, if an error is not caught by any boundary, React unmounts the entire component tree from the root. In production, place boundaries where the application can present a useful fallback and let unaffected areas remain interactive.
 
-### How to implement error boundaries
+## How to implement error boundaries
 
-As of React 19, error boundaries must still be class components — there is no hooks-based equivalent. To create one, define a class component that implements at least one of the following methods:
+As of React 19, error boundaries must still be class components; there is no hooks-based equivalent. To create one, define a class component that implements at least one of the following methods:
 
 - `static getDerivedStateFromError(error)`: Updates state so the next render shows the fallback UI. This alone is sufficient to render a fallback.
 - `componentDidCatch(error, info)`: Used to log error information to an error reporting service. It is optional and not required to render a fallback.
@@ -65,7 +63,7 @@ class ErrorBoundary extends Component {
 export default ErrorBoundary;
 ```
 
-### Usage
+## Usage
 
 To use the error boundary, wrap it around any component that you want to monitor for errors:
 
@@ -91,16 +89,16 @@ flowchart TD
   Root --> Sidebar["Sidebar remains interactive"]
 ```
 
-### Limitations
+## Limitations
 
 Error boundaries have some limitations:
 
 - They do not catch errors inside event handlers. For event handlers, you need to use regular JavaScript `try`/`catch` blocks.
 - They do not catch errors in asynchronous code (e.g., `setTimeout` or `requestAnimationFrame` callbacks).
 - They do not catch errors during server-side rendering.
-- They do not catch errors thrown in the error boundary itself — those propagate up to the next error boundary above it in the tree (or unmount the whole root if none exists).
+- They do not catch errors thrown in the error boundary itself; those propagate up to the next error boundary above it in the tree (or unmount the whole root if none exists).
 
-### Root-level error handlers (React 19)
+## Root-level error handlers (React 19)
 
 React 19 added reporting options on `createRoot` and `hydrateRoot`, useful for centralized logging and analytics. `onCaughtError` reports errors handled by a boundary, while `onUncaughtError` reports errors that reached the root without one:
 
@@ -123,13 +121,13 @@ const root = createRoot(document.getElementById('root'), {
 });
 ```
 
-These complement error boundaries — they do not replace them.
+These complement error boundaries: they do not replace them.
 
-### The `react-error-boundary` library
+## The `react-error-boundary` library
 
 If you do not want to maintain a class wrapper, the [`react-error-boundary`](https://github.com/bvaughn/react-error-boundary) library is one reusable option. It exposes an `<ErrorBoundary>` component plus a `useErrorBoundary` hook for forwarding errors from function components to the nearest boundary.
 
-### Best practices
+## Best practices
 
 Place boundaries according to the failures users should be able to recover from independently:
 

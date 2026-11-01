@@ -136,7 +136,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 5. ### What is the purpose of the `key` prop in React?
 
-    The `key` prop tells React how to identify each child in a list across renders so it can match the right component instance to the right data, preserve its state, and reorder DOM nodes correctly. A `key` only needs to be unique among siblings, not globally. Changing a component's `key` is also the idiomatic way to **reset its state** — React unmounts the old instance and mounts a fresh one.
+    The `key` prop tells React how to identify each child in a list across renders so it can match the right component instance to the right data, preserve its state, and reorder DOM nodes correctly. A `key` only needs to be unique among siblings, not globally. Changing a component's `key` is also the idiomatic way to **reset its state**: React unmounts the old instance and mounts a fresh one.
     
     ```jsx
     <ul>
@@ -156,7 +156,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 6. ### What is the consequence of using array indices as the value for `key`s in React?
 
-    Using array indices as `key`s causes React to reconcile the list incorrectly when items are reordered, inserted, or removed. Because the key identifies a position rather than an item, React reuses the wrong component instances — leaving stale local state, focus, and DOM attached to the wrong rows. The fix is to use a stable, unique identifier from the data (e.g. `item.id`). Index keys are only safe when the list is static and never reordered, filtered, or prepended to.
+    Using array indices as `key`s causes React to reconcile the list incorrectly when items are reordered, inserted, or removed. Because the key identifies a position rather than an item, React reuses the wrong component instances, leaving stale local state, focus, and DOM attached to the wrong rows. The fix is to use a stable, unique identifier from the data (e.g. `item.id`). Index keys are only safe when the list is static and never reordered, filtered, or prepended to.
 
     <br>
 
@@ -168,7 +168,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 7. ### What is the difference between controlled and uncontrolled React components?
 
-    A **controlled** component drives a form input from React state — you pass `value`/`checked` plus an `onChange` handler, and React state is the single source of truth. An **uncontrolled** component lets the DOM keep the value; you read it via a `ref` (or on submit) and seed the initial value with `defaultValue`/`defaultChecked`. Controlled inputs are the right default when you need validation, conditional UI, or to derive other state from the value. Uncontrolled inputs are simpler for write-once forms and for `<input type="file">`, which is always uncontrolled. React 19 also added first-class form support via the form `action` prop, `useFormStatus`, and `useActionState`, which often removes the need for per-field controlled state.
+    A **controlled** component drives a form input from React state; you pass `value`/`checked` plus an `onChange` handler, and React state is the single source of truth. An **uncontrolled** component lets the DOM keep the value; you read it via a `ref` (or on submit) and seed the initial value with `defaultValue`/`defaultChecked`. Controlled inputs are the right default when you need validation, conditional UI, or to derive other state from the value. Uncontrolled inputs are simpler for write-once forms and for `<input type="file">`, which is always uncontrolled. React 19 also added first-class form support via the form `action` prop, `useFormStatus`, and `useActionState`, which often removes the need for per-field controlled state.
 
     <br>
 
@@ -204,7 +204,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 10. ### What are the rules of React hooks?
 
-    React hooks have a few essential rules to ensure they work correctly. Call hooks at the top level of a function component or custom hook — never inside loops, conditions, nested functions, or after an early `return`. The `use` API is the exception: it is not a Hook and may be called conditionally or in loops, but it must still run inside a component or Hook and cannot be wrapped in `try`/`catch`. Lean on `eslint-plugin-react-hooks` to enforce these rules.
+    React hooks have a few essential rules to ensure they work correctly. Call hooks at the top level of a function component or custom hook, never inside loops, conditions, nested functions, or after an early `return`. The `use` API is the exception: it is not a Hook and may be called conditionally or in loops, but it must still run inside a component or Hook and cannot be wrapped in `try`/`catch`. Lean on `eslint-plugin-react-hooks` to enforce these rules.
 
     <br>
 
@@ -254,7 +254,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 12. ### What is the purpose of callback function argument format of `setState()` in React and when should it be used?
 
-    The callback (or **updater function**) form of `setState` — both `this.setState(prev => ...)` in classes and `setX(prev => ...)` with `useState` — guarantees that each update is computed from the latest queued state rather than the value captured in your closure. Use it whenever the next state depends on the previous state, especially when you call the setter more than once in the same event handler or when the update may run after an `await`/timeout/promise.
+    The callback (or **updater function**) form of `setState` (both `this.setState(prev => ...)` in classes and `setX(prev => ...)` with `useState`) guarantees that each update is computed from the latest queued state rather than the value captured in your closure. Use it whenever the next state depends on the previous state, especially when you call the setter more than once in the same event handler or when the update may run after an `await`/timeout/promise.
     
     ```jsx
     import { useState } from 'react';
@@ -318,7 +318,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 15. ### What is the `useCallback` hook in React and when should it be used?
 
-    `useCallback` caches a function definition while its dependencies remain `Object.is`-equal. The point is **referential stability** — so a `memo`-wrapped child can skip a render, or an Effect that depends on the function does not re-synchronize unnecessarily. Creating a function literal is usually not the cost worth optimizing; use `useCallback` when the changing identity causes measured or semantically required downstream work.
+    `useCallback` caches a function definition while its dependencies remain `Object.is`-equal. The point is **referential stability**, so a `memo`-wrapped child can skip a render, or an Effect that depends on the function does not re-synchronize unnecessarily. Creating a function literal is usually not the cost worth optimizing; use `useCallback` when the changing identity causes measured or semantically required downstream work.
     
     ```javascript
     const memoizedCallback = useCallback(() => {
@@ -370,7 +370,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 18. ### What is the `useId` hook in React and when should it be used?
 
-    `useId` (added in React 18) generates a stable, unique string ID per component instance, **per React root**. Its main reason for existing is to produce IDs that match between the server-rendered HTML and the client hydration — a plain incrementing counter would produce mismatches. Within a single root the IDs are unique, but two separate roots on the same page can collide unless you set `identifierPrefix` on `createRoot` / `hydrateRoot`. Use it for things like linking `<label htmlFor>` to `<input id>`, never as a list `key`.
+    `useId` (added in React 18) generates a stable, unique string ID per component instance, **per React root**. Its main reason for existing is to produce IDs that match between the server-rendered HTML and the client hydration; a plain incrementing counter would produce mismatches. Within a single root the IDs are unique, but two separate roots on the same page can collide unless you set `identifierPrefix` on `createRoot` / `hydrateRoot`. Use it for things like linking `<label htmlFor>` to `<input id>`, never as a list `key`.
     
     ```jsx
     import { useId } from 'react';
@@ -429,7 +429,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 21. ### What is `forwardRef()` in React used for?
 
-    As of React 19 (December 2024), `forwardRef()` is **no longer necessary** — function components can now accept `ref` as a regular prop, so wrapping in `forwardRef()` is no longer required. React plans to deprecate `forwardRef()` in a future release. `forwardRef()` historically existed because, before React 19, function components could not receive a `ref` prop and `forwardRef()` was the official workaround for forwarding a parent's ref down to a child DOM node or component.
+    As of React 19 (December 2024), `forwardRef()` is **no longer necessary**, function components can now accept `ref` as a regular prop, so wrapping in `forwardRef()` is no longer required. React plans to deprecate `forwardRef()` in a future release. `forwardRef()` historically existed because, before React 19, function components could not receive a `ref` prop and `forwardRef()` was the official workaround for forwarding a parent's ref down to a child DOM node or component.
     
     ```jsx
     // Modern (React 19+): ref is a regular prop
@@ -454,7 +454,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 22. ### How do you reset a component's state in React?
 
-    The most idiomatic way to reset a component's state in React is to give the component a `key` prop and change it — React unmounts the old instance and mounts a fresh one with brand-new state. For finer-grained resets, call your `useState` setter with the initial value, or dispatch a `RESET` action when using `useReducer`.
+    The most idiomatic way to reset a component's state in React is to give the component a `key` prop and change it: React unmounts the old instance and mounts a fresh one with brand-new state. For finer-grained resets, call your `useState` setter with the initial value, or dispatch a `RESET` action when using `useReducer`.
     
     ```jsx
     // Force a full reset by changing the key
@@ -722,7 +722,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 39. ### Explain the presentational vs container component pattern in React
 
-    The presentational vs container component pattern (also known as "dumb vs smart components") splits components into two roles: presentational components decide how things look and receive everything via props, while container components decide how things work — they fetch data, hold state, and pass props down. Dan Abramov, who popularized the pattern in 2015, [updated his original article in 2019](https://medium.com/@dan_abramov/smart-and-dumb-components-7ca2f9a7c7d0) to say he no longer recommends splitting components this way: hooks (especially custom hooks) cover the same separation of concerns without forcing you to introduce a wrapper component. The vocabulary is still useful for talking about responsibilities, but in modern React the "container" layer is usually a custom hook.
+    The presentational vs container component pattern (also known as "dumb vs smart components") splits components into two roles: presentational components decide how things look and receive everything via props, while container components decide how things work: they fetch data, hold state, and pass props down. Dan Abramov, who popularized the pattern in 2015, [updated his original article in 2019](https://medium.com/@dan_abramov/smart-and-dumb-components-7ca2f9a7c7d0) to say he no longer recommends splitting components this way: hooks (especially custom hooks) cover the same separation of concerns without forcing you to introduce a wrapper component. The vocabulary is still useful for talking about responsibilities, but in modern React the "container" layer is usually a custom hook.
 
     <br>
 
@@ -746,7 +746,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 41. ### What are render props in React and what are they for?
 
-    Render props in React are a technique for sharing code between components using a prop whose value is a function. The component calls that function with some internal state or data, and the function returns the React element to render. The prop does not have to be named `render` — passing a function as `children` is the more common modern form.
+    Render props in React are a technique for sharing code between components using a prop whose value is a function. The component calls that function with some internal state or data, and the function returns the React element to render. The prop does not have to be named `render`, passing a function as `children` is the more common modern form.
     
     ```jsx
     import { useState } from 'react';
@@ -822,7 +822,7 @@ Looking for more? Read our blog post [100+ React interview questions and answers
 
 45. ### What is virtual DOM in React?
 
-    The "virtual DOM" in React is a tree of plain JavaScript objects (React elements) that describes what the UI should look like — it is not a copy of the actual DOM. When state or props change, React builds a new tree, compares it with the previous one (a process called reconciliation, performed by the Fiber reconciler since React 16), and applies only the necessary changes to the real DOM. The React team now prefers the terms "React elements" and "Fiber tree." The main benefit is the declarative programming model, not raw speed over hand-written DOM updates.
+    The "virtual DOM" in React is a tree of plain JavaScript objects (React elements) that describes what the UI should look like: it is not a copy of the actual DOM. When state or props change, React builds a new tree, compares it with the previous one (a process called reconciliation, performed by the Fiber reconciler since React 16), and applies only the necessary changes to the real DOM. The React team now prefers the terms "React elements" and "Fiber tree." The main benefit is the declarative programming model, not raw speed over hand-written DOM updates.
 
     <br>
 

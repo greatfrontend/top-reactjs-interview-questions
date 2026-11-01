@@ -8,19 +8,17 @@ JSX is a syntax extension for JavaScript that lets you describe UI with HTML-lik
 
 ---
 
-## What is JSX and how does it work?
-
 JSX is syntax that a build tool transforms into calls producing React element descriptions; browsers do not execute JSX directly.
 
-### What is JSX?
+## What is JSX?
 
 JSX is a syntax extension for JavaScript that lets you describe UI trees with an HTML-like syntax. Although it was popularized by React, JSX itself is a separate spec and is also used by other libraries such as Preact and Solid. TypeScript supports it natively in `.tsx` files.
 
-### How does JSX work?
+## How does JSX work?
 
-JSX is not valid JavaScript by itself. A compiler — typically Babel or the bundler's built-in transform (SWC, esbuild, Oxc) — converts JSX into ordinary JavaScript function calls before the browser sees it.
+JSX is not valid JavaScript by itself. A compiler (typically Babel or the bundler's built-in transform (SWC, esbuild, Oxc)) converts JSX into ordinary JavaScript function calls before the browser sees it.
 
-### JSX syntax
+## JSX syntax
 
 JSX allows you to write HTML-like tags directly in your JavaScript code. For example:
 
@@ -28,7 +26,7 @@ JSX allows you to write HTML-like tags directly in your JavaScript code. For exa
 const element = <h1>Hello, world!</h1>;
 ```
 
-### Transformation process
+## Transformation process
 
 Since React 17 (2020), the default transform is the **automatic JSX runtime**. Instead of compiling to `React.createElement`, the compiler imports `jsx` / `jsxs` helpers from `react/jsx-runtime` and emits calls to those. A consequence is that you no longer need to `import React from 'react'` just to use JSX:
 
@@ -59,7 +57,7 @@ flowchart LR
   Render --> Commit["Renderer commits host changes"]
 ```
 
-### Embedding expressions
+## Embedding expressions
 
 You can embed JavaScript expressions inside JSX using curly braces `{}`. For example:
 
@@ -68,7 +66,7 @@ const name = 'John';
 const element = <h1>Hello, {name}!</h1>;
 ```
 
-### Attributes in JSX
+## Attributes in JSX
 
 You can use quotes to specify string literals as attributes and curly braces to embed JavaScript expressions. For example:
 
@@ -83,7 +81,7 @@ Because JSX attributes compile to JavaScript object keys, a few HTML attribute n
 - Event handlers are camelCased: `onclick` becomes `onClick`, `onchange` becomes `onChange`
 - Most other DOM properties (`tabIndex`, `readOnly`, `maxLength`, etc.) use camelCase
 
-### Fragments
+## Fragments
 
 To return multiple elements without an extra wrapper DOM node, use a fragment. The shorthand syntax is `<>...</>`:
 
@@ -100,13 +98,13 @@ function List() {
 
 The longer form `<Fragment key={id}>...</Fragment>` is needed when you must pass a `key`.
 
-### JSX is an expression
+## JSX is an expression
 
 After compilation, JSX expressions become regular JavaScript function calls and evaluate to JavaScript objects. This means you can use JSX inside `if` statements, assign it to variables, and pass it as a prop or argument.
 
-### JSX prevents injection attacks
+## JSX prevents injection attacks
 
-By default, React DOM escapes any values embedded in JSX with `{}` before rendering them, which neutralizes the most common XSS vector — injecting markup via untrusted strings:
+By default, React DOM escapes any values embedded in JSX with `{}` before rendering them, which neutralizes the most common XSS vector, injecting markup via untrusted strings:
 
 ```jsx
 const userInput = '<img src=x onerror="alert(1)" />';

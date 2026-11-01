@@ -98,10 +98,10 @@ Function components and hooks have no `this`, so there's nothing to bind, no `.b
 
 React 19 adds several Hooks and related APIs that solve problems custom Hooks alone could not:
 
-- **`use(promise)`** — read a promise (or context) inside a component, integrating with Suspense for loading states.
-- **`useActionState`** — manage a form action's state (pending, error, result) with a single hook.
-- **`useFormStatus`** — read the pending state of the nearest parent `<form>` from a child, e.g. to disable a submit button.
-- **`useOptimistic`** — show an optimistic UI update while a mutation is in flight, automatically reverting on failure.
+- **`use(promise)`**: read a promise (or context) inside a component, integrating with Suspense for loading states.
+- **`useActionState`**: manage a form action's state (pending, error, result) with a single hook.
+- **`useFormStatus`**: read the pending state of the nearest parent `<form>` from a child, e.g. to disable a submit button.
+- **`useOptimistic`**: show an optimistic UI update while a mutation is in flight, automatically reverting on failure.
 
 React Compiler 1.0 can additionally reduce manual `useMemo`/`useCallback` work in compatible code when the optional build-time optimizer is enabled.
 

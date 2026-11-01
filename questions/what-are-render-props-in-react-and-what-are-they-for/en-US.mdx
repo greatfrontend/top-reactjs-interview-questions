@@ -4,7 +4,7 @@ title: What are render props in React and what are they for?
 
 ## TL;DR
 
-Render props in React are a technique for sharing code between components using a prop whose value is a function. The component calls that function with some internal state or data, and the function returns the React element to render. The prop does not have to be named `render` — passing a function as `children` is the more common modern form.
+Render props in React are a technique for sharing code between components using a prop whose value is a function. The component calls that function with some internal state or data, and the function returns the React element to render. The prop does not have to be named `render`, passing a function as `children` is the more common modern form.
 
 ```jsx
 import { useState } from 'react';
@@ -26,29 +26,27 @@ Render props were popular before hooks. As of modern React, custom hooks have la
 
 ---
 
-## What are render props in React and what are they for?
-
 The render-prop pattern shares behavior by letting a component call a function supplied by its consumer to produce UI.
 
-### Definition
+## Definition
 
-Render props is a pattern in React for sharing code between components by passing a function as a prop. The component invokes that function with some piece of state or data and renders whatever it returns. The pattern gets its name from the prop, which is conventionally called `render` — though `children` as a function is just as common, and any prop name works.
+Render props is a pattern in React for sharing code between components by passing a function as a prop. The component invokes that function with some piece of state or data and renders whatever it returns. The pattern gets its name from the prop, which is conventionally called `render`, though `children` as a function is just as common, and any prop name works.
 
-### Purpose
+## Purpose
 
 Render props are used to:
 
 - Share logic between components without using higher-order components (HOCs)
 - Make components more reusable and composable
-- Improve code readability and maintainability
+- Let each consumer choose markup while the shared component owns its state
 
 In modern React, custom hooks are the preferred way to share _stateful logic_ between function components. Render props remain a good fit when the shared component also needs to own some piece of UI structure (e.g. wrapping children in an event listener container, virtualized lists, or "headless" UI libraries).
 
-### How it works
+## How it works
 
 A component that uses a render prop takes a function as a prop. The component calls this function during render with whatever state or data it wants to expose, and renders the React element that the function returns.
 
-### Example
+## Example
 
 Here is a simple example using a function component and hooks:
 
@@ -81,7 +79,7 @@ function MouseTracker({ render }) {
 
 In this example, `MouseTracker` tracks the mouse position and passes the coordinates to the `render` prop function. The `render` prop function then determines how to display the coordinates.
 
-### `children` as a function variant
+## `children` as a function variant
 
 A widely used variation passes the function as `children` instead of a named `render` prop. It reads more naturally because the consumer's UI lives between the component's tags:
 
@@ -105,11 +103,11 @@ return (
 );
 ```
 
-### Performance caveat
+## Performance caveat
 
-Defining the render prop inline (which is the usual style) creates a new function on every render of the parent. That new function reference defeats `React.memo` on the render-prop component itself, because the `render` (or `children`) prop is never referentially equal between renders. If the wrapping component is expensive to re-render, you can wrap the function in `useCallback`, hoist it to module scope, or — more commonly — switch to a custom hook, which sidesteps the issue entirely.
+Defining the render prop inline (which is the usual style) creates a new function on every render of the parent. That new function reference defeats `React.memo` on the render-prop component itself, because the `render` (or `children`) prop is never referentially equal between renders. If the wrapping component is expensive to re-render, you can wrap the function in `useCallback`, hoist it to module scope, or (more commonly) switch to a custom hook, which sidesteps the issue entirely.
 
-### Benefits
+## Benefits
 
 The pattern separates reusable stateful behavior from the markup chosen by each consumer.
 

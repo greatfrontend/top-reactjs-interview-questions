@@ -4,7 +4,7 @@ title: What is `forwardRef()` in React used for?
 
 ## TL;DR
 
-As of React 19 (December 2024), `forwardRef()` is **no longer necessary** — function components can now accept `ref` as a regular prop, so wrapping in `forwardRef()` is no longer required. React plans to deprecate `forwardRef()` in a future release. `forwardRef()` historically existed because, before React 19, function components could not receive a `ref` prop and `forwardRef()` was the official workaround for forwarding a parent's ref down to a child DOM node or component.
+As of React 19 (December 2024), `forwardRef()` is **no longer necessary**, function components can now accept `ref` as a regular prop, so wrapping in `forwardRef()` is no longer required. React plans to deprecate `forwardRef()` in a future release. `forwardRef()` historically existed because, before React 19, function components could not receive a `ref` prop and `forwardRef()` was the official workaround for forwarding a parent's ref down to a child DOM node or component.
 
 ```jsx
 // Modern (React 19+): ref is a regular prop
@@ -21,11 +21,9 @@ const MyInputLegacy = forwardRef((props, ref) => (
 
 ---
 
-## What is `forwardRef()` in React used for?
-
 `forwardRef` historically let a function component receive a parent's ref and forward it to a child, while React 19 permits `ref` as a regular prop.
 
-### The modern answer (React 19+)
+## The modern answer (React 19+)
 
 In React 19, `ref` is just a regular prop on function components. You can destructure it like any other prop and pass it through to a DOM element or child component. There is no longer any reason to reach for `forwardRef()` in new code:
 
@@ -54,14 +52,14 @@ function ParentComponent() {
 
 `forwardRef()` itself still works in React 19.2. The React documentation marks it as no longer necessary and says it will be deprecated in a future release, so migrations can be gradual and should account for the React versions supported by the application or library.
 
-### Why `forwardRef()` existed (legacy context)
+## Why `forwardRef()` existed (legacy context)
 
-Before React 19, `ref` was a "magic" prop that React intercepted — passing `ref` to a function component did nothing useful. `forwardRef()` was the API React provided to opt a function component into receiving a ref alongside its props, so the parent could reach a specific DOM node inside it (e.g. focus an input, measure a node, integrate with imperative third-party libraries).
+Before React 19, `ref` was a "magic" prop that React intercepted, passing `ref` to a function component did nothing useful. `forwardRef()` was the API React provided to opt a function component into receiving a ref alongside its props, so the parent could reach a specific DOM node inside it (e.g. focus an input, measure a node, integrate with imperative third-party libraries).
 
 ```jsx
 import { forwardRef, useRef } from 'react';
 
-// Legacy pattern — still works in React 19, but no longer necessary
+// Legacy pattern: still works in React 19, but no longer necessary
 const MyInput = forwardRef((props, ref) => <input ref={ref} {...props} />);
 
 function ParentComponent() {
@@ -70,9 +68,9 @@ function ParentComponent() {
 }
 ```
 
-### `useImperativeHandle`
+## `useImperativeHandle`
 
-When you want to expose a custom imperative API to the parent (rather than the raw DOM node), pair `ref` with `useImperativeHandle`. This is unchanged in React 19 — only the ref-forwarding mechanism has changed.
+When you want to expose a custom imperative API to the parent (rather than the raw DOM node), pair `ref` with `useImperativeHandle`. This is unchanged in React 19, only the ref-forwarding mechanism has changed.
 
 ```jsx
 import { useImperativeHandle, useRef } from 'react';
@@ -95,9 +93,9 @@ function FancyInput({ ref }) {
 }
 ```
 
-The parent now sees `{ focus, clear }` on the ref instead of the underlying input element. Use this sparingly — it is an escape hatch out of the declarative model.
+The parent now sees `{ focus, clear }` on the ref instead of the underlying input element. Use this sparingly: it is an escape hatch out of the declarative model.
 
-### Things to keep in mind
+## Things to keep in mind
 
 Ref forwarding exposes an imperative relationship, so its target and version requirements should remain explicit:
 

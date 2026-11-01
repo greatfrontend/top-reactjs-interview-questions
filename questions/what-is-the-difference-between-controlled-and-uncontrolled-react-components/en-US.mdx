@@ -4,15 +4,13 @@ title: What is the difference between controlled and uncontrolled React componen
 
 ## TL;DR
 
-A **controlled** component drives a form input from React state — you pass `value`/`checked` plus an `onChange` handler, and React state is the single source of truth. An **uncontrolled** component lets the DOM keep the value; you read it via a `ref` (or on submit) and seed the initial value with `defaultValue`/`defaultChecked`. Controlled inputs are the right default when you need validation, conditional UI, or to derive other state from the value. Uncontrolled inputs are simpler for write-once forms and for `<input type="file">`, which is always uncontrolled. React 19 also added first-class form support via the form `action` prop, `useFormStatus`, and `useActionState`, which often removes the need for per-field controlled state.
+A **controlled** component drives a form input from React state; you pass `value`/`checked` plus an `onChange` handler, and React state is the single source of truth. An **uncontrolled** component lets the DOM keep the value; you read it via a `ref` (or on submit) and seed the initial value with `defaultValue`/`defaultChecked`. Controlled inputs are the right default when you need validation, conditional UI, or to derive other state from the value. Uncontrolled inputs are simpler for write-once forms and for `<input type="file">`, which is always uncontrolled. React 19 also added first-class form support via the form `action` prop, `useFormStatus`, and `useActionState`, which often removes the need for per-field controlled state.
 
 ---
 
-## What is the difference between controlled and uncontrolled React components?
-
 The distinction is which system owns the current form value: React state for a controlled input or the DOM for an uncontrolled input.
 
-### Controlled components
+## Controlled components
 
 A controlled input passes both `value` (or `checked`) and `onChange` to the element. React state holds the truth; every keystroke flows through a setter.
 
@@ -43,7 +41,7 @@ function ControlledForm() {
 }
 ```
 
-### Uncontrolled components
+## Uncontrolled components
 
 An uncontrolled input keeps its value in the DOM. Seed the initial value with `defaultValue` (or `defaultChecked` for checkboxes/radios), and read the current value through a `ref` when you need it.
 
@@ -70,11 +68,11 @@ function UncontrolledForm() {
 }
 ```
 
-`defaultValue` is only consulted on the initial render — changing it later does not update the DOM. Passing `value` without an `onChange` handler makes the input read-only and warns in development unless `readOnly` is intentional. The reverse is valid: an input with `onChange` but no `value` remains uncontrolled. Pick one mode per field and do not switch modes during the input's lifetime.
+`defaultValue` is only consulted on the initial render, changing it later does not update the DOM. Passing `value` without an `onChange` handler makes the input read-only and warns in development unless `readOnly` is intentional. The reverse is valid: an input with `onChange` but no `value` remains uncontrolled. Pick one mode per field and do not switch modes during the input's lifetime.
 
-### `<input type="file">` is always uncontrolled
+## `<input type="file">` is always uncontrolled
 
-File inputs cannot be controlled — their `value` is read-only for security reasons (a page must not be able to set the user's chosen file). Always read files via a `ref` or from the `change`/`submit` event, even in an otherwise controlled form.
+File inputs cannot be controlled: their `value` is read-only for security reasons (a page must not be able to set the user's chosen file). Always read files via a `ref` or from the `change`/`submit` event, even in an otherwise controlled form.
 
 ```jsx
 function FileForm() {
@@ -95,7 +93,7 @@ function FileForm() {
 }
 ```
 
-### React 19 form actions
+## React 19 form actions
 
 React 19 made `<form action={...}>` a first-class way to handle submissions without per-field controlled state. The action receives a `FormData` object, and `useFormStatus` / `useActionState` expose pending and result state.
 
@@ -130,20 +128,20 @@ function NameForm() {
 }
 ```
 
-This pattern uses uncontrolled inputs (`defaultValue` plus `name`) and reads them out of `FormData` in the action — often the simplest choice for plain submit-style forms.
+This pattern uses uncontrolled inputs (`defaultValue` plus `name`) and reads them out of `FormData` in the action, often the simplest choice for plain submit-style forms.
 
-### Key differences
+## Key differences
 
 The ownership choice changes how values update and which use cases each style fits.
 
-#### State management
+### State management
 
 Controlled and uncontrolled inputs store their current value in different places:
 
 - Controlled: React state owns the value; the DOM mirrors it.
 - Uncontrolled: The DOM owns the value; React reads it on demand.
 
-#### Data flow
+### Data flow
 
 Both styles can report changes, but only the controlled style feeds every rendered value back through React state:
 
@@ -170,7 +168,7 @@ flowchart LR
   end
 ```
 
-#### When to use which
+### When to use which
 
 Choose according to whether application logic must observe or transform each value change:
 

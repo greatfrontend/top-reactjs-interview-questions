@@ -61,7 +61,7 @@ React Server Components (RSC) are a separate architecture from SSR. Their compon
 Here is a basic example using Next.js's App Router, which uses async server components by default:
 
 ```jsx
-// app/page.jsx — a Server Component (no 'use client' directive)
+// app/page.jsx: a Server Component (no 'use client' directive)
 async function fetchDataFromAPI() {
   const res = await fetch('https://api.example.com/data', {
     // Opt into a request-time fetch for this example.
@@ -89,7 +89,7 @@ Any interactive piece (e.g. a button with `onClick`) would live in a separate fi
 
 Hydration is not free. The browser has to download, parse, and execute the JS bundle, then walk the DOM and attach handlers. For large apps this can delay Time To Interactive even though pixels appeared quickly.
 
-Hydration mismatches occur when server HTML differs from the client's initial render—for example, rendering time or randomness independently on both sides, or branching on `window`. React 19 reports a consolidated diff and may regenerate a mismatched tree on the client. The fix is to render deterministic initial content, pass the server value to the client, or intentionally switch browser-only content after hydration.
+Hydration mismatches occur when server HTML differs from the client's initial render, for example, rendering time or randomness independently on both sides, or branching on `window`. React 19 reports a consolidated diff and may regenerate a mismatched tree on the client. The fix is to render deterministic initial content, pass the server value to the client, or intentionally switch browser-only content after hydration.
 
 ## Benefits of server-side rendering
 

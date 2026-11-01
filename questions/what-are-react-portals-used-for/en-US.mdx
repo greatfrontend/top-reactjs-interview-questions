@@ -8,19 +8,17 @@ React Portals are used to render children into a DOM node that exists outside th
 
 ---
 
-## What are React Portals used for?
-
 Portals separate a child's DOM placement from its ownership in the React component tree.
 
-### Introduction
+## Introduction
 
 React Portals provide a way to render children into a DOM node that exists outside the DOM hierarchy of the parent component. This is particularly useful for certain UI patterns that require breaking out of the normal parent-child DOM structure.
 
-### Use cases
+## Use cases
 
 Overlays are the most common portal use case because they often need to escape clipping and stacking contexts:
 
-#### Modals
+### Modals
 
 Modals often need to be rendered outside the parent component to avoid issues with z-index and overflow. By using a portal, you can ensure the modal is rendered at the top level of the DOM, making it easier to manage its visibility and positioning.
 
@@ -45,9 +43,9 @@ function Modal({ isOpen, children, titleId }) {
 
 This abbreviated example only demonstrates portal placement. A production modal must also manage focus, dismissal, and background interaction as described in the accessibility section below.
 
-#### Tooltips
+### Tooltips
 
-Tooltips need to be rendered outside the parent component to avoid being clipped by overflow settings. Using a portal lets the tooltip escape ancestor `overflow: hidden` and stacking-context constraints. To position the tooltip relative to its target element, use `getBoundingClientRect()` (which gives viewport-relative coordinates) and add the current scroll offsets — `offsetTop` / `offsetLeft` are relative to the nearest positioned ancestor (`offsetParent`) and produce the wrong values once the tooltip is portaled into `document.body`.
+Tooltips need to be rendered outside the parent component to avoid being clipped by overflow settings. Using a portal lets the tooltip escape ancestor `overflow: hidden` and stacking-context constraints. To position the tooltip relative to its target element, use `getBoundingClientRect()` (which gives viewport-relative coordinates) and add the current scroll offsets, `offsetTop` / `offsetLeft` are relative to the nearest positioned ancestor (`offsetParent`) and produce the wrong values once the tooltip is portaled into `document.body`.
 
 ```jsx
 import { useLayoutEffect, useState } from 'react';
@@ -91,7 +89,7 @@ const Tooltip = ({ text, targetRef }) => {
 };
 ```
 
-#### Dropdowns and popovers
+### Dropdowns and popovers
 
 Dropdown menus, comboboxes, and other popover-style UIs benefit from portals for the same reason as tooltips: they often need to escape an ancestor's `overflow: hidden`, `transform`, or stacking context. A portal lets the menu render at the top of the DOM while still being part of the React tree, which means clicks and keyboard events still bubble up to the parent dropdown component for state handling.
 
@@ -108,7 +106,7 @@ const Dropdown = ({ isOpen, children }) => {
 };
 ```
 
-### How to create a portal
+## How to create a portal
 
 To create a portal, import `createPortal` from `react-dom`. It takes the React content to render and the DOM node to render it into.
 
@@ -118,9 +116,9 @@ import { createPortal } from 'react-dom';
 createPortal(child, container);
 ```
 
-### Event bubbling follows the React tree
+## Event bubbling follows the React tree
 
-A subtle but commonly tested point: even though the portal's DOM node lives elsewhere in the document, React events (`onClick`, `onChange`, etc.) bubble up through the React component tree, not the DOM tree. So a click inside a portaled modal will trigger an `onClick` handler on the modal's React parent, even if that parent is on the other side of the document. Context also flows through portals normally.
+Even though a portal's DOM node lives elsewhere in the document, React events (`onClick`, `onChange`, etc.) bubble through the React component tree. A click inside a portaled modal can therefore reach an `onClick` handler on the modal's React parent, even if their DOM elements are far apart. Context also flows through portals normally.
 
 The child therefore occupies one position for React ownership and another for physical DOM placement:
 
@@ -144,15 +142,15 @@ flowchart LR
   App -. "context flows through" .-> Child
 ```
 
-### Server-side rendering
+## Server-side rendering
 
 `createPortal` requires a real DOM node, which doesn't exist during server-side rendering. A common pattern is to initialize a `mounted` state to `false`, set it to `true` in an Effect, and return `null` until then. The server and the client's first render consequently match. A `typeof window !== 'undefined'` branch directly in render can instead produce different initial markup and cause a hydration mismatch.
 
-### Accessibility
+## Accessibility
 
 Portals are commonly used for modals and dialogs, which come with accessibility expectations: focus should move into the dialog when it opens and be trapped inside it (Tab/Shift+Tab cycles within the dialog), Escape should close it, and focus should return to the triggering element on close. The dialog itself needs an appropriate role (`role="dialog"` or the native `<dialog>` element) and an accessible label. Implementing focus traps correctly is non-trivial, so most teams rely on dialog primitives from libraries like Base UI, Ariakit, or React Aria rather than rolling their own.
 
-### Benefits
+## Benefits
 
 Portals solve placement constraints while preserving React relationships such as context and event propagation.
 

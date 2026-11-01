@@ -8,18 +8,16 @@ title: What is the difference between state and props in React?
 
 ---
 
-## What is the difference between state and props in React?
-
 State is component-owned memory, while props are read-only inputs supplied by the component's parent.
 
-### State
+## State
 
 State is data a component owns and can change over time, usually in response to user interaction, network responses, or timers. When state changes, React schedules a re-render of that component so the UI reflects the new value.
 
 - State is local: a parent cannot read a child's state directly.
 - In function components, state is declared with the `useState` hook (or `useReducer` for more complex transitions).
 - Setters **queue state for a subsequent render** and React batches updates where possible. The current handler still sees the state snapshot from the render that created it.
-- The term **updater function** specifically refers to the `setX(prev => next)` form passed to a setter — not the setter itself. Use it whenever the next value depends on the previous one, so batched updates compose correctly.
+- The term **updater function** specifically refers to the `setX(prev => next)` form passed to a setter: not the setter itself. Use it whenever the next value depends on the previous one, so batched updates compose correctly.
 
 ```jsx
 import { useState } from 'react';
@@ -54,9 +52,9 @@ function Counter() {
 >
 > When a class state update depends on previous state, pass a function such as `this.setState((prev) => ({ count: prev.count + 1 }))`. Reading `this.state.count` in several queued object-form updates reuses the same snapshot. New code should generally prefer `useState` in a function component.
 
-### Props
+## Props
 
-Props (short for "properties") are the inputs a parent passes to a child. From the **child's perspective** they are read-only — you must not assign to them. From the system's perspective they are not "immutable" in any deep sense; the parent simply re-renders with a new value, and the child receives the new props on its next render.
+Props (short for "properties") are the inputs a parent passes to a child. From the **child's perspective** they are read-only; you must not assign to them. From the system's perspective they are not "immutable" in any deep sense; the parent simply re-renders with a new value, and the child receives the new props on its next render.
 
 ```jsx
 function Parent() {
@@ -75,9 +73,9 @@ function Greeting({ message }) {
 }
 ```
 
-Props can carry data, JSX (`children`), and callbacks. Callback props are how children communicate **upward** — the child invokes the function, the parent updates its state, and new props flow down on the next render.
+Props can carry data, JSX (`children`), and callbacks. Callback props are how children communicate **upward**; the child invokes the function, the parent updates its state, and new props flow down on the next render.
 
-### One-way data flow, lifted state, and derived values
+## One-way data flow, lifted state, and derived values
 
 These three ideas tie state and props together:
 
@@ -87,13 +85,13 @@ These three ideas tie state and props together:
 
 ```jsx
 function Cart({ items }) {
-  // Derived from props — do NOT put this in useState
+  // Derived from props: do NOT put this in useState
   const total = items.reduce((sum, item) => sum + item.price, 0);
   return <p>Total: {total}</p>;
 }
 ```
 
-### Key differences
+## Key differences
 
 The following table compares ownership, updates, and rendering behavior:
 

@@ -78,7 +78,7 @@ In this example, the server sends the static HTML with a button to the client. R
 
 ### Selective and streaming hydration (React 18+)
 
-React 18 introduced **selective hydration** powered by `Suspense`. With streaming SSR (`renderToPipeableStream` / `renderToReadableStream`), the server can flush HTML in chunks as data becomes ready, and the client can hydrate parts of the tree independently — a slow `Suspense` boundary no longer blocks the rest of the page from becoming interactive. React also prioritizes hydrating the part of the tree the user is currently interacting with.
+React 18 introduced **selective hydration** powered by `Suspense`. With streaming SSR (`renderToPipeableStream` / `renderToReadableStream`), the server can flush HTML in chunks as data becomes ready, and the client can hydrate parts of the tree independently; a slow `Suspense` boundary no longer blocks the rest of the page from becoming interactive. React also prioritizes hydrating the part of the tree the user is currently interacting with.
 
 ```jsx
 import { Suspense } from 'react';

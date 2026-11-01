@@ -8,15 +8,13 @@ The dependency array of `useEffect` controls when React re-synchronizes the effe
 
 ---
 
-## What does the dependency array of `useEffect` affect?
-
 The dependency list controls when React re-synchronizes an Effect with the reactive values used by its setup function.
 
-### Introduction to `useEffect`
+## Introduction to `useEffect`
 
 The `useEffect` hook in React is used to perform side effects in functional components. These side effects can include data fetching, subscriptions, or manually changing the DOM. The `useEffect` hook takes two arguments: a function that contains the side effect logic and an optional dependency array.
 
-### Dependency array
+## Dependency array
 
 The dependency array is the second argument to the `useEffect` hook. It is an array of values that the effect depends on. React uses this array to determine when to re-run the effect.
 
@@ -26,7 +24,7 @@ useEffect(() => {
 }, [dependency1, dependency2]);
 ```
 
-### How the dependency array affects `useEffect`
+## How the dependency array affects `useEffect`
 
 The three common dependency-list forms produce different setup and cleanup schedules:
 
@@ -81,7 +79,7 @@ flowchart TD
   Cleanup --> Setup["Run setup with new values"]
 ```
 
-### Cleanup behavior on dependency change
+## Cleanup behavior on dependency change
 
 When dependencies change, React first runs the previous effect's cleanup function (if any) before running the effect again with the new values. The same is true on unmount. This means dependency changes effectively perform a tear-down/set-up cycle, which matters for subscriptions, intervals, and event listeners.
 
@@ -92,11 +90,11 @@ useEffect(() => {
 }, [id]);
 ```
 
-### The `react-hooks/exhaustive-deps` lint rule
+## The `react-hooks/exhaustive-deps` lint rule
 
-The official `eslint-plugin-react-hooks` ships an `exhaustive-deps` rule that warns when reactive values used inside an effect are missing from the dependency array. Treat its warnings as bugs — silencing the rule is almost always the wrong fix and a common source of stale closures.
+The official `eslint-plugin-react-hooks` ships an `exhaustive-deps` rule that warns when reactive values used inside an effect are missing from the dependency array. Treat its warnings as bugs: silencing the rule is almost always the wrong fix and a common source of stale closures.
 
-### Common pitfalls
+## Common pitfalls
 
 Incorrect dependencies either leave an Effect synchronized with stale values or cause unnecessary repeated setup:
 

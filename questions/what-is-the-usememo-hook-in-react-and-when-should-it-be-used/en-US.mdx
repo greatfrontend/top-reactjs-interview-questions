@@ -12,15 +12,13 @@ const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
 
 ---
 
-## What is the `useMemo` hook in React and when should it be used?
-
 `useMemo` caches a calculation result as a performance optimization while its reactive dependencies remain equal.
 
-### What is `useMemo`?
+## What is `useMemo`?
 
 The `useMemo` hook caches the result of a calculation between renders. React returns the cached value while every dependency remains `Object.is`-equal, unless it discards the cache for a documented reason. Its purpose is performance optimization, not correctness.
 
-### Syntax
+## Syntax
 
 The syntax for `useMemo` is as follows:
 
@@ -31,13 +29,13 @@ const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);
 - The first argument is a function that returns the value you want to memoize.
 - The second argument is an array of dependencies. React normally reuses the value until a dependency changes, but it may discard the cache for documented reasons.
 
-### When should it be used?
+## When should it be used?
 
 Use it when profiling identifies meaningful calculation work or when stable value identity enables another measured optimization.
 
-#### Expensive calculations
+### Expensive calculations
 
-For a measured expensive calculation, `useMemo` can reuse the previous result while its dependencies remain equal. Candidate work includes filtering or sorting a large list, parsing a large payload, or running a heavy synchronous algorithm—not trivial arithmetic.
+For a measured expensive calculation, `useMemo` can reuse the previous result while its dependencies remain equal. Candidate work includes filtering or sorting a large list, parsing a large payload, or running a heavy synchronous algorithm, not trivial arithmetic.
 
 ```jsx
 import { useMemo } from 'react';
@@ -59,9 +57,9 @@ const MyComponent = ({ items, query }) => {
 };
 ```
 
-#### Preserving referential equality for memoized children
+### Preserving referential equality for memoized children
 
-This is the most common practical reason to reach for `useMemo`. Every render produces a new object/array literal, which breaks `React.memo` (or `useEffect` dependency) bailouts on a child. Memoizing the value keeps its reference stable across renders.
+Creating an object or array literal during each render gives it a new reference, which can prevent a `React.memo` child from skipping a render or cause an Effect dependency to change. `useMemo` can preserve the reference while its dependencies remain unchanged.
 
 ```jsx
 import { memo, useMemo } from 'react';
@@ -88,9 +86,9 @@ const MemoChild = memo(function MemoChild({ sortedItems }) {
 });
 ```
 
-Note that `useMemo` on a value alone does not prevent the child from re-rendering — the child must also be wrapped in `memo` (or otherwise short-circuit). `items.toSorted(...)` is used here because `Array.prototype.sort` mutates in place; mutating a prop would violate React's read-only props contract.
+Note that `useMemo` on a value alone does not prevent the child from re-rendering; the child must also be wrapped in `memo` (or otherwise short-circuit). `items.toSorted(...)` is used here because `Array.prototype.sort` mutates in place; mutating a prop would violate React's read-only props contract.
 
-### Caveats
+## Caveats
 
 Because the cached value is disposable, application correctness cannot depend on the cache being retained:
 

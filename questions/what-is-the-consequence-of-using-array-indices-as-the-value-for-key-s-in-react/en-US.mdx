@@ -4,7 +4,7 @@ title: What is the consequence of using array indices as the value for `key`s in
 
 ## TL;DR
 
-Using array indices as `key`s causes React to reconcile the list incorrectly when items are reordered, inserted, or removed. Because the key identifies a position rather than an item, React reuses the wrong component instances — leaving stale local state, focus, and DOM attached to the wrong rows. The fix is to use a stable, unique identifier from the data (e.g. `item.id`). Index keys are only safe when the list is static and never reordered, filtered, or prepended to.
+Using array indices as `key`s causes React to reconcile the list incorrectly when items are reordered, inserted, or removed. Because the key identifies a position rather than an item, React reuses the wrong component instances, leaving stale local state, focus, and DOM attached to the wrong rows. The fix is to use a stable, unique identifier from the data (e.g. `item.id`). Index keys are only safe when the list is static and never reordered, filtered, or prepended to.
 
 ---
 
@@ -72,7 +72,7 @@ A render-once nav menu built from a constant array fits. A live, editable, sorta
 
 ### Omitting the `key` is even worse
 
-If you leave `key` off entirely, React falls back to using the index and prints a `Warning: Each child in a list should have a unique "key" prop` in development. Suppressing the warning by passing `key={index}` does not fix the underlying issue — it just hides the message.
+If you leave `key` off entirely, React falls back to using the index and prints a `Warning: Each child in a list should have a unique "key" prop` in development. Suppressing the warning by passing `key={index}` does not fix the underlying issue; it just hides the message.
 
 ### Better approach
 
@@ -94,7 +94,7 @@ const List = () => (
 );
 ```
 
-If the data has no natural id, generate one when the item is created (e.g. `crypto.randomUUID()`) and store it on the item — do not generate a fresh id inside `map`, because it would change every render and defeat reconciliation entirely.
+If the data has no natural id, generate one when the item is created (e.g. `crypto.randomUUID()`) and store it on the item, do not generate a fresh id inside `map`, because it would change every render and defeat reconciliation entirely.
 
 ## Further reading
 

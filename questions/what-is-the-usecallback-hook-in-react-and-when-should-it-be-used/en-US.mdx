@@ -4,7 +4,7 @@ title: What is the `useCallback` hook in React and when should it be used?
 
 ## TL;DR
 
-`useCallback` caches a function definition while its dependencies remain `Object.is`-equal. The point is **referential stability** — so a `memo`-wrapped child can skip a render, or an Effect that depends on the function does not re-synchronize unnecessarily. Creating a function literal is usually not the cost worth optimizing; use `useCallback` when the changing identity causes measured or semantically required downstream work.
+`useCallback` caches a function definition while its dependencies remain `Object.is`-equal. The point is **referential stability**, so a `memo`-wrapped child can skip a render, or an Effect that depends on the function does not re-synchronize unnecessarily. Creating a function literal is usually not the cost worth optimizing; use `useCallback` when the changing identity causes measured or semantically required downstream work.
 
 ```javascript
 const memoizedCallback = useCallback(() => {
@@ -14,11 +14,9 @@ const memoizedCallback = useCallback(() => {
 
 ---
 
-## What is the `useCallback` hook in React and when should it be used?
-
 `useCallback` is an identity cache for a function definition, useful only when stable identity prevents specific downstream work or satisfies a dependency relationship.
 
-### What is `useCallback`?
+## What is `useCallback`?
 
 `useCallback` caches a function definition between renders until one of its dependencies changes according to `Object.is`. It does not avoid evaluating the function expression you pass; React returns the previously cached function identity when the dependencies match. That stable identity is useful only when it avoids downstream work or is required by another Hook's dependency relationship.
 
@@ -26,7 +24,7 @@ const memoizedCallback = useCallback(() => {
 >
 > React Compiler 1.0 is a separate, optional build-time optimizer. When enabled, it memoizes compatible components and values and can reduce the need for manual `useCallback`, `useMemo`, and `memo`. Check profiling and compiled output before adding manual memoization to Compiler-enabled code.
 
-### Syntax
+## Syntax
 
 Pass the function and every reactive value it reads:
 
@@ -36,11 +34,11 @@ const memoizedCallback = useCallback(() => {
 }, [a, b]);
 ```
 
-### When should `useCallback` be used?
+## When should `useCallback` be used?
 
 The main cases involve memoized consumers or Effects that depend on the function's identity.
 
-#### Preventing unnecessary re-renders of memoized children
+### Preventing unnecessary re-renders of memoized children
 
 When you pass a function as a prop to a `React.memo`-wrapped child, a new function reference on each parent render breaks the memoization and the child re-renders anyway. `useCallback` keeps the reference stable so `React.memo` can do its job.
 
@@ -73,7 +71,7 @@ const ChildComponent = memo(({ onClick }) => {
 });
 ```
 
-#### Stabilizing functions used in `useEffect` deps
+### Stabilizing functions used in `useEffect` deps
 
 If a function is referenced inside an effect's dependency array, a fresh reference each render will cause the effect to re-run every render. Wrapping the function in `useCallback` (or moving it inside the effect) prevents that:
 
@@ -88,11 +86,11 @@ useEffect(() => {
 }, [socket, handleMessage]);
 ```
 
-#### Relationship to `useMemo`
+### Relationship to `useMemo`
 
-`useCallback(fn, deps)` is exactly equivalent to `useMemo(() => fn, deps)` — it memoizes a value that happens to be a function. Use `useCallback` for readability when the value is a function.
+`useCallback(fn, deps)` is exactly equivalent to `useMemo(() => fn, deps)`; it memoizes a value that happens to be a function. Use `useCallback` for readability when the value is a function.
 
-### Caveats
+## Caveats
 
 Memoizing a function adds its own dependency comparison and maintenance cost:
 

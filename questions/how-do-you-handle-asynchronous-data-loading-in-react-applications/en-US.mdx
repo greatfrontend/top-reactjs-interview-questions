@@ -51,8 +51,8 @@ Depending on the library and its configuration, these tools can provide:
 
 When data is needed for the initial route and does not depend on browser-only state, a framework's server loader can avoid a client request waterfall and keep fetching code out of the client bundle. Client caches remain appropriate for highly interactive, frequently refreshed, or browser-specific data.
 
-- **Next.js App Router (React Server Components)** — `async` Server Components can `await` data directly and stream the result.
-- **React Router / Remix loaders** — co-locate a `loader` with the route; data is fetched in parallel with code.
+- **Next.js App Router (React Server Components)**: `async` Server Components can `await` data directly and stream the result.
+- **React Router / Remix loaders**: co-locate a `loader` with the route; data is fetched in parallel with code.
 
 ```jsx
 // Next.js Server Component (no useEffect needed)
@@ -67,7 +67,7 @@ async function UserPage({ params }) {
 
 ### React 19: `use()` + `<Suspense>`
 
-React 19's `use()` API lets a Client Component read a cached promise. While the promise is pending, the component **suspends** and the nearest `<Suspense>` boundary shows the fallback; if the promise rejects, the nearest error boundary catches it. Create or cache the promise outside the rendering Client Component—often in a route loader, Suspense-enabled data source, or Server Component—and pass it down so the same promise is reused across render attempts.
+React 19's `use()` API lets a Client Component read a cached promise. While the promise is pending, the component **suspends** and the nearest `<Suspense>` boundary shows the fallback; if the promise rejects, the nearest error boundary catches it. Create or cache the promise outside the rendering Client Component (often in a route loader, Suspense-enabled data source, or Server Component) and pass it down so the same promise is reused across render attempts.
 
 ```jsx
 'use client';
@@ -104,7 +104,7 @@ function onTabChange(next) {
 
 ### Low-level: `useEffect` + `fetch` (when and how)
 
-Plain `useEffect` + `fetch` is a valid fallback for a one-off client request. A complete implementation must handle two details that short examples commonly omit: **race conditions** (an older request resolving after a newer one) and **HTTP errors** (`fetch` only rejects on network failure — a 500 still resolves).
+Plain `useEffect` + `fetch` is a valid fallback for a one-off client request. A complete implementation must handle two details that short examples commonly omit: **race conditions** (an older request resolving after a newer one) and **HTTP errors** (`fetch` only rejects on network failure; a 500 still resolves).
 
 ```jsx
 import { useEffect, useState } from 'react';

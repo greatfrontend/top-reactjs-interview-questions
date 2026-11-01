@@ -29,7 +29,7 @@ Directly mutating state breaks React's snapshot model. Passing the same object b
 ```js
 // Anti-pattern
 const [user, setUser] = useState({ name: 'Ada', age: 36 });
-user.age = 37; // mutation — React doesn't see this
+user.age = 37; // mutation; React doesn't see this
 setUser(user); // same reference; React can ignore this update
 
 // Correct
@@ -41,14 +41,14 @@ setUser((prev) => ({ ...prev, age: 37 }));
 A common anti-pattern is copying a prop into state in order to "have a local copy." This usually leads to two sources of truth that drift out of sync.
 
 ```jsx
-// Anti-pattern — `fullName` mirrors props in state
+// Anti-pattern: `fullName` mirrors props in state
 function Greeting({ firstName, lastName }) {
   const [fullName, setFullName] = useState(`${firstName} ${lastName}`);
   // fullName won't update when firstName/lastName change!
   return <h1>{fullName}</h1>;
 }
 
-// Correct — compute it during render
+// Correct: compute it during render
 function Greeting({ firstName, lastName }) {
   const fullName = `${firstName} ${lastName}`;
   return <h1>{fullName}</h1>;
@@ -59,7 +59,7 @@ If the derived value is genuinely expensive, measure it and consider `useMemo`. 
 
 ### Using `useEffect` to derive data
 
-If a value can be computed from existing props/state, don't store it in state and update it from an effect — just compute it during render. The effect version adds an extra render, can flash stale values, and is harder to reason about.
+If a value can be computed from existing props/state, don't store it in state and update it from an effect, just compute it during render. The effect version adds an extra render, can flash stale values, and is harder to reason about.
 
 ```jsx
 // Anti-pattern
@@ -82,7 +82,7 @@ The React docs have a full guide on this: [You Might Not Need an Effect](https:/
 
 ### Using array index as `key` on dynamic lists
 
-`key={index}` is fine if the list is static and never reordered. As soon as items can be inserted, removed, or reordered, index keys cause React to reuse the wrong DOM nodes and component state — leading to subtle bugs (text inputs keeping the wrong value, animations playing on the wrong row).
+`key={index}` is fine if the list is static and never reordered. As soon as items can be inserted, removed, or reordered, index keys cause React to reuse the wrong DOM nodes and component state, leading to subtle bugs (text inputs keeping the wrong value, animations playing on the wrong row).
 
 ```jsx
 // Anti-pattern for a list that can change
@@ -109,7 +109,7 @@ items.map((item) => <li key={item.id}>{item.name}</li>);
 When an effect captures a value but doesn't list it in the dependency array, it keeps reading the old value forever. This shows up as "the timer keeps logging 0," "the WebSocket sends old form values," etc.
 
 ```js
-// Anti-pattern — effect closes over `count` but doesn't depend on it
+// Anti-pattern: effect closes over `count` but doesn't depend on it
 useEffect(() => {
   const id = setInterval(() => {
     console.log(count); // always logs the initial value
@@ -117,7 +117,7 @@ useEffect(() => {
   return () => clearInterval(id);
 }, []);
 
-// Correct — re-synchronize the interval when `count` changes
+// Correct: re-synchronize the interval when `count` changes
 useEffect(() => {
   const id = setInterval(() => {
     console.log(count);
@@ -130,7 +130,7 @@ Let `eslint-plugin-react-hooks`'s `exhaustive-deps` rule catch these.
 
 ### Forgetting to clean up effects
 
-Subscriptions, timers, intervals, and event listeners need to be torn down in the Effect's cleanup function. Otherwise they leak—and at a Strict Mode root, the extra development setup/cleanup cycle makes missing cleanup easier to notice.
+Subscriptions, timers, intervals, and event listeners need to be torn down in the Effect's cleanup function. Otherwise they leak, and at a Strict Mode root, the extra development setup/cleanup cycle makes missing cleanup easier to notice.
 
 ```js
 // Anti-pattern
@@ -172,15 +172,15 @@ function Component() {
 
 ### Inline functions and objects in JSX
 
-Defining a function or object inline (`onClick={() => doThing(id)}`, `style={{ color: 'red' }}`) creates a fresh reference each render. This is **not** automatically a performance problem — for the vast majority of components it's the idiomatic style, and the React docs explicitly say not to optimize prematurely. It matters when identity affects a memoized child or a Hook dependency. React Compiler can memoize many compatible cases when enabled.
+Defining a function or object inline (`onClick={() => doThing(id)}`, `style={{ color: 'red' }}`) creates a fresh reference each render. This is **not** automatically a performance problem, for the vast majority of components it's the idiomatic style, and the React docs explicitly say not to optimize prematurely. It matters when identity affects a memoized child or a Hook dependency. React Compiler can memoize many compatible cases when enabled.
 
 ### Prop drilling and the over-correction into context
 
-Passing a prop through five layers that don't use it is annoying, but the fix isn't always context. Often the right answer is to lift state to the right place, compose components differently (children, slots), or pull in a state library for genuinely global state. Wrapping every shared value in context invites the [context pitfalls](/questions/quiz/what-are-some-pitfalls-about-using-context-in-react) — every consumer re-renders on every change.
+Passing a prop through five layers that don't use it is annoying, but the fix isn't always context. Often the right answer is to lift state to the right place, compose components differently (children, slots), or pull in a state library for genuinely global state. Wrapping every shared value in context invites the [context pitfalls](/questions/quiz/what-are-some-pitfalls-about-using-context-in-react), every consumer re-renders on every change.
 
 ### Overusing `useMemo` and `useCallback`
 
-Memoization isn't free — it costs memory plus the equality check on every render. Sprinkling `useMemo`/`useCallback` on every value "just in case" usually loses time rather than saving it. Reach for them when:
+Memoization isn't free: it costs memory plus the equality check on every render. Sprinkling `useMemo`/`useCallback` on every value "just in case" usually loses time rather than saving it. Reach for them when:
 
 - The wrapped computation is genuinely expensive, or
 - The value is passed to a `React.memo`'d child or a hook dependency array where reference stability matters.
@@ -192,7 +192,7 @@ React Compiler 1.0 is an optional build-time optimizer that memoizes compatible 
 Deeply nested state is awkward to update immutably and easy to get wrong. Prefer a flatter shape, but **don't** lose information that the structure encoded. The fix below loses the "users have profiles" grouping; a better fix keeps the relationship while flattening the tree:
 
 ```js
-// Anti-pattern — deeply nested
+// Anti-pattern: deeply nested
 const [state, setState] = useState({
   user: {
     profile: {
@@ -202,7 +202,7 @@ const [state, setState] = useState({
   },
 });
 
-// Correct — flatten while preserving structure
+// Correct: flatten while preserving structure
 const [user, setUser] = useState({ name: 'John', age: 30 });
 
 // Or, for collections, normalize by id

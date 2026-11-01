@@ -85,7 +85,7 @@ import { Dispatcher } from 'flux';
 
 const dispatcher = new Dispatcher();
 
-// Store — register with the dispatcher before any actions are dispatched,
+// Store: register with the dispatcher before any actions are dispatched,
 // otherwise the first dispatch will be a no-op for this store.
 class CounterStore {
   constructor() {
@@ -106,7 +106,7 @@ const action = {
   payload: { amount: 1 },
 };
 
-// Dispatching an action — the registered store callback runs now.
+// Dispatching an action: the registered store callback runs now.
 dispatcher.dispatch(action);
 ```
 

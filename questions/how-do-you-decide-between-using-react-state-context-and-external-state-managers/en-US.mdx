@@ -115,16 +115,16 @@ Context fits values that many descendants need and that can tolerate its broadca
 Avoid one broad context when updates are frequent or consumers need independent subscriptions.
 
 - High-frequency updates (form input on every keystroke, animation state)
-- Independent slices that should not re-render each other — split into multiple contexts or use a store with selectors
+- Independent slices that should not re-render each other, split into multiple contexts or use a store with selectors
 
 ### External client-state libraries
 
 When many unrelated components need to read and write the same frequently-changing client state, an external store can notify only subscribers whose selected slice changed. External stores can also provide middleware, devtools, and persistence.
 
-- **Zustand** — a small hook-based store with selector subscriptions and no required provider.
-- **Jotai** — an atomic, bottom-up model where each piece of state is an atom; an atom update notifies consumers that read the changed atom.
-- **Redux Toolkit (RTK)** — the modern, batteries-included Redux. The legacy `createStore` from `redux` is deprecated; use `configureStore` + `createSlice`. RTK includes Redux DevTools (which support time-travel debugging) and pairs with **RTK Query** for server state.
-- **MobX** — observable/reactive model, popular in some enterprise codebases.
+- **Zustand**: a small hook-based store with selector subscriptions and no required provider.
+- **Jotai**: an atomic, bottom-up model where each piece of state is an atom; an atom update notifies consumers that read the changed atom.
+- **Redux Toolkit (RTK)**: the modern, batteries-included Redux. The legacy `createStore` from `redux` is deprecated; use `configureStore` + `createSlice`. RTK includes Redux DevTools (which support time-travel debugging) and pairs with **RTK Query** for server state.
+- **MobX**: observable/reactive model, popular in some enterprise codebases.
 - _Recoil_ is no longer a current choice because its repository was archived in 2025.
 
 #### When to use an external store
@@ -208,13 +208,13 @@ function Counter() {
 
 ### Server state vs client state
 
-A critical modern decision axis: data fetched from a server is **not** ordinary client state. It has a cache, can go stale, needs revalidation, refetching on focus, deduplication, retries, and pagination. Hand-rolling all of this on top of `useState` or Redux is error-prone.
+Server-fetched data has different lifecycle concerns from local UI state. Cached data can go stale and may need revalidation, refetching on focus, deduplication, retries, or pagination. Choose a data layer that provides the features the application needs rather than implementing each one with `useState` or Redux.
 
 For server data that needs a client cache, consider a dedicated server-state library:
 
-- **TanStack Query** (formerly React Query) — a widely used, framework-agnostic option.
-- **SWR** — lightweight alternative from Vercel.
-- **RTK Query** — built into Redux Toolkit, integrates with the same store.
+- **TanStack Query** (formerly React Query); a widely used, framework-agnostic option.
+- **SWR**: lightweight alternative from Vercel.
+- **RTK Query**: built into Redux Toolkit, integrates with the same store.
 
 Keeping cached server data separate from client-only state can simplify the client store and make invalidation rules explicit.
 

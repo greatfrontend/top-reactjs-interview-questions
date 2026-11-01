@@ -14,7 +14,7 @@ React makes state ownership explicit by separating values flowing down from upda
 
 ### What is one-way data flow?
 
-In React, one-way data flow refers to the concept where data moves in a single direction, from parent components to child components. This is achieved through the use of `props`. Parents pass data to children via `props`, and children may only read those `props` — they cannot mutate them. When a child needs to influence parent state, the parent passes down a callback (also via `props`) that the child invokes. The parent owns the state; the child requests changes.
+In React, one-way data flow refers to the concept where data moves in a single direction, from parent components to child components. This is achieved through the use of `props`. Parents pass data to children via `props`, and children may only read those `props`; they cannot mutate them. When a child needs to influence parent state, the parent passes down a callback (also via `props`) that the child invokes. The parent owns the state; the child requests changes.
 
 This is sometimes called "unidirectional data flow" and contrasts with two-way data binding found in frameworks like Angular and Vue, where directives such as `v-model` keep an input element and a piece of state automatically in sync in both directions. React deliberately avoids this: the input is told what to display via a prop, and any change is reported back through an event handler.
 
@@ -67,7 +67,7 @@ In this example, `ParentComponent` passes `data` and a `handleChange` callback t
 
 ### Lifting state up
 
-When two sibling components need to share or coordinate state, the React idiom is to "lift state up" — move the state into their nearest common ancestor and pass it down via `props`, along with callbacks to update it. Because data only flows downward, the common ancestor becomes the natural owner of any state shared by its descendants. This keeps the source of truth explicit instead of trying to synchronize two independent copies.
+When two sibling components need to share or coordinate state, the React idiom is to "lift state up", move the state into their nearest common ancestor and pass it down via `props`, along with callbacks to update it. Because data only flows downward, the common ancestor becomes the natural owner of any state shared by its descendants. This keeps the source of truth explicit instead of trying to synchronize two independent copies.
 
 ### Contrast with two-way binding
 

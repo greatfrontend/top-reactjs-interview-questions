@@ -8,24 +8,22 @@ A re-render means React calls a function component again (or calls a class compo
 
 ---
 
-## What does re-rendering mean in React?
-
 A re-render is React calling a component again to calculate its next output; it is distinct from committing changes to the host environment.
 
-### Understanding re-rendering
+## Understanding re-rendering
 
 Re-rendering is the process by which React calls a component's function again to compute a new UI description. It does not necessarily result in a DOM update: reconciliation may determine that no host changes are required.
 
-### When does re-rendering occur?
+## When does re-rendering occur?
 
 Re-rendering occurs in the following scenarios:
 
 - When a state update from a `useState` setter or `useReducer` dispatch is not skipped by a same-value bailout
 - When a component subscribed to a context reads a new context value
-- When a parent component re-renders, its children render by default—even if their props are referentially unchanged—unless an applicable bailout skips them
+- When a parent component re-renders, its children render by default (even if their props are referentially unchanged) unless an applicable bailout skips them
 - When a component's `key` changes, React unmounts the old instance and mounts a new one (a remount, not just a re-render)
 
-### The re-rendering process
+## The re-rendering process
 
 React moves from a scheduled update through render and reconciliation before committing any required host changes:
 
@@ -48,7 +46,7 @@ flowchart LR
   Changes -->|"no"| Done["Finish without changing the DOM"]
 ```
 
-### Example
+## Example
 
 Here's a simple example to illustrate re-rendering:
 
@@ -74,7 +72,7 @@ In this example:
 - React calls the `Counter` function again, producing a new element tree that is reconciled against the previous one.
 - React updates the actual DOM to reflect the new count.
 
-### Performance considerations
+## Performance considerations
 
 The cost of a re-render depends on the component work and subtree size. Profile a slow interaction before adding memoization. Common ways to narrow measured render work include:
 
@@ -82,7 +80,7 @@ The cost of a re-render depends on the component work and subtree size. Profile 
 - **`useMemo` and `useCallback`**: Hooks that preserve the identity of values and functions across renders so memoized children don't see "new" props.
 - **State colocation**: Move state down so fewer components re-render when it changes.
 
-### React Compiler
+## React Compiler
 
 React Compiler 1.0 is an optional build-time optimizer. When enabled, it memoizes compatible components and values and can remove much of the need for manual `memo`, `useMemo`, and `useCallback`. It is not part of React's runtime, does not optimize code it cannot prove safe, and does not eliminate re-renders caused by a component's own state or a context value it reads changing.
 

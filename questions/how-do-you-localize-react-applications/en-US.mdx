@@ -73,7 +73,7 @@ i18n.use(initReactI18next).init({
   lng: 'en', // default language
   fallbackLng: 'en',
   interpolation: {
-    escapeValue: false, // React is safe from XSS by default — it escapes string children. Only `dangerouslySetInnerHTML` bypasses that, so don't pass translated HTML through it without sanitization.
+    escapeValue: false, // React is safe from XSS by default; it escapes string children. Only `dangerouslySetInnerHTML` bypasses that, so don't pass translated HTML through it without sanitization.
   },
 });
 

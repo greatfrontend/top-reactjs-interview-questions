@@ -20,13 +20,11 @@ function MyComponent() {
 
 ---
 
-## What is React Suspense and what does it enable?
-
 Suspense coordinates how a boundary responds when a supported descendant cannot finish the current render yet.
 
-### Introduction to React Suspense
+## Introduction to React Suspense
 
-React Suspense coordinates a fallback for a subtree that cannot finish rendering yet. A component must suspend through a React-supported mechanism—such as `lazy`, `use` with a cached promise, or a framework integration. Starting a request in an Effect or returning a promise from an event handler does not make the nearest boundary show its fallback.
+React Suspense coordinates a fallback for a subtree that cannot finish rendering yet. A component must suspend through a React-supported mechanism, such as `lazy`, `use` with a cached promise, or a framework integration. Starting a request in an Effect or returning a promise from an event handler does not make the nearest boundary show its fallback.
 
 The nearest Suspense boundary owns the pending path, while rejection follows the normal error-boundary path:
 
@@ -45,7 +43,7 @@ flowchart TD
   Error --> ErrorUI["Render error fallback UI"]
 ```
 
-### Code splitting with React.lazy
+## Code splitting with React.lazy
 
 One primary Suspense use case is code splitting. Loading a component's chunk only when that component is needed can reduce initial JavaScript, while the boundary provides pending UI for the chunk request.
 
@@ -65,7 +63,7 @@ function MyComponent() {
 
 In this example, `React.lazy` is used to dynamically import the `LazyComponent`. The `Suspense` component wraps the lazy-loaded component and provides a fallback UI (`<div>Loading...</div>`) to display while the component is being loaded.
 
-### Data fetching with Suspense
+## Data fetching with Suspense
 
 React 19 stabilized reading cached promises with `use`. Supported data-loading paths include React Server Components, promises passed to Client Components and read with `use`, and Suspense-aware integrations such as TanStack Query or Relay. A plain query API does not necessarily suspend; use the library's documented Suspense integration. Promises created during a Client Component render must be cached or React will repeatedly suspend on a new promise.
 
@@ -99,7 +97,7 @@ function MyComponent() {
 }
 ```
 
-### The `use` API (React 19)
+## The `use` API (React 19)
 
 In React 19, you can read a promise directly from a client component with the `use()` hook. While the promise is pending, React suspends the nearest `Suspense` boundary; when it resolves, the component re-renders with the value.
 
@@ -122,13 +120,13 @@ function Page({ userPromise }) {
 
 `use()` also reads context. Despite its name, it is not a Hook: it can be called inside conditionals and loops, but it must run inside a component or Hook and cannot be wrapped in `try`/`catch`.
 
-### Server Components and streaming SSR
+## Server Components and streaming SSR
 
 React Server Components can suspend on the server while data loads, and the framework streams HTML to the browser as each `Suspense` boundary resolves. This means users see content progressively instead of waiting for the entire page to be ready, with the same `<Suspense fallback={...}>` semantics on both server and client.
 
 React 19.2 batches the reveal of server-rendered Suspense boundaries for a short period so nearby content can appear together. React uses heuristics to avoid delaying important loading metrics.
 
-### Pairing Suspense with error boundaries
+## Pairing Suspense with error boundaries
 
 Suspense handles the _pending_ state of an async operation, but it doesn't handle the _error_ state. To cover both, wrap your suspending tree in an error boundary as well:
 
@@ -147,7 +145,7 @@ function DataPanel() {
 }
 ```
 
-### Benefits of React Suspense
+## Benefits of React Suspense
 
 Suspense centralizes pending UI for supported code and data sources and composes with streaming rendering.
 

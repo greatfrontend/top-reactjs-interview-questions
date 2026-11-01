@@ -53,7 +53,7 @@ Fiber records units of work, while keys preserve sibling identity across success
 
 - **Fiber** is the data structure React has used since v16 to represent work-in-progress trees. It lets React pause or abandon eligible rendering work and switch to a higher-priority update, which underpins concurrent features such as transitions, `Suspense`, and `useDeferredValue`. Synchronous work can still block.
 - **Keys** are how you tell React which children are the same across renders. Without stable keys (or with index keys on a reordered list), React assumes positional equality and may unnecessarily unmount and remount components, losing state.
-- **Concurrent rendering** lets React work on multiple versions of the tree at once, mark some updates as non-urgent, and bail out if a higher-priority update arrives — all built on top of the virtual DOM / Fiber model.
+- **Concurrent rendering** lets React work on multiple versions of the tree at once, mark some updates as non-urgent, and bail out if a higher-priority update arrives, all built on top of the virtual DOM / Fiber model.
 - **React Compiler 1.0** is an optional build-time optimizer. When enabled, it can memoize compatible components and values, reducing work before reconciliation without changing the runtime reconciliation model.
 
 ### Code example
@@ -101,7 +101,7 @@ The element tree lets application code describe desired output instead of sequen
 Keeping work separate from the committed host tree lets React schedule eligible rendering before mutating visible output.
 
 - **Concurrent rendering**: The ability to compute renders off-DOM is what makes interruptible rendering, transitions, and `Suspense` possible.
-- **Renderer flexibility**: The same component model powers other renderers (React Native, react-three-fiber, custom renderers). Note however that React Native does not use a browser-style virtual DOM that diffs against HTML elements — it diffs against native view nodes via a separate renderer. The shared piece is React's reconciliation, not the DOM itself.
+- **Renderer flexibility**: The same component model powers other renderers (React Native, react-three-fiber, custom renderers). Note however that React Native does not use a browser-style virtual DOM that diffs against HTML elements; it diffs against native view nodes via a separate renderer. The shared piece is React's reconciliation, not the DOM itself.
 
 ## Downsides of virtual DOM
 

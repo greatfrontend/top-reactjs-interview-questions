@@ -67,7 +67,7 @@ Serving immutable artifacts lets cache infrastructure absorb traffic without rep
 
 ### Example with Next.js (App Router)
 
-In the Next.js App Router, `generateStaticParams` enumerates dynamic route parameters to prerender at build time. Data that should be reused must opt into the relevant cache model—for example, `cache: 'force-cache'` in the previous caching model or `use cache` with Cache Components in Next.js 16. Server Components are not inherently static; request-time data can make a route dynamic.
+In the Next.js App Router, `generateStaticParams` enumerates dynamic route parameters to prerender at build time. Data that should be reused must opt into the relevant cache model, for example, `cache: 'force-cache'` in the previous caching model or `use cache` with Cache Components in Next.js 16. Server Components are not inherently static; request-time data can make a route dynamic.
 
 ```jsx
 // app/posts/[slug]/page.jsx
@@ -121,7 +121,7 @@ This `revalidate` example applies when Cache Components are disabled. Current Ne
 
 Prefer request-time or client-side data for content whose identity, freshness, or route space cannot be determined safely ahead of time.
 
-- **Per-user content**: Anything personalized (auth-gated dashboards, "hello \{user}", carts) cannot be pre-rendered for every visitor — use SSR or client-side fetching for the personalized parts.
+- **Per-user content**: Anything personalized (auth-gated dashboards, "hello \{user}", carts) cannot be pre-rendered for every visitor, use SSR or client-side fetching for the personalized parts.
 - **Highly dynamic data**: Live prices, stock levels, scoreboards, etc. need fresher data than even ISR comfortably provides.
 - **Huge or unbounded route spaces**: If a framework tries to emit millions of pages, build time and storage become a problem. Prerender a subset, generate routes on demand, or use a partial/static shell with request-time content.
 - **Stale-data tradeoffs**: Plain SSG serves whatever was true at build time until the next deploy. Stale-while-revalidate ISR modes shorten that window but may serve the previous version while regeneration runs; exact behavior depends on the framework and invalidation method.

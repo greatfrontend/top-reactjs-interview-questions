@@ -81,7 +81,7 @@ function WelcomeDialog() {
 }
 ```
 
-`WelcomeDialog` is a `Dialog` with a fixed `title` — no inheritance required.
+`WelcomeDialog` is a `Dialog` with a fixed `title`, no inheritance required.
 
 #### Render props / children as a function
 
@@ -136,7 +136,7 @@ Composition keeps responsibilities local while allowing callers to control how r
 - **Reusability**: Smaller components can be reused across different parts of the application.
 - **Maintainability**: Easier to manage and update smaller components.
 - **Flexibility**: Components can be combined in many ways to create complex UIs without each combination needing its own component.
-- **No inheritance traps**: Avoids the tight coupling of class hierarchies and the diamond problem.
+- **No component class hierarchy**: Components reuse structure through children and props without inheriting from one another.
 
 ### Composition vs HOCs vs hooks
 

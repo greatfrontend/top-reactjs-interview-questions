@@ -4,7 +4,7 @@ title: What is the `useId` hook in React and when should it be used?
 
 ## TL;DR
 
-`useId` (added in React 18) generates a stable, unique string ID per component instance, **per React root**. Its main reason for existing is to produce IDs that match between the server-rendered HTML and the client hydration — a plain incrementing counter would produce mismatches. Within a single root the IDs are unique, but two separate roots on the same page can collide unless you set `identifierPrefix` on `createRoot` / `hydrateRoot`. Use it for things like linking `<label htmlFor>` to `<input id>`, never as a list `key`.
+`useId` (added in React 18) generates a stable, unique string ID per component instance, **per React root**. Its main reason for existing is to produce IDs that match between the server-rendered HTML and the client hydration; a plain incrementing counter would produce mismatches. Within a single root the IDs are unique, but two separate roots on the same page can collide unless you set `identifierPrefix` on `createRoot` / `hydrateRoot`. Use it for things like linking `<label htmlFor>` to `<input id>`, never as a list `key`.
 
 ```jsx
 import { useId } from 'react';
@@ -22,15 +22,13 @@ function NameField() {
 
 ---
 
-## What is the `useId` hook in React and when should it be used?
-
 `useId` creates component-scoped identifiers for rendered relationships that must remain stable across server rendering, hydration, and later renders.
 
-### Introduction to `useId`
+## Introduction to `useId`
 
-The `useId` hook was added in React 18. It returns a stable string ID tied to the component instance's position in the tree. The ID is the same on every render of that instance, and — crucially — it is the same on the server and the client.
+The `useId` hook was added in React 18. It returns a stable string ID tied to the component instance's position in the tree. The ID is the same on every render of that instance, and (crucially) it is the same on the server and the client.
 
-### Why `useId` exists: SSR and hydration
+## Why `useId` exists: SSR and hydration
 
 The actual motivation for `useId` is server-side rendering. Before React 18, generating IDs with a module-level counter (`let next = 0; const id = next++;`) could cause **hydration mismatches**: the server and client might increment the counter in a different order, producing different IDs. React reports mismatches and may regenerate the affected tree on the client, depending on where and how the mismatch occurs.
 
@@ -38,7 +36,7 @@ Module-level counters were already fragile before React 18. Any re-render, multi
 
 `useId` sidesteps it by deriving the ID from the component's location in the React tree, which is identical on the server and the client regardless of render order. Producing IDs unique to one component instance is a side benefit; the main job is hydration stability.
 
-### `useId` vs other ID-generation approaches
+## `useId` vs other ID-generation approaches
 
 `useId` exists specifically to be SSR-safe and stable across renders. Common alternatives fail one of those two requirements:
 
@@ -52,7 +50,7 @@ Module-level counters were already fragile before React 18. Any re-render, multi
 
 Use `useId` when a component needs to generate an ID for rendered accessibility relationships. An ID supplied through props or stored in application data is also safe to render. If an ID belongs to your data model (a row's primary key, for example), generate it outside render and store it rather than replacing it with `useId`.
 
-### `useId` in React Server Components
+## `useId` in React Server Components
 
 `useId` behaves inside Client Components the same way it does in plain client React. Two caveats apply specifically to RSC setups:
 
@@ -60,7 +58,7 @@ Use `useId` when a component needs to generate an ID for rendered accessibility 
 - IDs are derived from the component's position in the fiber tree, including any surrounding Suspense boundaries. There is no per-Suspense namespace. The boundary is simply another node in the parent path, which is what keeps IDs in different boundaries distinct.
 - Server Actions are unrelated to ID generation. They run on the server and do not participate in render-time ID generation.
 
-### Uniqueness scope and multiple roots
+## Uniqueness scope and multiple roots
 
 IDs from `useId` are unique **within a single React root**. If your page mounts more than one root (for example, an island-style architecture or an embedded widget), separate roots can generate the same opaque ID. Do not depend on the exact generated string: React changed its default prefix in React 19.2.
 
@@ -80,7 +78,7 @@ createRoot(document.getElementById('widget-b'), {
 
 The same option exists on `hydrateRoot`.
 
-### When to use `useId`
+## When to use `useId`
 
 The most common use is associating a `<label>` with its form control for accessibility:
 
@@ -100,7 +98,7 @@ function NameField() {
 
 It is also useful for ARIA attributes such as `aria-describedby`, `aria-labelledby`, and `aria-controls`.
 
-### Pairing inputs with `aria-describedby` and `aria-labelledby`
+## Pairing inputs with `aria-describedby` and `aria-labelledby`
 
 A common `useId` pattern for accessibility is connecting an input to a hint, an error message, or an external label via `aria-describedby` or `aria-labelledby`. Call `useId` once per component and append suffixes for each related element. This keeps related IDs grouped, saves hook calls, and makes the relationships clear in the markup:
 
@@ -123,7 +121,7 @@ function PasswordField() {
 
 The same pattern applies to `aria-labelledby` (when the label is a separate element, not a `<label>`), `aria-controls` (a button that toggles a panel), and `aria-errormessage` (an input pointing at an error region). All of these attributes need stable IDs that survive SSR, which is what `useId` provides.
 
-### What `useId` is not for
+## What `useId` is not for
 
 The generated identifier represents a component position, not the identity of application data.
 
@@ -136,11 +134,11 @@ The generated identifier represents a component position, not the identity of ap
 - **Do not parse or rely on the format.** The exact shape (`:r0:`, `«r0»`, etc.) is an implementation detail and has changed between versions.
 - **Do not generate IDs for data with `useId`.** If the ID must outlive the component (saved to a database, sent in an API request, used as a stable record identifier), `useId` is not the right tool. Use `crypto.randomUUID()` or a UUID library and store the result.
 
-### Practical guidance
+## Practical guidance
 
 Use the opaque value only to connect rendered elements, and store data identities separately:
 
-- Always pair the generated id with the element via `htmlFor` / `id` (or the relevant `aria-*` attribute) — never use it as decoration.
+- Always pair the generated id with the element via `htmlFor` / `id` (or the relevant `aria-*` attribute), never use it as decoration.
 - Concatenate suffixes for related controls instead of calling `useId` repeatedly.
 - Set `identifierPrefix` on each root if your app mounts more than one.
 - Reach for `useId` only when you actually need a generated id; many components can simply accept an `id` prop from the parent.

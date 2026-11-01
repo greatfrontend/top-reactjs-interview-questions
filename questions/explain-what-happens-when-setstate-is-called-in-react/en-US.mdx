@@ -90,9 +90,9 @@ After scheduling the state update(s), React will eventually render the component
 
 ### State snapshots and automatic batching
 
-It is more precise to say that setters **queue an update for a future render** than to call them "asynchronous." React does not return a promise from a setter, and `await setCount(...)` has no meaning. Since React 18, **automatic batching** groups multiple updates from React events and many other callbacks—including promise callbacks, timers, and native event handlers—into fewer renders. Updates separated by an actual asynchronous boundary are not guaranteed to share one batch.
+It is more precise to say that setters **queue an update for a future render** than to call them "asynchronous." React does not return a promise from a setter, and `await setCount(...)` has no meaning. Since React 18, **automatic batching** groups multiple updates from React events and many other callbacks (including promise callbacks, timers, and native event handlers) into fewer renders. Updates separated by an actual asynchronous boundary are not guaranteed to share one batch.
 
-Because updates are batched, you shouldn't rely on the state variable having its new value immediately after calling the setter. If the new state depends on the previous state, use the functional updater form — the updater receives the latest **queued** state, not the value captured by closure.
+Because updates are batched, you shouldn't rely on the state variable having its new value immediately after calling the setter. If the new state depends on the previous state, use the functional updater form; the updater receives the latest **queued** state, not the value captured by closure.
 
 ```jsx
 import { useState } from 'react';
